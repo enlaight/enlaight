@@ -1,0 +1,54 @@
+import React from 'react';
+import { MenuItemProps } from './types';
+
+export const MenuItem: React.FC<MenuItemProps> = ({
+  item,
+  isCollapsed,
+  onMenuClick,
+  submenuOpen,
+  hideSubMenu
+}) => {
+  const textColor = item.customColor ? item.customColor : 'text-brand-yellow';
+  return (
+    <button
+      onClick={() => !item.disabled && onMenuClick(item.id)}
+      disabled={item.disabled}
+      className={`flex w-full items-center relative group ${isCollapsed ? 'px-1 py-2 justify-center' : 'px-2 py-1.5'
+        } rounded-lg transition-colors group ${item.disabled
+          ? 'cursor-not-allowed opacity-50'
+          : `${!item.disabled && "hover:bg-sidebar-accent"}`
+        } ${item.isActive ? 'bg-sidebar-accent' : ''
+        }`}
+      aria-current={item.isActive ? 'page' : undefined}
+      aria-disabled={item.disabled}
+      title={isCollapsed ? item.label : undefined}
+    >
+      <div className={`flex items-start ${isCollapsed ? 'justify-center' : 'gap-3 flex-1 min-w-0'
+        } relative px-0 py-0.5`}>
+        <div className="flex-shrink-0">
+          {item.icon}
+        </div>
+        {!isCollapsed && (
+          <span className={`text-base font-medium leading-5 relative max-sm:text-sm transition-colors break-words hyphens-auto whitespace-normal text-left block min-w-0 ${item.isActive ? textColor : `text-white ${!item.disabled && `group-hover:${textColor} group-focus:${textColor}`}`
+            }`}>
+            {item.label}
+          </span>
+        )}
+      </div>
+      {item.hasSubmenu && !isCollapsed && !hideSubMenu && (
+        <div className="flex-shrink-0">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={`transition-transform ${submenuOpen ? 'rotate-180' : ''}`}
+          >
+            <path d="M12.0172 16C11.6459 15.9999 11.2899 15.8597 11.0274 15.6101L5.4274 10.2877C5.29369 10.165 5.18703 10.0181 5.11366 9.85579C5.04029 9.69345 5.00167 9.51885 5.00005 9.34217C4.99844 9.16549 5.03386 8.99028 5.10425 8.82675C5.17465 8.66323 5.2786 8.51466 5.41005 8.38973C5.5415 8.26479 5.69781 8.16599 5.86987 8.09909C6.04192 8.03218 6.22627 7.99851 6.41217 8.00005C6.59806 8.00159 6.78176 8.03829 6.95257 8.10803C7.12337 8.17776 7.27786 8.27913 7.407 8.40622L12.0172 12.7879L16.6274 8.40622C16.8914 8.16384 17.2451 8.02972 17.6122 8.03275C17.9792 8.03578 18.3304 8.17572 18.5899 8.42243C18.8495 8.66913 18.9968 9.00287 18.9999 9.35175C19.0031 9.70063 18.862 10.0367 18.607 10.2877L13.007 15.6101C12.7445 15.8597 12.3885 15.9999 12.0172 16V16Z" fill="white" />
+          </svg>
+        </div>
+      )}
+    </button>
+  );
+};
