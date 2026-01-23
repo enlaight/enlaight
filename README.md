@@ -1,7 +1,7 @@
 ````markdown
-# Placeholder
+# Enlaight
 
-Placeholder is a full-stack application built with modern frontend and backend technologies.
+Enlaight is a full-stack application built with modern frontend and backend technologies.
 
 ---
 
