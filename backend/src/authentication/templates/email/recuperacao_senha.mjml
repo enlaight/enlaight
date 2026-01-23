@@ -1,0 +1,52 @@
+<mjml>
+	<mj-head>
+		<mj-title> Reset Password </mj-title>
+		<mj-attributes>
+			<mj-text color="#525252" />
+		</mj-attributes>
+	</mj-head>
+
+	<mj-body>
+		<mj-section
+			background-size="cover"
+			background-url="https://enlaight-main.s3.sa-east-1.amazonaws.com/email_templates/enlaight_full_logo.png"
+		>
+			<mj-column>
+				<mj-text font-size="20px" font-weight="300" color="#fff"> Enlaight </mj-text>
+			</mj-column>
+		</mj-section>
+
+		<mj-section background-color="#fafafa">
+			<mj-column width="400px">
+				<mj-text> Hello, $nm_pessoa. </mj-text>
+
+				<mj-text>
+					We verified a request to <strong>reset your password</strong>. In order to proceed, please
+                        click the link:
+				</mj-text>
+
+				<mj-button background-color="#F4B73F" href="$link_botao">Reset Password</mj-button>
+
+				<mj-text font-size="10px" color="#a0a0a0">
+					This link will expire at <strong>$expiracao</strong>.
+				</mj-text>
+
+				<mj-text> If you <strong>did not</strong> make this request, please ignore this e-mail. </mj-text>
+
+				<mj-text>
+					Regards,<br />
+					Equipe Enlaight.
+				</mj-text>
+			</mj-column>
+		</mj-section>
+
+		<mj-section background-color="#f0f0f0">
+			<mj-column>
+				<mj-text font-size="12px">
+					<strong>Do not reply.</strong>
+					This is an automatic e-mail.
+				</mj-text>
+			</mj-column>
+		</mj-section>
+	</mj-body>
+</mjml>
