@@ -47,7 +47,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       SECRET_KEY: ${SECRET_KEY}
       REACT_URL: ${REACT_URL}
@@ -70,6 +70,7 @@ services:
       - ./backend/src:/src
       - ./backend/tests:/tests
       - ./backend/scripts:/scripts
+      - ./backend/mysql/init:/sql-init:ro
     networks:
       - internal
       - public
@@ -106,7 +107,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/scripts:/scripts
-      - ./backend/mysql/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
@@ -134,7 +134,7 @@ services:
     container_name: postgres_dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: n8n
+      POSTGRES_DB: n8n_enlaight_db
       POSTGRES_USER: n8n
       POSTGRES_PASSWORD: n8n_dev_password
     volumes:
@@ -144,7 +144,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n_enlaight_db"]
       interval: 5s
       timeout: 5s
       retries: 5
