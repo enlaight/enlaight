@@ -1,7 +1,9 @@
 # Enlaight
 
 ````markdown
-Enlaight is a full-stack application built with modern frontend and backend technologies, which .
+Enlaight is a full-stack application built with modern frontend and backend technologies,  
+featuring a database layer, automated workflows, and integrated data visualization  
+and analytics, orchestrated through Docker containers.
 ````
 
 ## 🧭 Navigation:
