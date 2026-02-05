@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
             xmlns="http://www.w3.org/2000/svg"
             className="logo max-sm:w-[140px] max-sm:h-[24px]"
             aria-label="Company logo"
+            id="Enlaight Logo"
           >
             <path d="M17.7754 26.1154L24.8852 30.2147V26.1154L21.3237 24.0625L17.7754 26.1154Z" fill="#2D2D2E" />
             <path d="M14.1934 19.9567L7.11639 15.8836L24.8844 5.5993L24.8516 1.5L0 15.8836L10.6451 22.0096L14.1934 19.9567Z" fill="#2D2D2E" />

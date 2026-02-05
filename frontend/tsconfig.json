@@ -2,8 +2,18 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": [
+				"src/*"
+			]
 		},
-		"jsx": "react-jsx"
+		"jsx": "react-jsx",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"types": [
+			"vite/client",
+			"vitest/globals"
+		]
 	}
 }

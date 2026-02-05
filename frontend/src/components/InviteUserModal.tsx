@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,14 +59,14 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
   // Available roles based on inviter role
   const availableRoles: { value: UserRole; label: string }[] = isAdmin
     ? [
-        { value: "ADMINISTRATOR", label: "Administrator" },
-        { value: "MANAGER", label: "Manager" },
-        { value: "USER", label: "User" },
-      ]
+      { value: "ADMINISTRATOR", label: "Administrator" },
+      { value: "MANAGER", label: "Manager" },
+      { value: "USER", label: "User" },
+    ]
     : [
-        { value: "MANAGER", label: "Manager" },
-        { value: "USER", label: "User" },
-      ];
+      { value: "MANAGER", label: "Manager" },
+      { value: "USER", label: "User" },
+    ];
 
   // Initialize: Load user data and determine role
   useEffect(() => {
@@ -280,10 +280,14 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="invite-user-desc">
         <DialogHeader>
           <DialogTitle>Invite User</DialogTitle>
         </DialogHeader>
+
+        <DialogDescription id="invite-user-desc" className="sr-only">
+          Modal to invite a user to the system.
+        </DialogDescription>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -351,7 +355,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" id='invite-user-modal'>
               <Label htmlFor="project">
                 Project <span className="text-destructive">*</span>
               </Label>
@@ -397,8 +401,8 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                       isManager
                         ? "Assigned from your account"
                         : selectedProject
-                        ? "Auto-selected from project"
-                        : "Select client"
+                          ? "Auto-selected from project"
+                          : "Select client"
                     }
                   />
                 </SelectTrigger>
