@@ -12,7 +12,16 @@ const images = [
 	techExpert
 ]
 
-export const AgentsCard: React.FC = ({
+interface AgentsCardProps {
+	index?: number;
+	name?: string;
+	expertise?: string;
+	desc?: string;
+	icon?: string;
+	onClick?: () => void;
+}
+
+export const AgentsCard: React.FC<AgentsCardProps> = ({
 	index = 0,
 	name = "John",
 	expertise = "AI Assistant",

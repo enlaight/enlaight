@@ -120,12 +120,15 @@ const ManualResetModal = ({ open, onClose, user, onPasswordReset }: ManualResetM
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby="manual-reset-desc">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             {showConfirmation ? "Confirm Password Reset" : "Manually Reset Password"}
           </DialogTitle>
+          <DialogDescription id="manual-reset-desc" className="sr-only">
+            Modal for manually resetting password.
+          </DialogDescription>
           <DialogDescription>
             {showConfirmation
               ? `Are you sure you want to reset the password for ${user.name}?`
@@ -202,7 +205,7 @@ const ManualResetModal = ({ open, onClose, user, onPasswordReset }: ManualResetM
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Password strength</span>
                     <span className={`font-medium ${passwordStrength.strength < 2 ? 'text-red-600' :
-                        passwordStrength.strength < 4 ? 'text-yellow-600' : 'text-green-600'
+                      passwordStrength.strength < 4 ? 'text-yellow-600' : 'text-green-600'
                       }`}>
                       {passwordStrength.label}
                     </span>

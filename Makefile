@@ -19,7 +19,11 @@ reset:
 	make start
 
 test:
-	@echo "placeholder for command"
+# 	Run tests in running frontend container:
+# 	docker compose exec frontend npm test
+
+#	Run tests in a new container (builds if necessary):
+	docker compose run --rm --build frontend npm test
 
 logs:
 	docker compose logs -f
