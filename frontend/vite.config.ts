@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from '@vitejs/plugin-react';
 import path from "node:path";
 import { componentTagger } from "lovable-tagger";
 
@@ -17,4 +17,9 @@ export default defineConfig(({ mode }) => ({
 			"@": path.resolve(__dirname, "./src"),
 		},
 	},
+	test: {
+		environment: 'jsdom', // browser env
+		globals: true, // no need to import "describe", "it" or "expect"
+		setupFiles: './vitest.setup.ts'
+	}
 }));

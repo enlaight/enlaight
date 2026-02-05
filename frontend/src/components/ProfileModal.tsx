@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -71,10 +72,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="profile-modal-desc">
         <DialogHeader>
           <DialogTitle>{t('profileModal.title')}</DialogTitle>
         </DialogHeader>
+
+        <DialogDescription id="profile-modal-desc" className="sr-only">
+          Modal to show user's profile information.
+        </DialogDescription>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -98,7 +103,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               </div>
             </div>
 
-            <Separator />
+            <Separator id='profile-modal' />
 
             {/* User Details */}
             <div className="space-y-4">
