@@ -2,16 +2,52 @@ START TRANSACTION;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-TRUNCATE TABLE authentication_userprofile_groups;
-TRUNCATE TABLE authentication_userprofile_user_permissions;
-TRUNCATE TABLE authentication_projects_users;
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_groups');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile_groups', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_user_permissions');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile_user_permissions', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_projects_users');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_projects_users', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
 -- TRUNCATE TABLE authentication_projects_agents;
-TRUNCATE TABLE authentication_boards;
-TRUNCATE TABLE authentication_projects;
-TRUNCATE TABLE authentication_clients;
-TRUNCATE TABLE agents;
-TRUNCATE TABLE expertise_areas;
-TRUNCATE TABLE authentication_userprofile;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_boards');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_boards', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_projects');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_projects', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_clients');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_clients', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'agents');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE agents', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'expertise_areas');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE expertise_areas', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile');
+SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -47,17 +83,30 @@ INSERT INTO auth_group (name)
 SELECT 'Admins'
 WHERE NOT EXISTS (SELECT 1 FROM auth_group WHERE name='Admins');
 
--- USER <-> GROUP
-INSERT INTO authentication_userprofile_groups (userprofile_id, group_id)
-SELECT u.id, g.id
-FROM authentication_userprofile u
-JOIN auth_group g ON g.name = 'Admins'
-WHERE u.username IN ('Admin');
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_groups');
+SET @stmt := IF(@tbl > 0, 'INSERT INTO authentication_userprofile_groups (userprofile_id, group_id) SELECT u.id, g.id FROM authentication_userprofile u JOIN auth_group g ON g.name = \'Admins\' WHERE u.username IN (\'Admin\')', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 
--- USER PERMISSIONS
-INSERT INTO authentication_userprofile_user_permissions (userprofile_id, permission_id)
-SELECT u.id, 1
-FROM authentication_userprofile u
-WHERE u.username IN ('Admin');
+SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_user_permissions');
+SET @stmt := IF(@tbl > 0, 'INSERT INTO authentication_userprofile_user_permissions (userprofile_id, permission_id) SELECT u.id, 1 FROM authentication_userprofile u WHERE u.username IN (\'Admin\')', 'SELECT 1');
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- CLIENTS
+-- include a unique hash_id to avoid duplicate '' when the column has a UNIQUE constraint
+INSERT INTO authentication_clients (id, name, created_at, updated_at)
+VALUES
+    ('cad2388abf014e8590d03f741b5ef914', 'First Client', NOW(), NULL);
+
+-- PROJECTS
+INSERT INTO authentication_projects (id, name, client_id, created_at, updated_at)
+VALUES
+    ('8888581eedb84918a82d46d0e51a36ce','First Project','cad2388abf014e8590d03f741b5ef914',NOW(),NULL);
+
+-- AGENTS
+INSERT INTO agents (id, name, description, avatar, url_n8n, created_at, updated_at)
+VALUES
+    ('9981gg99dba8f5d76c3d4918e085103e','Data Analyst','You are Nora, the Data Analyst agent for Enlaight AI. Your role is to analyze data, identify trends, generate insights, and answer questions about metrics and performance. Use clear, data-driven reasoning and, when possible, explain findings in simple terms that non-technical users can understand. You can summarize dashboards, analyze KPIs, and assist with reports or visualizations. Maintain a confident, insightful, and collaborative tone.',NULL,'https://n8n.enlaight.ai/webhook/0f1874f7-cfbb-4c8b-8722-411b326dd9d8/chat',NOW(),NULL);
 
 COMMIT;
