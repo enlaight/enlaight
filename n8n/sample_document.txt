@@ -1,0 +1,152 @@
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Introduction to Enlaight
+2. Getting Started with Knowledge Bases
+3. Managing Projects
+4. AI Agents and Expertise Areas
+5. Chat Sessions and Interactions
+6. Best Practices
+
+
+================================================================================
+1. INTRODUCTION TO ENLAIGHT
+================================================================================
+
+Enlaight is a comprehensive platform for managing AI-powered knowledge bases 
+and intelligent agents. It provides a unified interface for creating, 
+organizing, and querying knowledge bases, as well as deploying and managing 
+AI agents that can interact with this knowledge to provide intelligent responses.
+
+Key Features:
+  • Knowledge base management and organization
+  • AI agent configuration and deployment
+  • Project-based access control
+  • Chat session tracking and history
+  • Multi-user collaboration
+
+
+================================================================================
+2. GETTING STARTED WITH KNOWLEDGE BASES
+================================================================================
+
+Knowledge Bases (KBs) are collections of documents, files, and information 
+that AI agents can query to provide accurate and contextual responses. Each 
+knowledge base can contain multiple file types including PDFs, documents, 
+and structured data.
+
+Creating a Knowledge Base:
+  1. Navigate to the Knowledge Bases section
+  2. Click 'Create New Knowledge Base'
+  3. Enter a name and description
+  4. Select the project to associate with
+  5. Add files and documents to your KB
+
+KB Features:
+  • Multiple file format support
+  • Full-text search capabilities
+  • Version control and history
+  • Access control per project
+  • Real-time indexing
+
+
+================================================================================
+3. MANAGING PROJECTS
+================================================================================
+
+Projects are the top-level organizational unit in Enlaight. Each project can 
+have multiple knowledge bases, agents, and team members. Projects help 
+organize different business domains or clients.
+
+Project Features:
+  • Assign multiple users to a project
+  • Link multiple knowledge bases
+  • Configure agents
+  • Track conversations
+
+Project Setup:
+  1. Create a new project with a descriptive name
+  2. Associate with a client
+  3. Add team members
+  4. Configure linked knowledge bases
+  5. Set up agents
+
+
+================================================================================
+4. AI AGENTS AND EXPERTISE AREAS
+================================================================================
+
+AI Agents are intelligent bots trained to handle specific tasks or expertise 
+areas. You can create multiple agents within a project, each with different 
+capabilities and expertise areas.
+
+Types of Expertise Areas:
+  • General Support - Handles common queries
+  • Technical Documentation - Provides technical assistance
+  • Customer Service - Manages customer interactions
+  • Data Analysis - Analyzes and interprets data
+  • Sales Consulting - Assists with sales processes
+
+Agent Configuration:
+  1. Define agent name and description
+  2. Select expertise area
+  3. Configure knowledge base links
+  4. Set response parameters
+  5. Deploy agent
+
+
+================================================================================
+5. CHAT SESSIONS AND INTERACTIONS
+================================================================================
+
+Chat Sessions allow users to interact with AI agents and knowledge bases. 
+Each session maintains conversation history and context, enabling more 
+intelligent and personalized interactions.
+
+Session Features:
+  • Real-time conversations with AI agents
+  • Access to relevant knowledge base documents
+  • Context-aware responses
+  • Session history and transcripts
+  • User feedback and ratings
+
+Starting a Chat Session:
+  1. Select an agent
+  2. Choose relevant knowledge base
+  3. Begin conversation
+  4. Agent references KB documents
+  5. Review and save session transcript
+
+
+================================================================================
+6. BEST PRACTICES
+================================================================================
+
+Organize Knowledge Bases:
+  Create separate KBs for different topics or departments to improve search 
+  accuracy and relevance. Use clear folder structures and naming conventions.
+
+Regular Updates:
+  Keep your knowledge bases up-to-date with the latest information and 
+  documentation. Review and archive outdated content regularly.
+
+Clear Naming:
+  Use descriptive names for projects, KBs, and agents to make them easily 
+  identifiable. Include relevant keywords for better searchability.
+
+User Permissions:
+  Manage user access carefully to ensure data security and proper access 
+  control. Implement role-based access control where applicable.
+
+Monitor Performance:
+  Regularly review chat sessions and agent responses to optimize performance. 
+  Gather user feedback to improve agent accuracy.
+
+Document Structure:
+  Organize documents with clear headings and sections. Use consistent 
+  formatting for better indexing and retrieval.
+
+Quality Control:
+  Validate document content for accuracy and completeness. Remove duplicates 
+  and consolidate related information.

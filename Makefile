@@ -10,8 +10,7 @@ clear:
 	docker compose down --volumes --remove-orphans
 
 build:
-	
-	docker compose build --no-cache
+	docker compose build --no-cache $(filter-out $@,$(MAKECMDGOALS))
 
 reset:
 	make clear
@@ -53,5 +52,5 @@ help: ## 📋 Show this help message
 	@echo "  make reset		# Complete cleanup (!), build without cache and start"
 	@echo "  make test		# To be implemented"
 	@echo ""
-	@echo "  Note: using 'make start <service_name> <service_name>' will run only the given service(s)"
+	@echo "  Note: using 'make start/build <service_name> <service_name>' will run/build only the given service(s)"
 	@echo ""

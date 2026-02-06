@@ -194,9 +194,9 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("MYSQL_DATABASE", "enlaight_database"),
-        "USER": os.environ.get("MYSQL_USER", "enlaight"),
-        "PASSWORD": os.environ.get("MYSQL_PASSWORD", "enlaight"),
+        "NAME": os.environ.get("BACKEND_DB", "enlaight_database"),
+        "USER": os.environ.get("BACKEND_DB_USER", "enlaight"),
+        "PASSWORD": os.environ.get("BACKEND_DB_PASSWORD", "enlaight"),
         "HOST": os.environ.get("MYSQL_HOST", "mysql" if not DEBUG else "localhost"),
         "PORT": os.environ.get("MYSQL_PORT", "3306"),
     }
