@@ -71,6 +71,8 @@ services:
       - ./backend/tests:/tests
       - ./backend/scripts:/scripts
       - ./backend/mysql/init:/sql-init:ro
+      - ./n8n:/app/n8n
+      - ./superset:/app/superset
     networks:
       - internal
       - public

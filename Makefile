@@ -12,6 +12,11 @@ clear:
 build:
 	docker compose build --no-cache $(filter-out $@,$(MAKECMDGOALS))
 
+init:
+	make build
+	bash create_defaults.sh
+	make start
+
 reset:
 	make clear
 	docker compose build --no-cache

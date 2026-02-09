@@ -97,16 +97,16 @@ PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 -- include a unique hash_id to avoid duplicate '' when the column has a UNIQUE constraint
 INSERT INTO authentication_clients (id, name, created_at, updated_at)
 VALUES
-    ('cad2388abf014e8590d03f741b5ef914', 'First Client', NOW(), NULL);
+    ('18eebde4cf8a42779afac175dbb6083b', 'First Client', NOW(), NULL);
 
 -- PROJECTS
 INSERT INTO authentication_projects (id, name, client_id, created_at, updated_at)
 VALUES
-    ('8888581eedb84918a82d46d0e51a36ce','First Project','cad2388abf014e8590d03f741b5ef914',NOW(),NULL);
+    ('57ba75fbc7564f388d84677adc129ff4','First Project','18eebde4cf8a42779afac175dbb6083b',NOW(),NULL);
 
 -- AGENTS
 INSERT INTO agents (id, name, description, avatar, url_n8n, created_at, updated_at)
 VALUES
-    ('9981gg99dba8f5d76c3d4918e085103e','Data Analyst','You are Nora, the Data Analyst agent for Enlaight AI. Your role is to analyze data, identify trends, generate insights, and answer questions about metrics and performance. Use clear, data-driven reasoning and, when possible, explain findings in simple terms that non-technical users can understand. You can summarize dashboards, analyze KPIs, and assist with reports or visualizations. Maintain a confident, insightful, and collaborative tone.',NULL,'https://n8n.enlaight.ai/webhook/0f1874f7-cfbb-4c8b-8722-411b326dd9d8/chat',NOW(),NULL);
+    ('b6477ea69d32450b8a4b335f10f51bf2','Data Analyst','You are Nora, the Data Analyst agent for Enlaight AI. Your role is to analyze data, identify trends, generate insights, and answer questions about metrics and performance. Use clear, data-driven reasoning and, when possible, explain findings in simple terms that non-technical users can understand. You can summarize dashboards, analyze KPIs, and assist with reports or visualizations. Maintain a confident, insightful, and collaborative tone.',NULL,'https://n8n.enlaight.ai/webhook/0f1874f7-cfbb-4c8b-8722-411b326dd9d8/chat',NOW(),NULL);
 
 COMMIT;

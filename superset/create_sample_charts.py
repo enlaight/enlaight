@@ -26,12 +26,15 @@ import time
 from typing import Optional
 
 import requests
+import traceback
 
-SUPERSET_URL = os.environ.get("SUPERSET_BASE_URL")
-SUPERSET_USERNAME = os.environ.get("SUPERSET_DB_USER")
-SUPERSET_PASSWORD = os.environ.get("SUPERSET_DB_PASSWORD")
-SUPERSET_DB_NAME = os.environ.get("SUPERSET_DB_NAME")
-SUPERSET_TABLE = os.environ.get("SUPERSET_TABLE")  # e.g. authentication_chatsession
+# to be reviewed
+
+SUPERSET_URL = os.environ.get("SUPERSET_BASE_URL", "http://localhost:8088")
+SUPERSET_USERNAME = os.environ.get("SUPERSET_DB_USER", "admin")
+SUPERSET_PASSWORD = os.environ.get("SUPERSET_DB_PASSWORD", "admin")
+SUPERSET_DB_NAME = os.environ.get("SUPERSET_DB_NAME", "superset_database")
+SUPERSET_TABLE = os.environ.get("SUPERSET_TABLE", "assistants_analytics")  # e.g. authentication_chatsession
 
 if not SUPERSET_URL:
     print("SUPERSET_URL not set. Please set env var SUPERSET_URL (e.g. http://localhost:8088)")
@@ -42,6 +45,37 @@ if not SUPERSET_USERNAME or not SUPERSET_PASSWORD:
 
 session = requests.Session()
 
+# Debug flag to enable verbose output
+DEBUG = os.environ.get("DEBUG_SAMPLE_CHARTS", "0").lower() in ("1", "true", "yes")
+
+def log_debug(*args, **kwargs):
+    if DEBUG:
+        print("[create_sample_charts]", *args, **kwargs)
+
+def safe_request(method: str, url: str, **kwargs) -> Optional[requests.Response]:
+    """Wrapper around session.request that captures exceptions and prints useful debug info."""
+    try:
+        log_debug(f"Request: {method} {url} kwargs={{{', '.join(k for k in kwargs.keys())}}}")
+        resp = session.request(method, url, timeout=30, **kwargs)
+    except Exception as exc:
+        print(f"Request error for {method} {url}: {exc}")
+        if DEBUG:
+            traceback.print_exc()
+        return None
+
+    log_debug(f"Response status: {resp.status_code} for {method} {url}")
+    if DEBUG:
+        # try to show a safe preview of the response body
+        text = None
+        try:
+            text = resp.text
+        except Exception:
+            text = '<unreadable response body>'
+        preview = text[:2000] if text is not None else ''
+        print(f"Response preview (first 2000 chars):\n{preview}\n---end preview---")
+
+    return resp
+
 def superset_login(url: str, username: str, password: str) -> Optional[str]:
     """Attempt to log in and return access token (or None)."""
     login_url = f"{url.rstrip('/')}/api/v1/security/login"
@@ -51,12 +85,21 @@ def superset_login(url: str, username: str, password: str) -> Optional[str]:
         "provider": "db"
     }
     headers = {"Content-Type": "application/json"}
+    print(login_url, payload, headers)
 
-    resp = session.post(login_url, json=payload, headers=headers)
-    if resp.status_code not in (200, 201):
-        print(f"Login failed: {resp.status_code} - {resp.text}")
+    resp = safe_request("POST", login_url, json=payload, headers=headers)
+    if resp is None:
+        print("Login request failed (no response).")
         return None
-    data = resp.json()
+    if resp.status_code not in (200, 201):
+        text = resp.text if resp is not None else '<no response body>'
+        print(f"Login failed: {resp.status_code} - {text}")
+        return None
+    try:
+        data = resp.json()
+    except Exception:
+        print("Login succeeded but response JSON could not be decoded:", resp.text[:2000])
+        return None
     # Try common token fields
     token = data.get("access_token") or data.get("id_token") or data.get("token")
     if token:
@@ -69,11 +112,18 @@ def superset_login(url: str, username: str, password: str) -> Optional[str]:
 def find_database_id(url: str, db_name: str) -> Optional[int]:
     """Find a database id by name via API (best-effort)."""
     dbs_url = f"{url.rstrip('/')}/api/v1/database/"
-    resp = session.get(dbs_url)
+    resp = safe_request("GET", dbs_url)
+    if resp is None:
+        print("Failed to query Superset databases (no response).")
+        return None
     if resp.status_code != 200:
         print(f"Failed to query databases: {resp.status_code} - {resp.text}")
         return None
-    data = resp.json()
+    try:
+        data = resp.json()
+    except Exception:
+        print("Failed to parse databases response as JSON:", resp.text[:2000])
+        return None
     for item in data.get("result") or data.get("result", []):
         # fields differ between versions; try multiple names
         name = item.get("database_name") or item.get("name") or item.get("database")
@@ -90,11 +140,18 @@ def find_database_id(url: str, db_name: str) -> Optional[int]:
 def find_or_create_dataset(url: str, db_id: int, table_name: str) -> Optional[int]:
     """Find dataset by table_name and database id, or create it."""
     list_url = f"{url.rstrip('/')}/api/v1/dataset/"
-    resp = session.get(list_url, params={"q": json.dumps({"filters": []})})
+    resp = safe_request("GET", list_url, params={"q": json.dumps({"filters": []})})
+    if resp is None:
+        print("Failed to list datasets (no response).")
+        return None
     if resp.status_code != 200:
         print(f"Failed to list datasets: {resp.status_code} - {resp.text}")
         return None
-    results = resp.json().get("result") or resp.json().get("result", [])
+    try:
+        results = resp.json().get("result") or resp.json().get("result", [])
+    except Exception:
+        print("Failed to parse datasets list response as JSON:", resp.text[:2000])
+        return None
     for ds in results:
         # ds table might be under `table_name` or `table` depending on version
         if (ds.get("table_name") == table_name) or (ds.get("table") == table_name):
@@ -107,9 +164,18 @@ def find_or_create_dataset(url: str, db_id: int, table_name: str) -> Optional[in
         "schema": None,
     }
     create_url = f"{url.rstrip('/')}/api/v1/dataset/"
-    resp = session.post(create_url, json=payload)
+    log_debug(f"Creating dataset with payload: {payload}")
+    resp = safe_request("POST", create_url, json=payload)
+    if resp is None:
+        print("Failed to create dataset (no response).")
+        return None
     if resp.status_code in (200, 201):
-        return resp.json().get("id") or resp.json().get("result", {}).get("id")
+        try:
+            j = resp.json()
+        except Exception:
+            print("Dataset created but response JSON invalid:", resp.text[:2000])
+            return None
+        return j.get("id") or j.get("result", {}).get("id")
     print(f"Failed to create dataset: {resp.status_code} - {resp.text}")
     return None
 
@@ -127,21 +193,32 @@ def create_chart(url: str, dataset_id: int, viz_type: str, slice_name: str, para
     payload_alias["dataset_id"] = payload_alias.pop("datasource_id")
 
     # Attempt create with datasource_id first
-    resp = session.post(create_url, json=payload)
-    if resp.status_code in (200, 201):
+    log_debug(f"Creating chart '{slice_name}' ({viz_type}) payload: {payload}")
+    resp = safe_request("POST", create_url, json=payload)
+    if resp and resp.status_code in (200, 201):
         print(f"Created chart {slice_name} ({viz_type})")
         return True
     # Try with dataset_id field
-    resp = session.post(create_url, json=payload_alias)
-    if resp.status_code in (200, 201):
+    resp2 = safe_request("POST", create_url, json=payload_alias)
+    if resp2 and resp2.status_code in (200, 201):
         print(f"Created chart {slice_name} ({viz_type})")
         return True
-    print(f"Failed to create chart {slice_name}: {resp.status_code} - {resp.text}")
+
+    # If we get here, both attempts failed — print useful diagnostics
+    if resp is not None:
+        print(f"Failed to create chart {slice_name} with datasource_id: {resp.status_code} - {resp.text}")
+    if resp2 is not None:
+        print(f"Failed to create chart {slice_name} with dataset_id: {resp2.status_code} - {resp2.text}")
     return False
 
 
 def main():
+
+    print("i am here!")
+
+
     token = superset_login(SUPERSET_URL, SUPERSET_USERNAME, SUPERSET_PASSWORD)
+    print(token)
     if token is None:
         print("Warning: login did not return a bearer token. Continuing with session cookies if present.")
 
