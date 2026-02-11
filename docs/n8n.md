@@ -52,11 +52,11 @@
 
 ---
 
-## Agents / Bots
+## Assistants (Agents)
 
-### What is an Agent?
+### What is an Assistant?
 
-An **Agent** (called "Bot" in code) is a workflow in n8n that accepts chat messages and returns intelligent responses. Agents:
+An **Assistant** (also called "agent" in code) is a workflow in n8n that accepts chat messages and returns intelligent responses. Assistants:
 - Are powered by LLM models (GPT-4, Claude, etc.)
 - Can access knowledge bases
 - Can call external APIs
@@ -104,14 +104,14 @@ http://localhost:5678/webhook/<unique-code>/chat
 
 #### 2. Registration in Database
 
-Admin registers bot in Enlaight backend:
+Admin registers agent in Enlaight backend:
 
 **API Endpoint:** `POST /api/bots/`
 
 **Request Body:**
 ```json
 {
-  "name": "Data Analyst Bot",
+  "name": "Data Analyst",
   "description": "Analyzes data and provides insights",
   "avatar": "image_url_or_file",
   "url_n8n": "http://n8n:5678/webhook/abc123/chat",
@@ -127,11 +127,11 @@ Admin registers bot in Enlaight backend:
 
 #### 3. Frontend Display
 
-Frontend displays bot:
+Frontend displays assistant:
 1. Fetches list: `GET /api/bots/`
-2. Shows bot card with name, avatar, description
+2. Shows assistant card with name, avatar, description
 3. On click, embeds n8n chat widget
-4. Chat widget communicates directly to bot's webhook URL
+4. Chat widget communicates directly to assistant's webhook URL
 
 #### 4. User Interaction
 
@@ -155,7 +155,7 @@ n8n Returns Response
 Chat Widget Displays Message
 ```
 
-### Bot Database Model
+### Assistant Database Model
 
 **Agents Table:**
 ```python
