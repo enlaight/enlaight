@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Enlaight backend is a **Django REST API** built with modern best practices. It provides secure, scalable endpoints for the frontend to manage projects, agents, knowledge bases, users, and chat sessions. The backend enforces authentication, authorization, multi-tenancy isolation, and serves as a proxy bridge to n8n webhooks.
+The Enlaight backend is a **Django REST API** built with modern best practices. It provides secure, scalable endpoints for the frontend to manage projects, assistants (agents), knowledge bases, users, and chat sessions. The backend enforces authentication, authorization, multi-tenancy isolation, and serves as a proxy bridge to n8n webhooks.
 
 **Technology Stack:**
 - **Framework**: Django 5.2+
@@ -132,7 +132,6 @@ backend/src/
 **Available Roles:**
 - `ADMIN` / `ADMINISTRATOR` - Unrestricted access
 - `USER` - Project-based access
-- `GUEST` - Read-only, limited to assigned resources
 
 **Permission Classes** (from `permissions.py`):
 
@@ -586,8 +585,6 @@ return Response(
 
 ## Management Commands
 
-**Custom Django Commands** (`management/commands/`):
-
 ```bash
 # Run any Django command
 docker compose exec backend python manage.py [command]
@@ -600,82 +597,6 @@ docker compose exec backend python manage.py shell
 
 # Collect static files
 docker compose exec backend python manage.py collectstatic --noinput
-```
-
----
-
-## Testing
-
-**Run Tests:**
-```bash
-docker compose exec backend python manage.py test
-docker compose exec backend pytest  # If pytest configured
-```
-
-**Test Structure:**
-```
-tests/
-├── test_authentication.py
-├── test_projects.py
-├── test_bots.py
-└── [More test modules]
-```
-
----
-
-## Performance Considerations
-
-**Database Optimization:**
-- Connection pooling (`CONN_MAX_AGE=600`)
-- Select_related for foreign keys
-- Prefetch_related for reverse relations
-
-```python
-# Good: Single query (join)
-bots = Bot.objects.select_related('project')
-
-# Bad: N+1 queries
-bots = Bot.objects.all()
-for bot in bots:
-    print(bot.project.name)  # Separate query each time
-```
-
-**Caching:**
-- Redis integration for session/cache storage
-- Query caching recommendations
-
-**Pagination:**
-```python
-# DRF automatically paginates
-GET /api/projects/?page=1  # Returns 10 items per page
-```
-
----
-
-## Deployment
-
-### Production Checklist
-- [ ] Set `DEBUG=False`
-- [ ] Generate strong `SECRET_KEY`
-- [ ] Configure `ALLOWED_HOSTS`
-- [ ] Set up HTTPS with reverse proxy
-- [ ] Configure production database URL
-- [ ] Set up email backend (AWS SES)
-- [ ] Configure n8n API credentials
-- [ ] Run migrations: `python manage.py migrate`
-- [ ] Collect static files: `python manage.py collectstatic`
-- [ ] Set security headers (CSRF, CORS)
-- [ ] Monitor logs and errors
-
-### Docker Deployment
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /src
-COPY pyproject.toml .
-RUN pip install poetry && poetry install
-COPY . .
-RUN python manage.py collectstatic --noinput
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
 ```
 
 ---

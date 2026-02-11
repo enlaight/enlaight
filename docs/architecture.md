@@ -127,10 +127,10 @@ environment using `docker compose`.
 ## How These Parts Work Together
 
 - The **frontend** is the user’s entry point and communicates with the
-  **backend** for protected operations and to list available agents and KBs
+  **backend** for protected operations and to list available assistants and KBs
 - The **backend** stores application data and enforces permissions; for KB
   operations it forwards validated requests to **n8n** webhooks (proxy)
-- **n8n** executes workflow logic for agents and hosts KB files and metadata;
+- **n8n** executes workflow logic for assistants and hosts KB files and metadata;
   frontend chat may communicate directly with n8n webhooks for real-time chat
   while the backend keeps local references and enforces access
 - **Superset** provides analytics and dashboards using separate databases and
@@ -161,16 +161,3 @@ To run only the backend during development:
 ```bash
 docker compose up --build backend
 ```
-
----
-
-## Next Steps / Suggestions
-
-* Review `env.sample` to set correct `N8N_BASE_URL`, `N8N_KB_KEY`, and database
-  credentials before starting services
-* Inspect:
-
-  * `backend/src/authentication/views/kb*.py`
-  * `backend/src/authentication/views/bot.py`
-    to understand proxy logic
-* Use the **n8n UI** to inspect and edit workflows for agents and KB management
