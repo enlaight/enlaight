@@ -1,13 +1,8 @@
 # Knowledge Base (KB) Integration Flow
 
-**Application:** Enlaight  
-**Purpose:** Describe how Knowledge Bases are created, stored, managed, and accessed across the system.
-
----
-
 ## Overview
 
-Knowledge Bases (KBs) in Enlaight are document repositories that agents can access to provide informed responses. This document explains how KBs are created, configured, stored, and accessed by agents and users.
+Knowledge Bases (KBs) in Enlaight are document repositories that assistants can access to provide informed responses. This document explains how KBs are created, configured, stored, and accessed by assistants/agents and users.
 
 ---
 
@@ -220,19 +215,19 @@ updateFile(hashId, projectId, newFile)
 
 ---
 
-## Agent Usage
+## Assistant/Agent Usage
 
-* Agents do not link directly to KBs in backend
+* Assistants/agents do not link directly to KBs in backend
 * n8n workflows reference KBs internally
 * Backend enforces access control only
-* Agents choose KBs at workflow level
+* Assistants choose KBs at workflow level
 
 ---
 
 ## Environment Configuration
 
 ```env
-N8N_BASE_URL=https://n8n.enlaight.ai
+N8N_BASE_URL=https://n8n.enlaight.example
 N8N_KB_KEY=your_key
 N8N_TIMEOUT=15
 ```

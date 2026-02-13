@@ -21,58 +21,6 @@ The Enlaight backend is a **Django REST API** built with modern best practices. 
 
 ---
 
-## Directory Structure
-
-```
-backend/src/
-├── manage.py              # Django CLI tool
-├── asgi.py               # ASGI entry point
-├── core/                 # Django project settings
-│   ├── settings.py       # Configuration (database, apps, middleware)
-│   ├── urls.py          # Root URL routing
-│   ├── wsgi.py          # WSGI entry point
-│   ├── views.py         # Core views
-│   └── models/          # Shared models
-├── authentication/        # Main application (apps)
-│   ├── __init__.py
-│   ├── urls.py          # API routes
-│   ├── permissions.py   # RBAC & multi-tenancy
-│   ├── debug_auth.py    # Dev authentication
-│   ├── utils.py         # Helper functions
-│   ├── models/          # Database models
-│   │   ├── user_profile.py
-│   │   ├── projects.py
-│   │   ├── agents.py
-│   │   ├── kb.py        # Knowledge Base
-│   │   ├── chat_sessions.py
-│   │   ├── clients.py
-│   │   ├── boards.py
-│   │   ├── roles.py
-│   │   ├── expertise_area.py
-│   │   └── [More models...]
-│   ├── serializers/     # Data serialization (JSON conversion)
-│   │   ├── login_serializer.py
-│   │   ├── user_profile.py
-│   │   ├── [More serializers...]
-│   ├── views/           # API endpoints
-│   │   ├── authentication.py  # Login, logout, token
-│   │   ├── user.py           # User management
-│   │   ├── project.py        # Project CRUD
-│   │   ├── bot.py            # Agent/bot endpoints
-│   │   ├── kb.py             # KB proxy endpoints
-│   │   ├── kb_create.py
-│   │   ├── kb_delete.py
-│   │   ├── kb_file_add.py
-│   │   ├── [More views...]
-│   ├── services/        # Business logic
-│   │   └── [Service classes for complex operations]
-│   ├── management/      # Django management commands
-│   └── migrations/      # Database schema versions
-└── tests/              # Unit & integration tests
-```
-
----
-
 ## Core Concepts
 
 ### 1. Authentication & JWT
@@ -175,170 +123,6 @@ if is_admin(user):
     user_projects = Project.objects.all()
 ```
 
-### 4. Database Models
-
-**Core Models:**
-
-**UserProfile**
-```python
-- id (UUID)
-- email (unique)
-- password (hashed PBKDF2)
-- role (ADMIN, USER, GUEST)
-- full_name
-- avatar (optional image)
-- is_active
-- joined_at (timestamp)
-- is_staff, is_superuser
-```
-
-**Projects**
-```python
-- id (UUID)
-- name
-- description
-- created_at
-- users (many-to-many relationship)
-- clients (foreign key)
-```
-
-**Agents (Bots)**
-```python
-- id (UUID)
-- name
-- description
-- avatar (optional)
-- url_n8n (webhook URL hosted in n8n)
-- projects (many-to-many)
-- expertise_area (optional)
-- created_at
-```
-
-**KBLink (Knowledge Base)**
-```python
-- id (UUID)
-- external_id (hash from n8n)
-- name
-- project (foreign key)
-- description
-- created_at
-```
-
-**ChatSession**
-```python
-- id (UUID)
-- user (foreign key)
-- bot/agent (foreign key)
-- project (foreign key)
-- messages (array of message objects)
-- created_at, updated_at
-```
-
-**Clients**
-```python
-- id (UUID)
-- name
-- [Contact info fields]
-```
-
-**ExpertiseArea**
-```python
-- id (UUID)
-- name (categorization for bots)
-```
-
----
-
-## API Endpoints
-
-### Authentication Endpoints
-
-```
-POST   /api/login/                    # User login
-POST   /api/create/                   # Register new user
-POST   /api/refresh/                  # Refresh access token
-POST   /api/logout/                   # Blacklist refresh token
-GET    /api/me/                       # Get current user profile
-PATCH  /api/me/update/                # Update current user
-POST   /api/password/forgot/          # Request password reset
-POST   /api/password/reset/           # Reset password with token
-```
-
-### User Management Endpoints
-
-```
-GET    /api/users/                    # List all users (admin only)
-POST   /api/invite/                   # Send user invitation
-POST   /api/invite/confirm/           # Accept invitation
-GET    /api/roles/                    # List available roles
-GET    /api/users/<uuid>/roles/       # Get user's roles
-POST   /api/users/<uuid>/roles/add/   # Add role to user
-POST   /api/users/<uuid>/roles/remove/# Remove role from user
-POST   /api/login-as/<uuid>/          # Admin impersonation (debug)
-```
-
-### Project Endpoints
-
-```
-GET    /api/projects/                 # List user's projects
-POST   /api/projects/                 # Create new project
-GET    /api/projects/<uuid>/          # Get project detail
-PATCH  /api/projects/<uuid>/          # Update project
-DELETE /api/projects/<uuid>/          # Delete project
-POST   /api/projects/<uuid>/users/    # Assign users to project
-```
-
-### Bot/Agent Endpoints
-
-```
-GET    /api/bots/                     # List bots accessible to user
-POST   /api/bots/                     # Create new bot
-GET    /api/bots/<uuid>/             # Get bot detail
-PATCH  /api/bots/<uuid>/             # Update bot
-DELETE /api/bots/<uuid>/             # Delete bot
-```
-
-### Knowledge Base (KB) Proxy Endpoints
-
-These proxy requests to n8n for KB operations:
-
-```
-GET    /api/kb/list/                  # List all KBs (proxy to n8n)
-POST   /api/kb/create/                # Create KB (proxy to n8n)
-GET    /api/kb/get/                   # Get KB detail (proxy)
-PATCH  /api/kb/edit/                  # Edit KB (proxy)
-DELETE /api/kb/delete/                # Delete KB (proxy)
-POST   /api/kb/files/add/             # Upload file to KB (proxy)
-DELETE /api/kb/files/delete/          # Delete KB file (proxy)
-GET    /api/kb/files/list/            # List KB files (proxy)
-POST   /api/kb/attach/                # Link KB to project
-```
-
-### Chat Session Endpoints
-
-```
-GET    /api/chat-session/             # List chat sessions
-POST   /api/chat-session/             # Create chat session
-GET    /api/chat-session/<uuid>/      # Get session detail
-PATCH  /api/chat-session/<uuid>/      # Update session
-DELETE /api/chat-session/<uuid>/      # Delete session
-```
-
-### Additional Endpoints
-
-```
-GET    /api/clients/                  # List clients
-POST   /api/clients/                  # Create client
-GET    /api/search/                   # Global search
-POST   /api/boards/                   # Dashboard management
-POST   /api/expertise-areas/          # Expertise categories
-POST   /api/chat-favorites/           # Favorite chat items
-POST   /api/translate/                # Translate text (batch)
-POST   /api/translate/lookup/         # Lookup translation
-```
-
----
-
 ## Serializers (Data Conversion)
 
 Serializers convert Django model instances to/from JSON:
@@ -351,13 +135,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'full_name', 'role', 'avatar']
         read_only_fields = ['id', 'joined_at']
 ```
-
-**Serializer Types:**
-- **ModelSerializer** - Auto-generated from models
-- **Custom Fields** - Email validation, file upload
-- **Nested Serializers** - Related objects
-- **List Serializers** - Many instances
-
 ---
 
 ## Views & ViewSets
@@ -451,6 +228,8 @@ docker compose exec backend python manage.py migrate authentication [migration_n
 ```
 
 ### Database Initialization
+
+**Note:** In this same script file, the Superset database is initialized.
 
 **init-databases.sql** runs on MySQL startup:
 ```sql

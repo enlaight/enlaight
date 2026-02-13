@@ -23,6 +23,7 @@ type User = {
   id: string;
   first_name: string;
   last_name: string;
+  full_name: string;
   email: string;
   role: 'ADMINISTRATOR' | 'MANAGER' | 'USER';
   active: boolean;
@@ -34,6 +35,7 @@ type User = {
   requirePasswordChange?: boolean;
   createdAt: string;
   updatedAt: string;
+  status: string;
 };
 
 const UserManagement = () => {
@@ -485,7 +487,7 @@ const UserManagement = () => {
       />
 
       {/* Password Reset Modals */}
-      < SendResetEmailModal
+      <SendResetEmailModal
         open={!!sendResetUser}
         onClose={() => setSendResetUser(null)}
         user={sendResetUser}

@@ -94,7 +94,7 @@ Enterprise-ready data visualization and analytics (dashboards and charts).
 
 ---
 
-## Docker / Orchestration
+## Docker
 
 ### Purpose
 Compose and run all services in a consistent local or production-like
@@ -124,22 +124,6 @@ environment using `docker compose`.
 
 ---
 
-## How These Parts Work Together
-
-- The **frontend** is the user’s entry point and communicates with the
-  **backend** for protected operations and to list available assistants and KBs
-- The **backend** stores application data and enforces permissions; for KB
-  operations it forwards validated requests to **n8n** webhooks (proxy)
-- **n8n** executes workflow logic for assistants and hosts KB files and metadata;
-  frontend chat may communicate directly with n8n webhooks for real-time chat
-  while the backend keeps local references and enforces access
-- **Superset** provides analytics and dashboards using separate databases and
-  can be optionally enabled by admins
-- **Docker Compose** wires all services together with networks, volumes, and
-  environment variables so they run consistently on a host or server
-
----
-
 ## Quick Commands (Local Development)
 
 To start the full stack using the included Makefile:
@@ -156,8 +140,8 @@ Or with Docker Compose directly:
 docker compose up --build
 ```
 
-To run only the backend during development:
+To run only a certain service:
 
 ```bash
-docker compose up --build backend
+make start <service>
 ```

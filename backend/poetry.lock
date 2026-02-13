@@ -737,6 +737,21 @@ coreapi = ["coreapi (>=2.3.3)", "coreschema (>=0.0.4)"]
 validation = ["swagger-spec-validator (>=2.1.0)"]
 
 [[package]]
+name = "ecs-logging"
+version = "2.3.0"
+description = "Logging formatters for ECS (Elastic Common Schema) in Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "ecs_logging-2.3.0-py3-none-any.whl", hash = "sha256:42da72191a98bd724d105e126ca8d7c81fc82b0d7bbbe4bb1584c34e61042cfc"},
+    {file = "ecs_logging-2.3.0.tar.gz", hash = "sha256:be7f618e71e10c33a61165aea58813ebd702f6c0044538155871cb9a1609ab4e"},
+]
+
+[package.extras]
+develop = ["elastic-apm", "mock", "pytest", "pytest-cov", "structlog"]
+
+[[package]]
 name = "executing"
 version = "2.2.0"
 description = "Get the currently executing AST node of a frame, and other information"
@@ -2540,4 +2555,4 @@ test = ["pytest (>=8.1,<9.0)", "pytest-rerunfailures (>=14.0,<15.0)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "1c145c4043300035bd81d1d80f36029728769f35177bc15b81fb9ed4e2da8e3f"
+content-hash = "e2dd29f93bb0fca15a60f6c2b3d6b98714f77658daba4767feca5d75ad022193"

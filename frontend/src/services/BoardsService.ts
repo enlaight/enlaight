@@ -8,7 +8,7 @@ export const BoardsService = {
 	},
 
 	async update(data: string) {
-		const { response } = await api.put<Boards>(`boards/`, { data: data });
+		const response = await api.put<Boards>(`boards/`, { data: data });
 		return response;
 	},
 

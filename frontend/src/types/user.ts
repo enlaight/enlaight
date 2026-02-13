@@ -14,4 +14,5 @@ export type User = {
 	avatar?: string | null;
 	client_id?: string | null;
 	projects?: string[];
+	status?: string | null;
 };

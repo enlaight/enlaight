@@ -22,7 +22,6 @@ const MainLayout = () => {
 		setSidebarCollapsed(!sidebarCollapsed);
 	};
 	const SIDEBAR_WIDTH = '15rem';
-	// const SIDEBAR_WIDTH_MOBILE = '13rem';
 
 	const collapsedPx = 64;
 	const expandedPx = parseInt(SIDEBAR_WIDTH) * 16 || 240;
