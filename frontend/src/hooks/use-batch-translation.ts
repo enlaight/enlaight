@@ -35,7 +35,7 @@ export function useBatchTranslation(texts: string[], namespace: string = "defaul
     const translateBatch = async () => {
       try {
         // Get unique texts to avoid duplicate translations
-        const uniqueTexts = [...new Set(texts.filter(text => text && text.trim() !== ''))];
+        const uniqueTexts = Array.from(new Set(texts.filter(text => text && text.trim() !== '')));
 
         const items = uniqueTexts.map(text => ({
           text,

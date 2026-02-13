@@ -1,11 +1,11 @@
-# n8n Agents / Bots Integration Flow  
+# n8n Agents / Assistants Integration Flow  
 **Enlaight Application**
 
 ---
 
 ## Overview
 
-The Enlaight application integrates **n8n (workflow automation) agents/bots**
+The Enlaight application integrates **n8n (workflow automation) agents/assistants**
 that users can interact with via chat. This document explains how agents are
 created, configured, plugged into the application, and accessed by end users.
 
@@ -28,7 +28,7 @@ created, configured, plugged into the application, and accessed by end users.
 - Database: **MySQL** (Enlaight application data)
 
 ### 3. Frontend (React + TypeScript)
-- Displays available agents/bots to users
+- Displays available agents/assistants to users
 - Embeds n8n chat widget for direct interaction
 - `BotService` handles API calls to list and manage agents
 
@@ -46,20 +46,20 @@ created, configured, plugged into the application, and accessed by end users.
 Example webhook URL:
 ```
 
-[http://localhost:5678/webhook/](http://localhost:5678/webhook/)<unique-code>/chat
+http://localhost:5678/webhook/<unique-code>/chat
 
 ```
 
 ---
 
-#### Step 2: Register Agent in Database
-Admins create an Agent record using the Enlaight backend.
+#### Step 2: Register Assistant in Database
+Admins create an Assistant record using the Enlaight backend.
 
 **Model**
 - `authentication.models.agents.Agents`
 
 **Key Fields**
-- `name` — string (e.g. *Data Analyst Bot*)
+- `name` — string (e.g. *Data Analyst*)
 - `description` — text (optional)
 - `avatar` — image (optional)
 - `url_n8n` — **URL (required)**: webhook URL from n8n
@@ -76,7 +76,7 @@ POST /api/bots/
 Example body:
 ```json
 {
-  "name": "Data Analyst Bot",
+  "name": "Data Analyst",
   "description": "Analyzes data and provides insights",
   "url_n8n": "http://n8n:5678/webhook/abc123xyz/chat"
 }
@@ -140,7 +140,7 @@ GET /api/bots/
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Data Analyst Bot",
+  "name": "Data Analyst",
   "description": "Analyzes data and provides insights",
   "url_n8n": "http://n8n:5678/webhook/abc123xyz/chat",
   "expertise_area": {
@@ -235,27 +235,20 @@ Required props:
 
 ---
 
-## How Users Access Agents
+## How Users Access Assistants/Agents
 
 ### Access Control Mechanism
 
 #### Project-Based Access
 
-* Agents ↔ Projects
+* Assistants ↔ Projects
 * Users ↔ Projects
-* Users can access only agents in their projects
+* Users can access only assistants in their projects
 
 #### Role-Based Access
 
-* **Admins** → access all agents
-* **Regular users** → access only project-assigned agents
-
-#### Database Relationships
-
-```
-UserProfile ⇄ Projects ⇄ Agents
-     M2M         M2M
-```
+* **Admins** → access all assistants
+* **Regular users** → access only project-assigned assistants
 
 ---
 

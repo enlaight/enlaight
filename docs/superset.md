@@ -26,34 +26,6 @@
 
 ---
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Enlaight Frontend                        │
-│              (React App on port 8080)                       │
-│  - Embeds Superset dashboards                              │
-│  - Uses guest tokens for access                            │
-└─────────────────────────────────────────────────────────────┘
-                           ↑↓
-              Embedded SDK / Guest Token
-                           ↓↑
-┌─────────────────────────────────────────────────────────────┐
-│               Superset Service (8088)                       │
-│  - Flask backend                                            │
-│  - React UI                                                 │
-│  - Dashboard management                                     │
-│  - Chart creation                                           │
-│  - Query execution                                          │
-│  - User authentication                                      │
-└─────────────────────────────────────────────────────────────┘
-            ↑       ↑       ↑       ↑
-        MySQL   Redis   Celery   Data Sources
-       (Meta)  (Cache) (Tasks)  (Databases)
-```
-
----
-
 ## Database Configuration
 
 ### Superset Metadata Database
@@ -63,8 +35,8 @@ Superset stores its own metadata in a separate MySQL database:
 **Environment Variables (from env.sample):**
 ```env
 SUPERSET_DB_NAME=superset_database
-SUPERSET_DB_USER=superset
-SUPERSET_DB_PASSWORD=superset
+SUPERSET_DB_USER=<superset_user>
+SUPERSET_DB_PASSWORD=<superset_password>
 DATABASE_URL=mysql+mysqldb://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@mysql:3306/${SUPERSET_DB_NAME}?charset=utf8mb4
 SQLALCHEMY_DATABASE_URI=mysql+pymysql://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@mysql:3306/${SUPERSET_DB_NAME}?charset=utf8mb4
 ```
@@ -177,7 +149,7 @@ SUPERSET_SECRET_KEY=your_very_long_random_secret_key_at_least_42_characters
 
 **Optional Configuration (from env.sample):**
 ```env
-SUPERSET_BASE_URL=http://localhost:8088  # Production: https://superset.enlaight.ai
+SUPERSET_BASE_URL=http://localhost:8088  # Production: https://superset.enlaight.example
 SUPERSET_LOG_LEVEL=INFO
 ```
 
@@ -702,21 +674,3 @@ Content-Type: application/json
   "rls": []
 }
 ```
-
----
-
-## Integration Checklist
-
-- [ ] Superset running on port 8088
-- [ ] Admin user created and logged in
-- [ ] MySQL metadata database configured
-- [ ] Redis cache configured
-- [ ] Data source (Enlaight DB) connected
-- [ ] Sample dashboards created
-- [ ] Guest token configuration set up
-- [ ] CORS enabled for frontend
-- [ ] Embedded SDK working in frontend
-- [ ] Filters and parameters working
-- [ ] Caching and performance optimized
-- [ ] User roles and permissions configured
-

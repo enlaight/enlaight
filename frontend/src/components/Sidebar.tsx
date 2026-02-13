@@ -14,7 +14,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen = true,
   onClose,
   isCollapsed = false,
-  onToggleCollapse,
 }) => {
   return (
     <aside

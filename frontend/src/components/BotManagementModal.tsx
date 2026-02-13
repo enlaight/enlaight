@@ -53,7 +53,7 @@ const mockBots: Bot[] = [
 export const BotManagementModal: React.FC<BotManagementModalProps> = ({ isOpen, onClose }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  const preventSidebarClose = (e: MouseEvent) => {
+  const preventSidebarClose = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
   };
 
@@ -220,7 +220,7 @@ export const BotManagementModal: React.FC<BotManagementModalProps> = ({ isOpen, 
       <AddBotModal
         isOpen={isAddBotOpen}
         onClose={() => setIsAddBotOpen(false)}
-        onSave={handleAddBot}
+        onCreated={handleAddBot}
       />
 
       {editingBot && (

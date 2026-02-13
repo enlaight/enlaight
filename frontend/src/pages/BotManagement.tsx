@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navbar } from "@/components/Navbar";
-import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/contexts/SidebarContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAgentsChat } from "@/contexts/AgentsChatContext";
 import { useAuth } from "@/hooks/use-auth";
 import { Plus, Link, Bot as BotIcon } from "lucide-react";
 import { AddBotModal } from "@/components/AddBotModal";

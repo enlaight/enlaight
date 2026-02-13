@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Enlaight frontend is a modern, responsive React application built with **TypeScript** and **Vite**. It provides a comprehensive user interface for managing projects, agents (bots), knowledge bases, chat sessions, dashboards, and user administration.
+The Enlaight frontend is a modern, responsive React application built with **TypeScript** and **Vite**. It provides a comprehensive user interface for managing projects, assistants (agents), knowledge bases, chat sessions, dashboards, and user administration.
 
 **Technology Stack:**
 - **Framework**: React 18+
@@ -16,52 +16,6 @@ The Enlaight frontend is a modern, responsive React application built with **Typ
 - **Internationalization**: i18next
 
 **Port**: 8080 (locally)
-
----
-
-## Directory Structure
-
-```
-frontend/src/
-├── App.tsx                 # Main app component
-├── main.tsx               # Vite entry point
-├── index.css              # Global styles
-├── App.css                # App-level styles
-├── assets/                # Static assets (SVGs, images)
-│   └── svgs.tsx          # SVG component library
-├── components/            # Reusable UI components
-│   ├── AddBotModal.tsx
-│   ├── AddChartModal.tsx
-│   ├── AddClientModal.tsx
-│   ├── AddProjectModal.tsx
-│   ├── BotDisplayItem.tsx
-│   ├── AgentsCard.tsx     # Bot/agent display
-│   ├── AgentsChatMount.tsx  # Chat widget integration
-│   ├── [More modal/card components...]
-│   └── FloatingSidebarToggle.tsx
-├── contexts/              # React Context for state sharing
-├── hooks/                 # Custom React hooks
-├── integrations/          # Third-party integrations
-├── lib/                   # Utility functions and helpers
-├── locales/               # i18n translation files
-├── pages/                 # Page-level components
-├── routes/                # Route definitions (React Router)
-├── services/              # API service classes
-│   ├── api.ts            # Axios instance & configuration
-│   ├── AuthService.ts    # Authentication/JWT
-│   ├── BotService.ts     # Agent/bot API calls
-│   ├── ProjectService.ts # Project API calls
-│   ├── ClientService.ts  # Client API calls
-│   ├── KnowledgeBaseService.ts  # KB API calls
-│   ├── ChatSessionService.ts    # Chat session API calls
-│   ├── UserService.ts    # User management API calls
-│   ├── [More services...]
-│   └── TranslationService.ts    # Translation API
-├── store/                 # State management (Zustand)
-└── types/                 # TypeScript type definitions
-```
-
----
 
 ## Key Components
 
@@ -108,7 +62,7 @@ class BotService {
 
 **Key Services:**
 - **AuthService**: Login, logout, token management
-- **BotService**: Agent/bot CRUD operations
+- **BotService**: Assistant/agent CRUD operations
 - **ProjectService**: Project management, user assignment
 - **KnowledgeBaseService**: KB creation, file upload, deletion
 - **ChatSessionService**: Chat history, message persistence
@@ -125,11 +79,11 @@ class BotService {
 
 **Feature Components:**
 - **Bot Management**
-  - `AgentsCard.tsx` - Display available bots
-  - `BotDisplayItem.tsx` - Individual bot card
-  - `BotManagementModal.tsx` - Bot CRUD modal
-  - `AddBotModal.tsx` - Create new bot
-  - `EditBotModal.tsx` - Bot editing
+  - `AgentsCard.tsx` - Display available assistants
+  - `BotDisplayItem.tsx` - Individual assistant card
+  - `BotManagementModal.tsx` - Assistant CRUD modal
+  - `AddBotModal.tsx` - Create new assistant
+  - `EditBotModal.tsx` - Assistant editing
   - `AgentsChatMount.tsx` - Embed n8n chat widget
 
 - **Project Management**
@@ -175,9 +129,9 @@ class BotService {
 
 **AgentsChatMount.tsx**
 - Embeds `@n8n/chat` widget
-- Displays chat interface for bot interactions
-- Takes bot webhook URL (`url_n8n`) from database
-- Allows real-time conversation with agent/bot
+- Displays chat interface for agent interactions
+- Takes agent webhook URL (`url_n8n`) from database
+- Allows real-time conversation with assistant/agent
 
 ```typescript
 <N8nChat
@@ -207,9 +161,9 @@ React Router manages application navigation:
 **Main Routes:**
 - `/projects` - Project dashboard
 - `/projects/:id` - Project detail
-- `/bots` - Bot/agent management
+- `/bots` - Assistant/agent management
 - `/knowledge-bases` - KB management
-- `/chat/:botId` - Chat with bot
+- `/chat/:botId` - Chat with assistant
 - `/dashboards` - Analytics & charts
 - `/users` - User administration
 - `/settings` - Application settings
@@ -217,34 +171,6 @@ React Router manages application navigation:
 - `/invite/:token` - Invitation acceptance
 
 Protected routes check JWT token validity before rendering.
-
----
-
-## Build & Development
-
-### Development Mode
-```bash
-npm run devmode  # Start dev server on port 8080 with hot reload
-npm run dev      # Staging environment
-npm run test     # Run Vitest
-npm run lint     # Run ESLint
-```
-
-### Production Build
-```bash
-npm run build    # Create optimized production bundle
-npm run build:dev  # Production build with dev source maps
-npm run preview  # Preview production build locally
-```
-
-### Build Configuration (vite.config.ts)
-```typescript
-- Port: 8080
-- Alias: @ → src/
-- Test environment: jsdom (browser simulation)
-- Global test APIs (no import needed)
-- Component tagger for Lovable integration
-```
 
 ---
 
@@ -280,6 +206,8 @@ apiClient.interceptors.response.use(
 
 ### Environment Variables
 
+These variables **must** be set on your `.env` file, switching out codes appropriately.
+
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api    # Backend API endpoint
 VITE_N8N_CHAT_URL=http://localhost:5678/webhook/<code>/chat
@@ -290,74 +218,46 @@ VITE_N8N_SUPPORT_ASSISTANT_URL=http://localhost:5678/webhook/<code>/chat
 
 ## Key Features
 
-### 1. Project-Based Multi-Tenancy
-- Users assigned to projects
-- Can only access assigned projects
-- Admins see all projects
-- Projects contain bots, KBs, and users
+### 1. Chat Sessions
+- Message history tracking
+- Favorite chat items
+- User-specific chat sessions
+- Real-time bot interaction via webhooks
 
-### 2. Bot/Agent Management
+### 2. Search Functionality
+- Global search across projects, bots, KBs
+- Filter and pagination support
+
+### 3. Internationalization (i18n)
+- Multi-language support via i18next
+- Translation lookup service
+- Batch translation API
+- Language detection and selection
+
+### 4. Assistant/agent Management
 - Create, edit, delete agents
 - Configure webhook URLs (from n8n)
 - Assign to projects
 - Categorize by expertise area
 - Embed n8n chat widget for interaction
 
-### 3. Knowledge Base Management
+### 5. Knowledge Base Management
 - Create multiple knowledge bases
 - Upload files (PDF, DOCX, CSV, etc.)
 - Link KBs to projects
 - File operations proxied to backend → n8n
 
-### 4. Chat Sessions
-- Message history tracking
-- Favorite chat items
-- User-specific chat sessions
-- Real-time bot interaction via webhooks
-
-### 5. User & Client Management
+### 6. User & Client Management
 - Create users and admins
 - Send invitations via email
 - Manage client/organization records
 - Role-based access (ADMIN, USER, GUEST)
 
-### 6. Dashboards & Analytics
+### 7. Dashboards & Analytics
 - Superset integration for embedded dashboards
 - Chart management
 - Data visualization
 - Analytics queries
-
-### 7. Search Functionality
-- Global search across projects, bots, KBs
-- Filter and pagination support
-
-### 8. Internationalization (i18n)
-- Multi-language support via i18next
-- Translation lookup service
-- Batch translation API
-- Language detection and selection
-
----
-
-## Component Communication Flow
-
-```
-User Input (Component)
-    ↓
-Event Handler
-    ↓
-Service Call (e.g., BotService.createBot)
-    ↓
-API Request (axios interceptors add JWT token)
-    ↓
-Backend Response
-    ↓
-TanStack Query / State Update
-    ↓
-Component Re-render
-    ↓
-UI Update
-```
 
 ---
 
@@ -405,9 +305,7 @@ try {
 - Mock API calls with MSW (Mock Service Worker)
 
 ```bash
-npm run test      # Run all tests
-npm run test -- --watch  # Watch mode
-npm run test -- --coverage  # Coverage report
+make test
 ```
 
 ---
@@ -422,32 +320,6 @@ npm run test -- --coverage  # Coverage report
 - Form data types
 
 All services use TypeScript for type safety and IDE autocompletion.
-
----
-
-## Deployment
-
-### Production Build Checklist
-- [ ] Update `VITE_API_BASE_URL` to production API
-- [ ] Set `VITE_N8N_CHAT_URL` to production n8n
-- [ ] Run `npm run lint` - ensure no warnings
-- [ ] Run `npm run build` - test production build
-- [ ] Review bundle size (target < 500KB gzipped)
-- [ ] Test all authentication flows
-- [ ] Verify API connectivity
-- [ ] Test on target browsers
-
-### Docker Build
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package.json .
-RUN npm install
-COPY . .
-RUN npm run build
-EXPOSE 8080
-CMD ["npm", "run", "devmode"]
-```
 
 ---
 

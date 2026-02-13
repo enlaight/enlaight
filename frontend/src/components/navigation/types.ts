@@ -6,6 +6,7 @@ export interface MenuItem {
   hasSubmenu?: boolean;
   submenuOpen?: boolean;
   disabled?: boolean;
+  customColor?: string;
 }
 
 export interface NavigationMenuProps {
@@ -17,6 +18,7 @@ export interface MenuItemProps {
   isCollapsed: boolean;
   onMenuClick: (itemId: string) => void;
   submenuOpen: boolean;
+  hideSubMenu?: boolean;
 }
 
 export interface SubMenuItemProps {

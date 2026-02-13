@@ -29,7 +29,7 @@ export const BotService = {
 
 	async patch(
 		id: string,
-		payload: Partial<Pick<Bot, "name" | "description" | "url_n8n" | "active">> & {
+		payload: Partial<Pick<Bot, "name" | "description" | "url_n8n">> & {
 			projects?: string[];
 			expertise_area?: string | null;
 		}

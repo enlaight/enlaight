@@ -12,8 +12,29 @@ const hashId = () => {
 	return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
 };
 
+interface StoreState {
+	currentQuery: string;
+	query: string;
+	searchResults: any[];
+	loadingSearch: boolean;
+
+	users: any[];
+	agents: any[];
+	projects: any[];
+	kbs: any[];
+	clients: any[];
+	favorites: any[];
+
+	update: (key: string, newState: any) => void;
+	add: (key: string, item: any | any[]) => void;
+	edit: (key: string, id: string, updatedData: any) => void;
+	remove: (key: string, id: string) => void;
+	removeFav: (key: string, message_id: string) => void;
+	removeSessionFromAgent: (agentId: string, sessionKey: string) => void;
+};
+
 // This is the zustand store
-export const useStore = create((set) => ({
+export const useStore = create<StoreState>((set) => ({
 	// States
 	currentQuery: "",
 	query: "",
