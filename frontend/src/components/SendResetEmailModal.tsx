@@ -14,10 +14,10 @@ type User = {
   role: 'Admin' | 'Manager' | 'Member';
   status: 'active' | 'inactive';
   avatarUrl?: string;
-  lastResetEmailAt?: string;
+  lastResetEmailAt?: string | Date;
   requirePasswordChange?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 interface SendResetEmailModalProps {

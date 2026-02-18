@@ -42,7 +42,10 @@ if (existing) (api.defaults.headers.common as any).Authorization = `${AUTH_SCHEM
 
 api.interceptors.request.use((cfg) => {
 	const t = tokenStore.access;
-	if (t) (cfg.headers ||= {}).Authorization = `${AUTH_SCHEME} ${t}`;
+	if (t) {
+		if (!cfg.headers) cfg.headers = new axios.AxiosHeaders();
+		cfg.headers.set('Authorization', `${AUTH_SCHEME} ${t}`);
+	}
 	return cfg;
 });
 
@@ -57,7 +60,9 @@ async function doRefresh(): Promise<string | null> {
 			tokenStore.set((data as any).access, r);
 			return (data as any).access as string;
 		}
-	} catch { }
+	} catch (e) {
+		console.error(e);
+	}
 	tokenStore.clear();
 	return null;
 }
