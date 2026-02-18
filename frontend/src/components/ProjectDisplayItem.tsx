@@ -6,10 +6,9 @@ interface ProjectDisplayItemProps {
   project: {
     id: string;
     name: string;
-    project: object;
     clientName?: string;
     description?: string | null;
-    createdAt?: string;
+    createdAt?: string | Date;
   };
   onEdit: () => void;
   onDelete: () => void;

@@ -21,11 +21,12 @@ import { listUsers } from '@/services/UserService';
 
 type User = {
   id: string;
+  name: string;
   first_name: string;
   last_name: string;
   full_name: string;
   email: string;
-  role: 'ADMINISTRATOR' | 'MANAGER' | 'USER';
+  role: 'Administrator' | 'Manager' | 'Member';
   active: boolean;
   avatarUrl?: string | null;
   department: string;

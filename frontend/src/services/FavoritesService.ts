@@ -20,7 +20,7 @@ export const FavoritesService = {
 	async delete(message_id: string) {
 		if (!message_id) return false;
 		try {
-			await api.delete(`chat-favorites/${message_id}`, { message_id });
+			await api.delete(`chat-favorites/${message_id}`);
 			return true;
 		} catch (err) {
 			console.error(err);
