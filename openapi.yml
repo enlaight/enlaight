@@ -1,0 +1,2241 @@
+openapi: 3.0.3
+
+info:
+  title: Enlaight API
+  description: |
+    REST API for the Enlaight AI platform.
+
+    **Authentication:** Most endpoints require a JWT Bearer token obtained from `POST /api/login/`.
+    Include it as `Authorization: Bearer <access_token>` in every authenticated request.
+
+    **Token refresh:** When the access token expires (2-hour lifetime), call `POST /api/refresh/`
+    with the refresh token to obtain a new pair.
+  version: 1.0.0
+  contact:
+    name: Enlaight Engineering
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.enlaight.ai
+    description: Production
+
+# ── Security schemes ──────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ── Reusable schemas ────────────────────────────────────────────────────────
+  schemas:
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@localhost.ai
+        username:
+          type: string
+          example: Admin
+        password:
+          type: string
+          format: password
+          example: admin1234
+      description: Provide either `email` or `username` together with `password`.
+
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+          description: Short-lived JWT access token (2-hour lifetime).
+        refresh:
+          type: string
+          description: Long-lived JWT refresh token (1-day lifetime).
+
+    RefreshRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+
+    LogoutRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required: [new_password]
+      properties:
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+
+    VerifyTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    # ── Users ─────────────────────────────────────────────────────────────────
+    Role:
+      type: string
+      enum: [ADMINISTRATOR, MANAGER, USER]
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        job_title:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        joined_at:
+          type: string
+          format: date
+          nullable: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        active:
+          type: boolean
+        is_active:
+          type: boolean
+        is_staff:
+          type: boolean
+        is_superuser:
+          type: boolean
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        full_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        job_title:
+          type: string
+        department:
+          type: string
+        avatar:
+          type: string
+          format: binary
+          description: Image file upload.
+
+    RolesResponse:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                $ref: '#/components/schemas/Role'
+              label:
+                $ref: '#/components/schemas/Role'
+
+    RoleModifyRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+
+    InviteRequest:
+      type: object
+      required: [email, project_id]
+      properties:
+        email:
+          type: string
+          format: email
+        project_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/Role'
+          description: Defaults to USER.
+        client_id:
+          type: string
+          format: uuid
+          description: Required for ADMINISTRATOR invites. Ignored for MANAGER invites.
+
+    InviteConfirmRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    # ── Clients ───────────────────────────────────────────────────────────────
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ClientCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    # ── Projects ──────────────────────────────────────────────────────────────
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        client_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ProjectCreateRequest:
+      type: object
+      required: [name, client_id]
+      properties:
+        name:
+          type: string
+        client_id:
+          type: string
+          format: uuid
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+
+    AttachDetachRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    AttachDetachResponse:
+      type: object
+      properties:
+        attached_now:
+          type: array
+          items:
+            type: string
+            format: uuid
+        already_attached:
+          type: array
+          items:
+            type: string
+            format: uuid
+        missing:
+          type: array
+          items:
+            type: string
+            format: uuid
+        count_total:
+          type: integer
+
+    # ── Agents (Bots) ─────────────────────────────────────────────────────────
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        url_n8n:
+          type: string
+          format: uri
+          description: n8n chat webhook URL for this agent.
+        expertise_area:
+          type: string
+          format: uuid
+          nullable: true
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AgentCreateRequest:
+      type: object
+      required: [name, url_n8n]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url_n8n:
+          type: string
+          format: uri
+
+    AgentUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url_n8n:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        expertise_area:
+          type: string
+          format: uuid
+          nullable: true
+
+    AgentExpertiseRequest:
+      type: object
+      properties:
+        expertise_area:
+          type: string
+          format: uuid
+          nullable: true
+
+    # ── Expertise Areas ───────────────────────────────────────────────────────
+    ExpertiseArea:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    ExpertiseAreaCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    # ── Chat Sessions ─────────────────────────────────────────────────────────
+    ChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_key:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        data:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ChatSessionCreateRequest:
+      type: object
+      required: [session_key, agent_id]
+      properties:
+        session_key:
+          type: string
+          description: Unique identifier for the session, generated client-side.
+        agent_id:
+          type: string
+          format: uuid
+        first_message:
+          type: string
+          nullable: true
+
+    ChatSessionDeleteRequest:
+      type: object
+      required: [session_key, agent_id]
+      properties:
+        session_key:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+
+    # ── Chat Favorites ────────────────────────────────────────────────────────
+    ChatFavorite:
+      type: object
+      properties:
+        message_id:
+          type: string
+        session_key:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          nullable: true
+
+    ChatFavoriteCreateRequest:
+      type: object
+      required: [session_key, agent_id, message_id]
+      properties:
+        session_key:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+        text:
+          type: string
+
+    # ── Search ────────────────────────────────────────────────────────────────
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+
+    SearchResult:
+      type: object
+      properties:
+        session_id:
+          type: string
+        message:
+          type: string
+        author:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+
+    SearchResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    # ── Knowledge Base ────────────────────────────────────────────────────────
+    KBCreateRequest:
+      type: object
+      required: [name, project_id]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+
+    KBEditRequest:
+      type: object
+      required: [hash_id]
+      properties:
+        hash_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    KBAttachRequest:
+      type: object
+      required: [hash_id]
+      properties:
+        hash_id:
+          type: string
+        name:
+          type: string
+
+    KBItem:
+      type: object
+      properties:
+        external_id:
+          type: string
+          description: hash_id assigned by n8n.
+        name:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+
+    KBListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        project_id:
+          type: string
+          format: uuid
+        count:
+          type: integer
+        kbs:
+          type: array
+          items:
+            $ref: '#/components/schemas/KBItem'
+
+    # ── Translation ───────────────────────────────────────────────────────────
+    TranslateResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        found:
+          type: boolean
+        auto:
+          type: boolean
+          description: True if the translation was produced by AWS Translate.
+
+    TranslateBatchRequest:
+      type: object
+      required: [items]
+      properties:
+        namespace:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            required: [text, lang]
+            properties:
+              text:
+                type: string
+              lang:
+                type: string
+                example: pt
+
+    # ── Superset ──────────────────────────────────────────────────────────────
+    SupersetGuestTokenRequest:
+      type: object
+      required: [dashId]
+      properties:
+        dashId:
+          type: string
+          format: uuid
+
+    # ── Health ────────────────────────────────────────────────────────────────
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        db:
+          type: string
+          example: ok
+        latency_ms:
+          type: number
+          example: 3
+
+    # ── Common ────────────────────────────────────────────────────────────────
+    PaginatedResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items: {}
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+
+# ── Tags ──────────────────────────────────────────────────────────────────────
+tags:
+  - name: Auth
+    description: Login, logout, token management, password reset.
+  - name: Users
+    description: User management and role assignment.
+  - name: Invites
+    description: User invitation flow.
+  - name: Clients
+    description: Client organisation management.
+  - name: Projects
+    description: Project management, bot and user assignment.
+  - name: Agents
+    description: AI agent (bot) management.
+  - name: Expertise Areas
+    description: Expertise area tags for agents.
+  - name: Chat Sessions
+    description: Chat session lifecycle.
+  - name: Chat Favorites
+    description: Bookmarked chat messages.
+  - name: Search
+    description: Semantic search over chat history (proxied via n8n).
+  - name: Knowledge Base
+    description: Knowledge base CRUD — proxied to n8n webhooks.
+  - name: Translation
+    description: Text translation via AWS Translate.
+  - name: Superset
+    description: Embedded BI guest token.
+  - name: Health
+    description: Service and database health checks.
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Auth ────────────────────────────────────────────────────────────────────
+
+  /api/login/:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Authenticates with email or username + password. Returns a JWT access + refresh token pair.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/refresh/:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      operationId: tokenRefresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: New token pair issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Refresh token invalid or blacklisted.
+
+  /api/logout/:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Blacklists the refresh token, ending the session.
+      operationId: logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logged out successfully.
+        '400':
+          description: Invalid or missing token.
+
+  /api/verify-token/:
+    post:
+      tags: [Auth]
+      summary: Verify JWT token
+      operationId: verifyToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyTokenRequest'
+      responses:
+        '200':
+          description: Token is valid.
+        '401':
+          description: Token is invalid or expired.
+
+  /api/me/:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Not authenticated.
+
+  /api/me/update/:
+    patch:
+      tags: [Auth]
+      summary: Update current user profile
+      operationId: updateMe
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Validation error.
+
+  /api/password/forgot/:
+    post:
+      tags: [Auth]
+      summary: Request password reset email
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Reset email sent.
+        '404':
+          description: User not found.
+
+  /api/password/reset/:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      operationId: resetPassword
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password updated.
+        '400':
+          description: Invalid or expired token.
+
+  # ── Users ────────────────────────────────────────────────────────────────────
+
+  /api/roles/:
+    get:
+      tags: [Users]
+      summary: List available roles
+      operationId: listRoles
+      responses:
+        '200':
+          description: Role options.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesResponse'
+
+  /api/users/:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: ordering
+          in: query
+          schema:
+            type: string
+        - name: department
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated user list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserProfile'
+    post:
+      tags: [Users]
+      summary: Create user
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [full_name, email]
+              properties:
+                full_name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  $ref: '#/components/schemas/Role'
+                job_title:
+                  type: string
+                department:
+                  type: string
+                joined_at:
+                  type: string
+                  format: date
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: User created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /api/users/{user_id}/roles/:
+    get:
+      tags: [Users]
+      summary: Get user roles
+      operationId: getUserRoles
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User roles.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: User not found.
+
+  /api/users/{user_id}/roles/add/:
+    post:
+      tags: [Users]
+      summary: Add role to user
+      operationId: addUserRole
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleModifyRequest'
+      responses:
+        '200':
+          description: Role added.
+        '404':
+          description: User not found.
+
+  /api/users/{user_id}/roles/remove/:
+    delete:
+      tags: [Users]
+      summary: Remove role from user
+      operationId: removeUserRole
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleModifyRequest'
+      responses:
+        '200':
+          description: Role removed.
+        '404':
+          description: User or role not found.
+
+  /api/login-as/{user_id}/:
+    post:
+      tags: [Users]
+      summary: Impersonate user (admin only)
+      operationId: loginAs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token pair for target user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '403':
+          description: Insufficient permissions.
+        '404':
+          description: User not found.
+
+  # ── Invites ───────────────────────────────────────────────────────────────
+
+  /api/invite/:
+    post:
+      tags: [Invites]
+      summary: Send invitation
+      operationId: sendInvite
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+      responses:
+        '200':
+          description: Invitation sent.
+        '400':
+          description: Validation error.
+        '403':
+          description: Insufficient permissions.
+        '404':
+          description: Project or client not found.
+
+  /api/invite/confirm/:
+    post:
+      tags: [Invites]
+      summary: Confirm invitation and activate account
+      operationId: confirmInvite
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteConfirmRequest'
+      responses:
+        '200':
+          description: Account activated.
+        '400':
+          description: Invalid or expired token.
+        '404':
+          description: User not found.
+
+  # ── Clients ───────────────────────────────────────────────────────────────
+
+  /api/clients/:
+    get:
+      tags: [Clients]
+      summary: List clients
+      operationId: listClients
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Client list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+    post:
+      tags: [Clients]
+      summary: Create client
+      operationId: createClient
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '201':
+          description: Client created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Client with this name already exists.
+
+  /api/clients/{pk}/:
+    get:
+      tags: [Clients]
+      summary: Get client
+      operationId: getClient
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Client details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          description: Not found.
+    patch:
+      tags: [Clients]
+      summary: Update client
+      operationId: updateClient
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '200':
+          description: Updated client.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          description: Not found.
+    delete:
+      tags: [Clients]
+      summary: Delete client
+      operationId: deleteClient
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: Not found.
+
+  # ── Projects ──────────────────────────────────────────────────────────────
+
+  /api/projects/:
+    get:
+      tags: [Projects]
+      summary: List projects
+      operationId: listProjects
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: ordering
+          in: query
+          schema:
+            type: string
+        - name: client__name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated project list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+    post:
+      tags: [Projects]
+      summary: Create project
+      operationId: createProject
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '201':
+          description: Project created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /api/projects/{pk}/:
+    get:
+      tags: [Projects]
+      summary: Get project
+      operationId: getProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project with linked agents.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          description: Not found.
+    patch:
+      tags: [Projects]
+      summary: Update project
+      operationId: updateProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Updated project.
+        '404':
+          description: Not found.
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      operationId: deleteProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: Not found.
+
+  /api/projects/{pk}/bots/:
+    get:
+      tags: [Projects]
+      summary: List bots in project
+      operationId: listProjectBots
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agents linked to project.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agent'
+
+  /api/projects/{pk}/bots/attach/:
+    post:
+      tags: [Projects]
+      summary: Attach bots to project
+      operationId: attachBotsToProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachDetachRequest'
+      responses:
+        '200':
+          description: Attach summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachDetachResponse'
+
+  /api/projects/{pk}/bots/detach/:
+    post:
+      tags: [Projects]
+      summary: Detach bots from project
+      operationId: detachBotsFromProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachDetachRequest'
+      responses:
+        '200':
+          description: Detach summary.
+
+  /api/projects/{pk}/users/attach/:
+    post:
+      tags: [Projects]
+      summary: Attach users to project (admin only)
+      operationId: attachUsersToProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachDetachRequest'
+      responses:
+        '200':
+          description: Attach summary.
+
+  /api/projects/{pk}/users/detach/:
+    post:
+      tags: [Projects]
+      summary: Detach users from project (admin only)
+      operationId: detachUsersFromProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachDetachRequest'
+      responses:
+        '200':
+          description: Detach summary.
+
+  # ── Agents ────────────────────────────────────────────────────────────────
+
+  /api/bots/:
+    get:
+      tags: [Agents]
+      summary: List agents
+      operationId: listAgents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+            description: Searches name, description, and url_n8n.
+      responses:
+        '200':
+          description: Paginated agent list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Agent'
+    post:
+      tags: [Agents]
+      summary: Create agent (admin only)
+      operationId: createAgent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreateRequest'
+      responses:
+        '201':
+          description: Agent created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: Agent with this name already exists.
+
+  /api/bots/{pk}/:
+    get:
+      tags: [Agents]
+      summary: Get agent
+      operationId: getAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agent details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Not found.
+    patch:
+      tags: [Agents]
+      summary: Update agent (admin only)
+      operationId: updateAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdateRequest'
+      responses:
+        '200':
+          description: Updated agent.
+        '404':
+          description: Not found.
+    delete:
+      tags: [Agents]
+      summary: Delete agent (admin only)
+      operationId: deleteAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted.
+
+  /api/bots/{pk}/expertise/:
+    post:
+      tags: [Agents]
+      summary: Set agent expertise area (admin only)
+      operationId: setAgentExpertise
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentExpertiseRequest'
+      responses:
+        '200':
+          description: Expertise area updated.
+
+  # ── Expertise Areas ───────────────────────────────────────────────────────
+
+  /api/expertise-areas/:
+    get:
+      tags: [Expertise Areas]
+      summary: List expertise areas
+      operationId: listExpertiseAreas
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated expertise area list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExpertiseArea'
+    post:
+      tags: [Expertise Areas]
+      summary: Create expertise area
+      operationId: createExpertiseArea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpertiseAreaCreateRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpertiseArea'
+
+  /api/expertise-areas/{pk}/:
+    get:
+      tags: [Expertise Areas]
+      summary: Get expertise area
+      operationId: getExpertiseArea
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Expertise area.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpertiseArea'
+        '404':
+          description: Not found.
+    patch:
+      tags: [Expertise Areas]
+      summary: Update expertise area
+      operationId: updateExpertiseArea
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpertiseAreaCreateRequest'
+      responses:
+        '200':
+          description: Updated.
+    delete:
+      tags: [Expertise Areas]
+      summary: Delete expertise area
+      operationId: deleteExpertiseArea
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          description: Not found.
+
+  # ── Chat Sessions ─────────────────────────────────────────────────────────
+
+  /api/chat-session/:
+    get:
+      tags: [Chat Sessions]
+      summary: List recent chat sessions
+      description: Returns the 6 most recent sessions for the authenticated user.
+      operationId: listChatSessions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recent sessions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatSession'
+    post:
+      tags: [Chat Sessions]
+      summary: Create chat session
+      operationId: createChatSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSessionCreateRequest'
+      responses:
+        '201':
+          description: Session created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '400':
+          description: Session already exists or agent not found.
+
+  /api/chat-session/delete/:
+    delete:
+      tags: [Chat Sessions]
+      summary: Delete chat session
+      operationId: deleteChatSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSessionDeleteRequest'
+      responses:
+        '200':
+          description: Session deleted.
+        '404':
+          description: Session not found.
+
+  # ── Chat Favorites ────────────────────────────────────────────────────────
+
+  /api/chat-favorites/:
+    get:
+      tags: [Chat Favorites]
+      summary: List favorites
+      operationId: listChatFavorites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: session_key
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Favorite messages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatFavorite'
+    post:
+      tags: [Chat Favorites]
+      summary: Add favorite
+      operationId: createChatFavorite
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatFavoriteCreateRequest'
+      responses:
+        '201':
+          description: Favorite added.
+        '200':
+          description: Already exists.
+        '404':
+          description: Session not found.
+
+  /api/chat-favorites/{pk}/:
+    delete:
+      tags: [Chat Favorites]
+      summary: Remove favorite
+      operationId: deleteChatFavorite
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pk
+          in: path
+          required: true
+          description: message_id of the favorited message.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Removed.
+        '400':
+          description: Invalid data.
+
+  # ── Search ────────────────────────────────────────────────────────────────
+
+  /api/search/:
+    post:
+      tags: [Search]
+      summary: Semantic search over chat history
+      description: Proxied to n8n for vector-based search.
+      operationId: search
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '201':
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '500':
+          description: n8n configuration error.
+        '504':
+          description: n8n timeout.
+
+  # ── Knowledge Base ────────────────────────────────────────────────────────
+
+  /api/kb/list-all/:
+    get:
+      tags: [Knowledge Base]
+      summary: List knowledge bases for a project
+      operationId: listKBs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Knowledge base list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KBListResponse'
+        '400':
+          description: Missing project_id.
+        '403':
+          description: Access denied.
+        '404':
+          description: Project not found.
+
+  /api/kb/get/:
+    get:
+      tags: [Knowledge Base]
+      summary: Get knowledge base
+      operationId: getKB
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: hash_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: KB details from n8n.
+        '400':
+          description: Missing hash_id.
+        '504':
+          description: n8n timeout.
+
+  /api/kb/create/:
+    post:
+      tags: [Knowledge Base]
+      summary: Create knowledge base
+      operationId: createKB
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KBCreateRequest'
+      responses:
+        '200':
+          description: KB created.
+        '404':
+          description: Project not found.
+        '502':
+          description: n8n error.
+
+  /api/kb/edit/:
+    patch:
+      tags: [Knowledge Base]
+      summary: Edit knowledge base metadata
+      operationId: editKB
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KBEditRequest'
+      responses:
+        '200':
+          description: KB updated.
+        '504':
+          description: n8n timeout.
+
+  /api/kb/delete/:
+    delete:
+      tags: [Knowledge Base]
+      summary: Delete knowledge base
+      operationId: deleteKB
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: hash_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted.
+        '400':
+          description: Missing hash_id.
+
+  /api/kb/attach/:
+    post:
+      tags: [Knowledge Base]
+      summary: Link existing KB to project
+      operationId: attachKB
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KBAttachRequest'
+      responses:
+        '200':
+          description: Linked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [created, exists]
+                  project_id:
+                    type: string
+                    format: uuid
+                  hash_id:
+                    type: string
+                  name:
+                    type: string
+        '403':
+          description: Access denied.
+        '404':
+          description: Project not found.
+
+  /api/kb/files/list/:
+    get:
+      tags: [Knowledge Base]
+      summary: List files in knowledge base
+      operationId: listKBFiles
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: hash_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File list from n8n.
+        '400':
+          description: Missing hash_id.
+
+  /api/kb/file/add/:
+    post:
+      tags: [Knowledge Base]
+      summary: Add file to knowledge base
+      operationId: addKBFile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, hash_id]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                hash_id:
+                  type: string
+      responses:
+        '200':
+          description: File indexed.
+        '504':
+          description: n8n timeout.
+
+  /api/kb/file/delete/:
+    delete:
+      tags: [Knowledge Base]
+      summary: Delete file from knowledge base
+      operationId: deleteKBFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: hash_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: file
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted.
+        '400':
+          description: Missing parameters.
+
+  /api/kb/file/update/:
+    patch:
+      tags: [Knowledge Base]
+      summary: Replace file in knowledge base
+      operationId: updateKBFile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [hash_id, file, project_id]
+              properties:
+                hash_id:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                project_id:
+                  type: string
+                  format: uuid
+                old_file:
+                  type: string
+      responses:
+        '200':
+          description: File replaced.
+        '207':
+          description: Partial success — file added but old file deletion failed.
+        '400':
+          description: Invalid data.
+        '403':
+          description: KB does not belong to project.
+        '404':
+          description: Project not found.
+
+  # ── Translation ───────────────────────────────────────────────────────────
+
+  /api/i18n/translate/:
+    get:
+      tags: [Translation]
+      summary: Translate single text
+      operationId: translate
+      parameters:
+        - name: text
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+            example: pt
+        - name: namespace
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Translation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateResponse'
+
+  /api/i18n/translate/batch/:
+    post:
+      tags: [Translation]
+      summary: Batch translate texts
+      operationId: translateBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateBatchRequest'
+      responses:
+        '200':
+          description: Translation results.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TranslateResponse'
+        '413':
+          description: Too many items or text too long.
+
+  # ── Superset ──────────────────────────────────────────────────────────────
+
+  /api/superset/guest-token/:
+    post:
+      tags: [Superset]
+      summary: Get Superset embedded guest token
+      operationId: supersetGuestToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupersetGuestTokenRequest'
+      responses:
+        '200':
+          description: Guest token for embedding the dashboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Missing dashId or authentication failed.
+
+  # ── Health ────────────────────────────────────────────────────────────────
+
+  /health/:
+    get:
+      tags: [Health]
+      summary: Service health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is up.
+
+  /api/health/db/:
+    get:
+      tags: [Health]
+      summary: Database health check
+      operationId: dbHealthCheck
+      responses:
+        '200':
+          description: Database is reachable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Database unavailable.

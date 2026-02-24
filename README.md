@@ -75,7 +75,7 @@ make reset
 Upon initialization, the main application creates a default admin user. Additional accounts can be created from the UI. To change the defaults, edit `./backend/src/authentication/management/commands/set_admin.sql`.
 
 **Email:** `admin@localhost.ai`
-**Password:** `123456`
+**Password:** `admin1234`
 
 ### Superset Application
 

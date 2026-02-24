@@ -74,7 +74,7 @@ INSERT INTO authentication_userprofile (
     password_reset_token_expires_at, created_at, updated_at, job_title, department, active, joined_at
 )
 VALUES
-    (REPLACE(UUID(),'-',''),'pbkdf2_sha256$1000000$MJCt7NkTDRcmAAlQvlPBLk$e9r0S1U0BuCe2ApS5DTYqxd8SuYUI8AAy24TdMs13vc=',
+    (REPLACE(UUID(),'-',''),'pbkdf2_sha256$1000000$kp5n0PiKQuP9BTImZ64EjX$xhinKFqbftleRe2/pYaNXv6OpwvFhMVrAbbzI2RdX0A=',
     'Admin Account',NULL,TRUE,'Admin','Admin','Account','admin@localhost.ai',
     TRUE,TRUE,NOW(),'ADMINISTRATOR',NULL,NULL,NOW(),NULL,'Default Admin Account','Administration',TRUE,NOW());
 
