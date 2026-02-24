@@ -116,15 +116,45 @@ All workflow JSON files live in `n8n/workflows/`. Import them via **n8n UI → S
 
 > **Credential placeholder:** MySQL/Postgres credential IDs inside the JSONs are placeholders (`WAREHOUSE_DB_CREDENTIAL_ID`, `Postgres account`, etc.). After importing, open each workflow and reassign the credentials to the ones you created in your local n8n instance.
 
+#### All sample workflows at a glance
+
+| File | Category | Trigger | Description |
+|---|---|---|---|
+| `agent-data-analyst.json` | Agent | Chat webhook | RAG chat agent (Nora) — PGVector retrieval + OpenRouter LLM |
+| `create-kb.json` | KB CRUD | Webhook `POST` | Create a new knowledge base |
+| `get-kb.json` | KB CRUD | Webhook `GET` | Fetch a single knowledge base by ID |
+| `get-all-kb.json` | KB CRUD | Webhook `GET` | List all knowledge bases |
+| `edit-kb.json` | KB CRUD | Webhook `PATCH` | Update knowledge base name / metadata |
+| `delete-kb.json` | KB CRUD | Webhook `DELETE` | Delete a knowledge base and its vectors |
+| `add-file-kb.json` | KB CRUD | Webhook `POST` | Index a document into a knowledge base via PGVector |
+| `list-files-kb.json` | KB CRUD | Webhook `GET` | List all indexed files in a knowledge base |
+| `delete-files-kb.json` | KB CRUD | Webhook `DELETE` | Remove a document's vectors from a knowledge base |
+| `youscan-collect-mentions.json` | Data pipeline | Schedule 01:00 UTC | Collect previous day's mentions from YouScan API → local JSON |
+| `youscan-normalize-mentions.json` | Data pipeline | Schedule 02:00 UTC | Normalize raw JSON files → warehouse DB, move to archive |
+
+---
+
 #### 🤖 Agent Workflows
 
-| File | Workflow name | Description |
-|---|---|---|
-| `agent-data-analyst.json` | **Agent — Data Analyst (Nora)** | RAG-enabled chat agent. Exposes a public webhook chat interface. Uses PGVector for knowledge-base retrieval, Postgres for chat memory, OpenRouter as the LLM, and OpenAI for embeddings. |
+##### `agent-data-analyst.json` — Agent — Data Analyst (Nora)
+
+A RAG-enabled conversational agent that exposes a public chat webhook.
+
+| Component | Detail |
+|---|---|
+| **Trigger** | Public chat webhook (allows any origin) |
+| **LLM** | OpenRouter Chat Model (configurable model, custom system prompt) |
+| **Memory** | PostgreSQL Chat Memory — retains last 10 messages, keyed by session ID |
+| **Knowledge base** | PGVector Store — semantic search over indexed documents |
+| **Embeddings** | OpenAI Embeddings |
+
+**Required n8n credentials:** OpenRouter API key, OpenAI API key, Postgres connection.
+
+---
 
 #### 📚 Knowledge Base (KB) Workflows
 
-These seven webhook-driven workflows form a complete CRUD API for managing knowledge bases and their indexed documents. They are called by the Enlaight backend and are the backbone of the RAG pipeline.
+These eight webhook-driven workflows form a complete CRUD API for managing knowledge bases and their indexed documents. They are called by the Enlaight backend and power the RAG pipeline.
 
 | File | Workflow name | Method | Description |
 |---|---|---|---|
@@ -137,16 +167,56 @@ These seven webhook-driven workflows form a complete CRUD API for managing knowl
 | `list-files-kb.json` | **List Files — KB** | `GET` | Lists all documents indexed in a given knowledge base. |
 | `delete-files-kb.json` | **Delete Files — KB** | `DELETE` | Removes a specific document's vectors from PGVector and its metadata from Postgres. |
 
+**Required n8n credentials:** Postgres connection (PGVector), OpenAI API key.
+
+---
+
 #### 🔌 YouScan Data Pipeline Workflows
 
-Two scheduled workflows that implement the same logic as the Python scripts (see [Scripts](#scripts) below) natively inside n8n. They run back-to-back each night: the collector at 01:00 UTC, the normalizer at 02:00 UTC.
+Two scheduled workflows that implement the same logic as the Python scripts in `n8n/scripts/` (see [Scripts](#scripts) below), running natively inside n8n. They run back-to-back each night.
 
-| File | Workflow name | Schedule | Description |
-|---|---|---|---|
-| `youscan-collect-mentions.json` | **YouScan — Collect Mentions** | Daily 01:00 UTC | Fetches active topic IDs from the warehouse DB, calls the YouScan API for each topic to paginate all mentions from the previous calendar day (cursor-based via `sinceSeq`), and writes one raw JSON file per topic to `RAW_DATA_DIR`. Supports up to 3 API keys in parallel and retries 429/5xx errors with exponential back-off. |
-| `youscan-normalize-mentions.json` | **YouScan — Normalize Mentions** | Daily 02:00 UTC | Scans `RAW_DATA_DIR` for raw JSON files produced by the collector. For each file: deduplicates topics, ingestion files, and individual mentions against the warehouse DB; normalizes all fields (timestamps, source strings, engagement metrics, geo); inserts content shards (title / text / fullText) into `youscan_content`; then moves the processed file to `INGESTED_DATA_DIR`. |
+##### `youscan-collect-mentions.json` — YouScan — Collect Mentions
 
-**Required n8n credentials for the YouScan workflows:**
+**Schedule:** daily at 01:00 UTC
+
+**What it does:**
+
+1. **Build Date Range** — computes `startDate` / `endDate` for the previous calendar day (UTC).
+2. **Get Active Topics from DB** — queries `youscan_topics` in the warehouse MySQL DB.
+3. **Fetch Topics (API Key 1/2/3)** — parallel HTTP calls to the YouScan `/topics/` endpoint for each configured key.
+4. **Merge & Filter Topics** — builds a `topicId → {name, query, api_key}` map, filtered to only topics active in the DB.
+5. **Collect Mentions (Paginated)** — cursor-based pagination via `sinceSeq`, with exponential back-off retry for 429 / 5xx (max 5 attempts), runs per topic in parallel.
+6. **Write JSON to Disk** — writes one `youscan_mentions_{topic_id}_{date}_{uuid}.json` file per topic to `RAW_DATA_DIR`.
+
+| Nodes used | Types |
+|---|---|
+| Schedule Trigger, Code (×4), HTTP Request (×3), MySQL | n8n built-in |
+
+---
+
+##### `youscan-normalize-mentions.json` — YouScan — Normalize Mentions
+
+**Schedule:** daily at 02:00 UTC
+
+**What it does:**
+
+1. **Scan Raw Directory** — lists all `*.json` files in `RAW_DATA_DIR`; short-circuits gracefully if empty.
+2. **Read JSON File** — parses each raw file (one n8n item per file).
+3. **Topic dedup** — checks `youscan_topics`; inserts if new, resolves the internal DB `id`.
+4. **File dedup** — checks `youscan_ingestion_files` by UUID; skips the entire file if already processed.
+5. **Insert Ingestion File Record** — records the file metadata.
+6. **Explode Mentions** — fans out one n8n item per mention.
+7. **Mention dedup** — checks `youscan_mentions` by `youscan_mention_id`; skips duplicates.
+8. **Build Mention Row** — normalizes all fields: timestamps via JS `Date`, source string cleaned, JSON arrays serialized.
+9. **Insert Mention** — writes to `youscan_mentions`.
+10. **Explode Content Shards → Insert Content Shard** — inserts `title`, `text`, `fullText` as separate rows in `youscan_content`.
+11. **Move File to Ingested** — `fs.renameSync` moves the processed file to `INGESTED_DATA_DIR`.
+
+| Nodes used | Types |
+|---|---|
+| Schedule Trigger, Code (×9), Filter (×4), MySQL (×8) | n8n built-in |
+
+**Required n8n credentials for both YouScan workflows:**
 
 | Credential type | Used by |
 |---|---|

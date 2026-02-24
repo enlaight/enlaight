@@ -189,6 +189,9 @@
     }
   },
   "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6c209a96cb7d9c1f0697cf1373f933d54f7beaee0b2f6e286e8cf55179beb527"
