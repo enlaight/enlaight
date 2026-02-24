@@ -16,6 +16,8 @@ and analytics, orchestrated through Docker containers.
 6. [Sprints](#-sprints)
 7. [Technologies Used](#-technologies-used)
 
+📐 For a detailed breakdown of every component and how they connect, see **[INTEGRATIONS.md](./INTEGRATIONS.md)**.
+
 ---
 
 ## 🚀 Getting Started (Local Setup)
