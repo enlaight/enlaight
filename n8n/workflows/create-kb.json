@@ -1,0 +1,401 @@
+{
+  "name": "Create - KB",
+  "nodes": [
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "enlaight_knowledge_bases",
+          "mode": "list",
+          "cachedResultName": "enlaight_knowledge_bases"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Webhook').item.json.body.name }}",
+            "description": "={{ $('Webhook').item.json.body.description }}",
+            "hash_id": "={{ $json.data.toLowerCase() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avatar",
+              "displayName": "avatar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hash_id",
+              "displayName": "hash_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1000,
+        -300
+      ],
+      "id": "ad9126c4-e071-4099-8131-02974ca6d3f8",
+      "name": "enlaight_knowledge_bases",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "encodingType": "base64"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -300
+      ],
+      "id": "de51dd88-3255-4cb9-9d4d-b6f7e2bdd7af",
+      "name": "generate-hash"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*) from enlaight_knowledge_bases where name = '{{ $('Webhook').item.json.body.name }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        280,
+        -160
+      ],
+      "id": "3431d3d8-b9af-4bff-a719-06242e8c1774",
+      "name": "enlaight_knowledge_bases1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ Number($json.count) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        -160
+      ],
+      "id": "256696c2-9770-4111-8f1a-56c5b3fc60cc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kb/create/",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        -20
+      ],
+      "id": "1b55d874-f464-4170-b9c1-7bfc1a1225c4",
+      "name": "Webhook",
+      "webhookId": "3e3362f1-3eed-47ef-8ad7-b7d97e3c8323",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "vUzVjEyp7o7am56J",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"name\": \"{{ $json.name }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"hash_id\": \"{{ $json.hash_id }}\",\n  \"created_at\": \"{{ $json.created_at }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1340,
+        -400
+      ],
+      "id": "b5859682-1a04-4d88-987d-3131a4ad372f",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        120
+      ],
+      "id": "55c0b73f-b136-46e9-8a58-6f320a3d076c",
+      "name": "respond_error_invalid_response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ $json.body.name }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "34ef1b7c-48f3-4eeb-ada5-98cc087655c0",
+              "leftValue": "={{ $json.body.description }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -60,
+        -20
+      ],
+      "id": "6903e0a2-49da-46d8-8aa8-d34e7510d774",
+      "name": "check_payload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base already exists\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        -40
+      ],
+      "id": "9b023a9d-4b12-4ba6-9b1b-1d3eacd4c108",
+      "name": "respond_error_kb_already_exists"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"Error while creating knowledge base\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1340,
+        -200
+      ],
+      "id": "80b00cb1-ed98-4460-aacb-639aee76763a",
+      "name": "respond_error_while_creating"
+    }
+  ],
+  "connections": {
+    "enlaight_knowledge_bases": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_while_creating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-hash": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enlaight_knowledge_bases1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "generate-hash",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_kb_already_exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "check_payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_payload": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_invalid_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "name": "List Files - KB",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook/kb/file/list",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        180
+      ],
+      "id": "dbb3e6ab-0500-4008-8a00-31c891f39ed9",
+      "name": "Webhook",
+      "webhookId": "a842391e-148b-4468-86e2-bf42843a942c",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "vUzVjEyp7o7am56J",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*) from enlaight_knowledge_bases where hash_id = '{{ $json.body.hash_id }}';\n\n  -- select * from n8n_vectors;\n-- select * from n8n_vector_collections;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -260,
+        180
+      ],
+      "id": "b5f2c9c4-d848-4102-b9a5-20081d958959",
+      "name": "vector_store1",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"files\": [{{ $json.files.map(item => '\"' + item.original_file_name  + '\"' ) }}]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        740,
+        60
+      ],
+      "id": "07479766-c5b2-45dd-90f3-b53894aecd64",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ Number($json.count) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -20,
+        180
+      ],
+      "id": "70eb87f9-1efa-48f4-b586-60e4d0c03a54",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base does not exist\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        300
+      ],
+      "id": "85e02232-cc24-433f-8b7e-d6b55cf56c65",
+      "name": "respond_error_kb_does_not_exists"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT original_file_name\n  from (\n  SELECT\n    metadata->>'original_file_name' AS original_file_name,\n    c.name\n  FROM n8n_vectors v\n    left join n8n_vector_collections c\n    on v.collection_id = c.uuid\n  WHERE metadata ? 'original_file_name'\n    AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n    AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n  ORDER BY original_file_name\n  );",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        280,
+        60
+      ],
+      "id": "1426e4eb-c658-4076-a013-51fed32724cf",
+      "name": "check_if_file_already_indexed",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        500,
+        60
+      ],
+      "id": "61859770-e2b6-4d16-93e1-6d13de660e1e",
+      "name": "Aggregate"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "vector_store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "vector_store1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "check_if_file_already_indexed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_kb_does_not_exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "check_if_file_already_indexed": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.enlaight.ai",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "55",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "cache-control": "no-cache",
+            "content-type": "application/json",
+            "key": "f9c1a8e3b72d45f6904ae21c5d78b6ef",
+            "postman-token": "6ea7a1e5-8a1b-4459-9a74-5da345e0dd76",
+            "x-forwarded-for": "187.10.137.168",
+            "x-forwarded-host": "n8n.enlaight.ai",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "cc7667c5cd60",
+            "x-real-ip": "187.10.137.168"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "hash_id": "o7gpvgd3m3njh5npkkqqpbpfibcg7fj2"
+          },
+          "webhookUrl": "https://n8n.enlaight.ai/webhook/webhook/kb/file/list",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

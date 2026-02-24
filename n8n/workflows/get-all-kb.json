@@ -1,0 +1,210 @@
+{
+  "name": "Get All - KB",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "kb/list-all",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1940,
+        100
+      ],
+      "id": "5e733478-02cc-43ae-9b9f-d8b2a052e564",
+      "name": "Webhook",
+      "webhookId": "69c19b7c-70df-4ed0-9d72-60c38c781f9c"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1340,
+        220
+      ],
+      "id": "445b4866-5397-4576-80be-58c84fdcccea",
+      "name": "respond_error_invalid_response1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from enlaight_knowledge_bases;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1340,
+        -20
+      ],
+      "id": "7e831c79-8a01-4a1e-93e3-a73c8819247d",
+      "name": "enlaight_knowledge_bases3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ $json.headers?.key \n   || $json.headers?.Key \n   || ($json.headers?.authorization || '').replace(/^Bearer\\s+/i,'') \n   || $node[\"Webhook\"].json.headers?.key \n   || null }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1660,
+        100
+      ],
+      "id": "4d46772d-a799-4e19-b496-069cc43c48cd",
+      "name": "check_key1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"kbs\": {{ JSON.stringify($json.data) }}\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        -20
+      ],
+      "id": "195d24e2-3aab-484f-8cbd-c362380d4566",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nreturn [{ json: { status: 'success', count: rows.length, data: rows } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        -20
+      ],
+      "id": "89ad6d7f-6b3a-44da-baa2-fac9b6bd786a",
+      "name": "Code"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "check_key1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enlaight_knowledge_bases3": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_key1": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_invalid_response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        []
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.enlaight.ai",
+            "user-agent": "PostmanRuntime/7.47.1",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "cache-control": "no-cache",
+            "key": "f9c1a8e3b72d45f6904ae21c5d78b6ef",
+            "postman-token": "8423a00b-f5e6-4b01-9c3f-790675ead940",
+            "x-forwarded-for": "54.86.50.139",
+            "x-forwarded-host": "n8n.enlaight.ai",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "cc7667c5cd60",
+            "x-real-ip": "54.86.50.139"
+          },
+          "params": {},
+          "query": {},
+          "body": {},
+          "webhookUrl": "https://n8n.enlaight.ai/webhook/kb/list-7153367F-84AD-4A6A-A4BC-33A837F5D3E5",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "meta": null
+}

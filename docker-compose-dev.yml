@@ -1,0 +1,182 @@
+networks:
+  internal:
+    driver: bridge
+  public:
+    driver: bridge
+
+services:
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    command: sh -c "npm run devmode -- --host 0.0.0.0"
+    container_name: enlaight_frontend
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - public
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=300
+
+  # Backend (Django)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: enlaight-service
+    container_name: enlaight_backend
+    working_dir: /src
+    command: ["sh", "/scripts/run.sh"]
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      REACT_URL: ${REACT_URL}
+      MYSQL_DATABASE: ${BACKEND_DB}
+      MYSQL_USER: ${BACKEND_DB_USER}
+      MYSQL_PASSWORD: ${BACKEND_DB_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      N8N_BASE_URL: ${N8N_BASE_URL}
+      N8N_KB_KEY: ${N8N_KB_KEY}
+      N8N_TIMEOUT: ${N8N_TIMEOUT}
+      USE_X_FORWARDED_HOST: ${USE_X_FORWARDED_HOST}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE}
+      DEBUG: ${DEBUG}
+    volumes:
+      - ./backend/src:/src
+      - ./backend/tests:/tests
+      - ./backend/scripts:/scripts
+      - ./backend/mysql/init:/sql-init:ro
+      - ./n8n:/app/n8n
+    networks:
+      - internal
+      - public
+
+  # Email service
+  smtp:
+    image: rnwood/smtp4dev
+    container_name: smtp4dev
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+      - "2525:25"
+    networks:
+      - internal
+      - public
+
+  # Databases
+  mysql:
+    image: mysql:8.4
+    container_name: enlaight_mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --log-bin-trust-function-creators=1
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: America/Sao_Paulo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: enlaight_cache
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:15
+    container_name: postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: n8n_enlaight_db
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: n8n_dev_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n_enlaight_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # N8N
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:1.113.0
+    container_name: n8n_dev
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - NODE_ENV=development
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678
+      - GENERIC_TIMEZONE=UTC
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_enlaight_db
+      - DB_POSTGRESDB_USER=n8n
+      - DB_POSTGRESDB_PASSWORD=n8n_dev_password
+      - DB_POSTGRESDB_SSL_ENABLED=false
+      - N8N_RUN_MIGRATIONS=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/local-files:/files
+    networks:
+      - internal
+      - public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  postgres_data:
+  n8n_data:
+  redis:
+    external: false

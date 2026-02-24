@@ -1,0 +1,726 @@
+{
+  "name": "YouScan — Normalize Mentions",
+  "description": "Runs daily at 02:00 UTC (after the collector). Reads raw JSON files from RAW_DATA_DIR, deduplicates and normalizes mentions into the warehouse MySQL DB (youscan_topics, youscan_ingestion_files, youscan_mentions, youscan_content), then moves each processed file to INGESTED_DATA_DIR.",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-800, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000001",
+      "name": "Daily at 02:00 UTC"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Scan RAW_DATA_DIR for *.json files and return one item per file.\nconst fs   = require('fs');\nconst path = require('path');\n\nconst rawDir      = $env.RAW_DATA_DIR      || './data/raw';\nconst ingestedDir = $env.INGESTED_DATA_DIR || './data/ingested';\n\nfs.mkdirSync(rawDir,      { recursive: true });\nfs.mkdirSync(ingestedDir, { recursive: true });\n\nconst files = fs.readdirSync(rawDir)\n  .filter(f => f.endsWith('.json'))\n  .sort();\n\nconsole.log(`[SCAN] Found ${files.length} file(s) in ${rawDir}`);\n\nif (files.length === 0) {\n  // Return a sentinel so downstream nodes can short-circuit gracefully\n  return [{ json: { noFiles: true, rawDir, ingestedDir } }];\n}\n\nreturn files.map(fileName => ({\n  json: {\n    fileName,\n    filePath:     path.join(rawDir, fileName),\n    rawDir,\n    ingestedDir,\n    noFiles:      false\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-560, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000002",
+      "name": "Scan Raw Directory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "no-files-check",
+              "leftValue": "={{ $json.noFiles }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [-320, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000003",
+      "name": "Has Files?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read and parse the raw JSON file for this item.\nconst fs = require('fs');\n\nconst { filePath, fileName, rawDir, ingestedDir } = $json;\n\nlet mentionsDict;\ntry {\n  const raw = fs.readFileSync(filePath, 'utf8');\n  mentionsDict = JSON.parse(raw);\n} catch (err) {\n  throw new Error(`[READ ERROR] ${fileName}: ${err.message}`);\n}\n\nconsole.log(`[READ] ${fileName}: ${mentionsDict.total || 0} mentions`);\n\nreturn [{\n  json: {\n    ...mentionsDict,\n    // carry file metadata for later steps\n    _fileName:    fileName,\n    _filePath:    filePath,\n    _ingestedDir: ingestedDir\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000004",
+      "name": "Read JSON File"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM youscan_topics WHERE youscan_topic_id = {{ $json.topic_id }} LIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [160, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000005",
+      "name": "Check Topic Exists",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decide whether we need to INSERT the topic.\n// Pass the mentionsDict forward with the db_topic_id if already found.\nconst dbRow = items[0]?.json;\nconst mentionsDict = $('Read JSON File').first().json;\n\nconst existingId = dbRow?.id || null;\n\nreturn [{\n  json: {\n    ...mentionsDict,\n    _db_topic_id: existingId,   // null → needs insert\n    _topicExists: existingId !== null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [160, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000006",
+      "name": "Evaluate Topic"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "topic-exists",
+              "leftValue": "={{ $json._topicExists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [400, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000007",
+      "name": "Topic New?"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": {
+          "__rl": true,
+          "value": "youscan_topics",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uuid":             "={{ crypto.randomUUID().replace(/-/g,'') }}",
+            "youscan_topic_id": "={{ $json.topic_id }}",
+            "name":             "={{ $json.topic.name }}",
+            "query":            "={{ $json.topic.query || '' }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [640, -320],
+      "id": "b2c3d4e5-0002-0002-0002-000000000008",
+      "name": "Insert Topic",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM youscan_topics WHERE youscan_topic_id = {{ $json.topic_id }} LIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [640, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000009",
+      "name": "Re-fetch Topic ID",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge: attach the resolved db topic id onto the mentionsDict.\n// Receives items from BOTH the Insert branch and the existing-topic branch.\nconst mentionsDict = $('Evaluate Topic').first().json;\nconst dbRow = items[0]?.json;\n\nconst dbTopicId = dbRow?.id || mentionsDict._db_topic_id;\n\nreturn [{\n  json: {\n    ...mentionsDict,\n    _db_topic_id: dbTopicId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000010",
+      "name": "Resolve Topic ID"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM youscan_ingestion_files WHERE uuid = '{{ $json.uuid }}' LIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [1120, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000011",
+      "name": "Check File Already Ingested",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// If the file was already ingested, short-circuit and move it.\n// Otherwise, proceed with mention normalization.\nconst fileRow = items[0]?.json;\nconst mentionsDict = $('Resolve Topic ID').first().json;\n\nconst alreadyIngested = !!fileRow?.id;\n\nif (alreadyIngested) {\n  console.log(`[SKIP] ${mentionsDict._fileName} already ingested.`);\n}\n\nreturn [{\n  json: {\n    ...mentionsDict,\n    _alreadyIngested: alreadyIngested\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000012",
+      "name": "Evaluate File"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "file-new",
+              "leftValue": "={{ $json._alreadyIngested }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1360, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000013",
+      "name": "File New?"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": {
+          "__rl": true,
+          "value": "youscan_ingestion_files",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uuid":              "={{ $json.uuid }}",
+            "youscan_topic_id": "={{ $json.topic_id }}",
+            "topic_id":         "={{ $json._db_topic_id }}",
+            "file_name":        "={{ $json._fileName }}",
+            "collected_at":     "={{ $json.collection_datetime ? new Date($json.collection_datetime).toISOString().slice(0,19).replace('T',' ') : null }}",
+            "total_collected":  "={{ $json.total || 0 }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [1600, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000014",
+      "name": "Insert Ingestion File Record",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Explode mentions array: one output item per mention.\n// Each item carries the parent context needed for DB inserts.\nconst mentionsDict = $('Evaluate File').first().json;\nconst mentions = mentionsDict.mentions || [];\n\nconsole.log(`[EXPLODE] ${mentionsDict._fileName}: ${mentions.length} mentions`);\n\nreturn mentions.map(m => ({\n  json: {\n    mention:          m,\n    db_topic_id:      mentionsDict._db_topic_id,\n    youscan_topic_id: mentionsDict.topic_id,\n    _fileName:        mentionsDict._fileName,\n    _filePath:        mentionsDict._filePath,\n    _ingestedDir:     mentionsDict._ingestedDir\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000015",
+      "name": "Explode Mentions"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM youscan_mentions WHERE youscan_mention_id = '{{ $json.mention.id }}' LIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [2080, -160],
+      "id": "b2c3d4e5-0002-0002-0002-000000000016",
+      "name": "Check Mention Exists",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decide whether to insert this mention.\nconst dbRow = items[0]?.json;\nconst ctx = $('Explode Mentions').first().json;\n\nconst exists = !!dbRow?.id;\nreturn [{\n  json: { ...ctx, _mentionExists: exists }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2080, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000017",
+      "name": "Evaluate Mention"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "mention-new",
+              "leftValue": "={{ $json._mentionExists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [2320, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000018",
+      "name": "Mention New?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the INSERT payload for youscan_mentions.\n// Mirrors the Python normalizer: cleans source, parses datetimes,\n// and maps all YouScan API fields to DB columns.\n\nconst ctx = $json;\nconst m   = ctx.mention;\n\nfunction get(key) {\n  const v = m[key];\n  return (v === null || v === undefined) ? null : v;\n}\n\nfunction parseDt(val) {\n  if (!val) return null;\n  try {\n    return new Date(val).toISOString().slice(0, 19).replace('T', ' ');\n  } catch { return null; }\n}\n\nfunction cleanSource(val) {\n  if (val === null || val === undefined) return null;\n  const s = String(val).replace(/\"/g, '').trim();\n  return s || null;\n}\n\nconst row = {\n  uuid:               crypto.randomUUID().replace(/-/g, ''),\n  youscan_mention_id: m.id,\n  topic_id:           ctx.db_topic_id,\n  youscan_topic_id:   ctx.youscan_topic_id,\n  youscan_added_at:   parseDt(get('addedAt')),\n  published_at:       parseDt(get('published')),\n  url:                get('url'),\n  image_url:          get('imageUrl'),\n  source:             cleanSource(get('source')),\n  author:             get('author'),\n  sentiment:          get('sentiment'),\n  resource_type:      get('resourceType'),\n  publication_place:  get('publicationPlace'),\n  language:           get('language'),\n  country:            get('country'),\n  city:               get('city'),\n  region:             get('region'),\n  post_type:          get('postType'),\n  post_id:            get('postId'),\n  discussion_id:      get('discussionId'),\n  potential_reach:    get('potentialReach'),\n  engagement:         get('engagement'),\n  tags:               get('tags') ? JSON.stringify(get('tags')) : null,\n  auto_categories:    get('autoCategories') ? JSON.stringify(get('autoCategories')) : null,\n  subjects:           get('subjects') ? JSON.stringify(get('subjects')) : null\n};\n\n// Content shards: title / text / fullText\nconst shards = [];\nfor (const [contentType, fieldKey] of [\n  ['mention_title',     'title'],\n  ['mention_text',      'text'],\n  ['mention_full_text', 'fullText']\n]) {\n  if (m[fieldKey]) {\n    shards.push({\n      content_type: contentType,\n      content:      m[fieldKey]\n    });\n  }\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    _mentionRow:    row,\n    _contentShards: shards\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2560, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000019",
+      "name": "Build Mention Row"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": {
+          "__rl": true,
+          "value": "youscan_mentions",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uuid":               "={{ $json._mentionRow.uuid }}",
+            "youscan_mention_id": "={{ $json._mentionRow.youscan_mention_id }}",
+            "topic_id":           "={{ $json._mentionRow.topic_id }}",
+            "youscan_topic_id":   "={{ $json._mentionRow.youscan_topic_id }}",
+            "youscan_added_at":   "={{ $json._mentionRow.youscan_added_at }}",
+            "published_at":       "={{ $json._mentionRow.published_at }}",
+            "url":                "={{ $json._mentionRow.url }}",
+            "image_url":          "={{ $json._mentionRow.image_url }}",
+            "source":             "={{ $json._mentionRow.source }}",
+            "author":             "={{ $json._mentionRow.author }}",
+            "sentiment":          "={{ $json._mentionRow.sentiment }}",
+            "resource_type":      "={{ $json._mentionRow.resource_type }}",
+            "publication_place":  "={{ $json._mentionRow.publication_place }}",
+            "language":           "={{ $json._mentionRow.language }}",
+            "country":            "={{ $json._mentionRow.country }}",
+            "city":               "={{ $json._mentionRow.city }}",
+            "region":             "={{ $json._mentionRow.region }}",
+            "post_type":          "={{ $json._mentionRow.post_type }}",
+            "post_id":            "={{ $json._mentionRow.post_id }}",
+            "discussion_id":      "={{ $json._mentionRow.discussion_id }}",
+            "potential_reach":    "={{ $json._mentionRow.potential_reach }}",
+            "engagement":         "={{ $json._mentionRow.engagement }}",
+            "tags":               "={{ $json._mentionRow.tags }}",
+            "auto_categories":    "={{ $json._mentionRow.auto_categories }}",
+            "subjects":           "={{ $json._mentionRow.subjects }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [2800, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000020",
+      "name": "Insert Mention",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Explode content shards for this mention.\n// Each shard (title, text, fullText) becomes a separate youscan_content row.\nconst ctx    = $('Build Mention Row').first().json;\nconst shards = ctx._contentShards || [];\n\n// The INSERT Mention node returns the new DB row's insertId\nconst insertResult = items[0]?.json;\nconst dbMentionId  = insertResult?.insertId || null;\n\nif (shards.length === 0) return [];\n\nreturn shards.map(shard => ({\n  json: {\n    youscan_mention_id: dbMentionId,\n    uuid:               crypto.randomUUID().replace(/-/g, ''),\n    content_type:       shard.content_type,\n    content:            shard.content\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3040, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000021",
+      "name": "Explode Content Shards"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": {
+          "__rl": true,
+          "value": "youscan_content",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "youscan_mention_id": "={{ $json.youscan_mention_id }}",
+            "uuid":               "={{ $json.uuid }}",
+            "content_type":       "={{ $json.content_type }}",
+            "content":            "={{ $json.content }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [3280, 0],
+      "id": "b2c3d4e5-0002-0002-0002-000000000022",
+      "name": "Insert Content Shard",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Move the fully-processed file from raw/ to ingested/.\n// This node should run once per file, after all its mentions are done.\n// In n8n we trigger it from the Evaluate File step (after Insert File Record).\nconst fs   = require('fs');\nconst path = require('path');\n\nconst ctx         = $('Evaluate File').first().json;\nconst filePath    = ctx._filePath;\nconst ingestedDir = ctx._ingestedDir;\nconst fileName    = ctx._fileName;\n\nfs.mkdirSync(ingestedDir, { recursive: true });\n\nconst dest = path.join(ingestedDir, fileName);\nfs.renameSync(filePath, dest);\n\nconsole.log(`[MOVED] ${fileName} → ${dest}`);\n\nreturn [{\n  json: {\n    fileName,\n    dest,\n    status: 'moved'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, -320],
+      "id": "b2c3d4e5-0002-0002-0002-000000000023",
+      "name": "Move File to Ingested"
+    }
+  ],
+  "connections": {
+    "Daily at 02:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Scan Raw Directory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan Raw Directory": {
+      "main": [
+        [
+          {
+            "node": "Has Files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Files?": {
+      "main": [
+        [
+          {
+            "node": "Read JSON File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read JSON File": {
+      "main": [
+        [
+          {
+            "node": "Check Topic Exists",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Evaluate Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Topic Exists": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Topic": {
+      "main": [
+        [
+          {
+            "node": "Topic New?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Topic New?": {
+      "main": [
+        [
+          {
+            "node": "Insert Topic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-fetch Topic ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Topic": {
+      "main": [
+        [
+          {
+            "node": "Re-fetch Topic ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-fetch Topic ID": {
+      "main": [
+        [
+          {
+            "node": "Resolve Topic ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Topic ID": {
+      "main": [
+        [
+          {
+            "node": "Check File Already Ingested",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Evaluate File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check File Already Ingested": {
+      "main": [
+        [
+          {
+            "node": "Evaluate File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate File": {
+      "main": [
+        [
+          {
+            "node": "File New?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File New?": {
+      "main": [
+        [
+          {
+            "node": "Insert Ingestion File Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Ingestion File Record": {
+      "main": [
+        [
+          {
+            "node": "Explode Mentions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Move File to Ingested",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explode Mentions": {
+      "main": [
+        [
+          {
+            "node": "Check Mention Exists",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Evaluate Mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Mention Exists": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Mention": {
+      "main": [
+        [
+          {
+            "node": "Mention New?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mention New?": {
+      "main": [
+        [
+          {
+            "node": "Build Mention Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Mention Row": {
+      "main": [
+        [
+          {
+            "node": "Insert Mention",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Mention": {
+      "main": [
+        [
+          {
+            "node": "Explode Content Shards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explode Content Shards": {
+      "main": [
+        [
+          {
+            "node": "Insert Content Shard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  }
+}
