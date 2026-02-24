@@ -223,109 +223,109 @@ services:
       - public
       - internal
   
-  # Superset
-  superset:
-    build:
-      context: ./superset
-      dockerfile: Dockerfile
-    image: *superset-image
-    container_name: superset_app
-    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
-    user: "root"
-    restart: unless-stopped
-    ports:
-      - "8088:8088"
-    env_file:
-      - .env
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    environment:
-      # Production environment settings
-      FLASK_ENV: production
-      SUPERSET_ENV: production
-      SUPERSET_LOAD_EXAMPLES: "false"
-      # Enable Playwright for reports and thumbnails
-      PLAYWRIGHT_REPORTS_AND_THUMBNAILS: "true"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - internal
+  # # Superset
+  # superset:
+  #   build:
+  #     context: ./superset
+  #     dockerfile: Dockerfile
+  #   image: *superset-image
+  #   container_name: superset_app
+  #   command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+  #   user: "root"
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8088:8088"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     superset-init:
+  #       condition: service_completed_successfully
+  #   volumes: *superset-volumes
+  #   environment:
+  #     # Production environment settings
+  #     FLASK_ENV: production
+  #     SUPERSET_ENV: production
+  #     SUPERSET_LOAD_EXAMPLES: "false"
+  #     # Enable Playwright for reports and thumbnails
+  #     PLAYWRIGHT_REPORTS_AND_THUMBNAILS: "true"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - internal
 
-  superset-init:
-    image: *superset-image
-    container_name: superset_init
-    command: ["/app/docker/docker-init.sh"]
-    user: "root"
-    env_file:
-      - .env
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    volumes: *superset-volumes
-    environment:
-      FLASK_ENV: production
-      SUPERSET_ENV: production
-      SUPERSET_LOAD_EXAMPLES: "false"
-    healthcheck:
-      disable: true
-    networks:
-      - internal
+  # superset-init:
+  #   image: *superset-image
+  #   container_name: superset_init
+  #   command: ["/app/docker/docker-init.sh"]
+  #   user: "root"
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #   volumes: *superset-volumes
+  #   environment:
+  #     FLASK_ENV: production
+  #     SUPERSET_ENV: production
+  #     SUPERSET_LOAD_EXAMPLES: "false"
+  #   healthcheck:
+  #     disable: true
+  #   networks:
+  #     - internal
 
-  superset-worker:
-    image: *superset-image
-    container_name: superset_worker
-    command: ["/app/docker/docker-bootstrap.sh", "worker"]
-    user: "root"
-    env_file:
-      - .env
-    restart: unless-stopped
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    environment:
-      FLASK_ENV: production
-      SUPERSET_ENV: production
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - internal
+  # superset-worker:
+  #   image: *superset-image
+  #   container_name: superset_worker
+  #   command: ["/app/docker/docker-bootstrap.sh", "worker"]
+  #   user: "root"
+  #   env_file:
+  #     - .env
+  #   restart: unless-stopped
+  #   depends_on:
+  #     superset-init:
+  #       condition: service_completed_successfully
+  #   volumes: *superset-volumes
+  #   environment:
+  #     FLASK_ENV: production
+  #     SUPERSET_ENV: production
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - internal
 
-  superset-worker-beat:
-    image: *superset-image
-    container_name: superset_worker_beat
-    command: ["/app/docker/docker-bootstrap.sh", "beat"]
-    user: "root"
-    env_file:
-      - .env
-    restart: unless-stopped
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    environment:
-      FLASK_ENV: production
-      SUPERSET_ENV: production
-    healthcheck:
-      disable: true
-    networks:
-      - internal
+  # superset-worker-beat:
+  #   image: *superset-image
+  #   container_name: superset_worker_beat
+  #   command: ["/app/docker/docker-bootstrap.sh", "beat"]
+  #   user: "root"
+  #   env_file:
+  #     - .env
+  #   restart: unless-stopped
+  #   depends_on:
+  #     superset-init:
+  #       condition: service_completed_successfully
+  #   volumes: *superset-volumes
+  #   environment:
+  #     FLASK_ENV: production
+  #     SUPERSET_ENV: production
+  #   healthcheck:
+  #     disable: true
+  #   networks:
+  #     - internal
 
 volumes:
   mysql_data:
   postgres_data:
   n8n_data:
-  superset_home:
-    external: false
+  # superset_home:
+  #   external: false
   redis:
     external: false

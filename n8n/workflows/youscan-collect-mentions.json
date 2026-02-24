@@ -1,0 +1,276 @@
+{
+  "name": "YouScan — Collect Mentions",
+  "description": "Runs daily at 01:00 UTC. Fetches active topic IDs from the warehouse DB, then paginates the YouScan API to collect the previous calendar day's mentions for each topic, saving raw JSON files to the local RAW_DATA_DIR.",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 1 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-800, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Daily at 01:00 UTC"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build date range: previous calendar day (UTC)\nconst now = new Date();\nconst lastMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());\nconst prevMidnight = new Date(lastMidnight.getTime() - 86400000);\n\nconst pad = (n) => String(n).padStart(2, '0');\nconst fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;\n\nreturn [{\n  json: {\n    startDate: fmt(prevMidnight),\n    endDate:   fmt(lastMidnight),\n    rawDataDir: $env.RAW_DATA_DIR || './data/raw'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-560, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Build Date Range"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT youscan_topic_id FROM youscan_topics WHERE youscan_topic_id <> 0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-320, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Get Active Topics from DB",
+      "credentials": {
+        "mySql": {
+          "id": "WAREHOUSE_DB_CREDENTIAL_ID",
+          "name": "Warehouse MySQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all topic IDs from DB rows and pass them forward together\n// with the date range from the first input\nconst dateRange = $('Build Date Range').first().json;\n\nconst topicIds = items\n  .map(item => item.json.youscan_topic_id)\n  .filter(id => id !== null && id !== undefined && id !== 0);\n\nconsole.log(`[TOPICS] Found ${topicIds.length} active topics in warehouse DB`);\n\nreturn [{\n  json: {\n    topicIds,\n    startDate: dateRange.startDate,\n    endDate:   dateRange.endDate,\n    rawDataDir: dateRange.rawDataDir\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Aggregate Topic IDs"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.YOUSCAN_URL.replace(/\\/$/, '') }}/topics/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.YOUSCAN_API_KEYS.split(',')[0].trim() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, -160],
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Fetch Topics API Key 1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.YOUSCAN_URL.replace(/\\/$/, '') }}/topics/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "={{ ($env.YOUSCAN_API_KEYS.split(',')[1] || '').trim() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Fetch Topics API Key 2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.YOUSCAN_URL.replace(/\\/$/, '') }}/topics/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "apiKey",
+              "value": "={{ ($env.YOUSCAN_API_KEYS.split(',')[2] || '').trim() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, 160],
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Fetch Topics API Key 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge topics from all API keys into a single map: topic_id → { name, query, api_key }\n// Then filter to only the topic IDs that are active in the warehouse DB.\n\nconst upstream = $('Aggregate Topic IDs').first().json;\nconst activeIds = new Set(upstream.topicIds.map(String));\n\nconst apiKeys = $env.YOUSCAN_API_KEYS.split(',').map(k => k.trim()).filter(Boolean);\nconst allInputs = items; // one item per HTTP response\n\nconst topicMap = {};\n\nallInputs.forEach((item, idx) => {\n  const apiKey = apiKeys[idx] || '';\n  const topics = item.json.topics || [];\n  topics.forEach(t => {\n    topicMap[String(t.id)] = {\n      topicId:  t.id,\n      name:     t.name,\n      query:    t.query || '',\n      api_key:  apiKey\n    };\n  });\n});\n\n// Build one output item per active topic that exists in the YouScan API response\nconst result = [];\nfor (const id of activeIds) {\n  if (topicMap[id]) {\n    result.push({\n      json: {\n        ...topicMap[id],\n        startDate:  upstream.startDate,\n        endDate:    upstream.endDate,\n        rawDataDir: upstream.rawDataDir\n      }\n    });\n  } else {\n    console.log(`[SKIP] Topic ${id} not found in any YouScan API key response`);\n  }\n}\n\nconsole.log(`[MERGE] ${result.length} active topics matched across all API keys`);\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000008",
+      "name": "Merge & Filter Topics"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Paginated mention collection for a single topic.\n// Iterates cursor-based pages (sinceSeq) until a page returns fewer than 'size' mentions.\n// Implements exponential back-off for 429 / 5xx (max 5 retries per page).\n//\n// NOTE: n8n Code nodes are async-capable. We use the built-in $http helper\n// (available in Code v2) or fall back to native fetch.\n\nconst topic     = $json;\nconst baseUrl   = $env.YOUSCAN_URL.replace(/\\/$/, '');\nconst apiKey    = topic.api_key;\nconst topicId   = topic.topicId;\nconst dtFrom    = topic.startDate;\nconst dtTo      = topic.endDate;\nconst PAGE_SIZE = 1000;\nconst MAX_RETRIES = 5;\n\nasync function fetchPage(sinceSeq) {\n  const url = [\n    `${baseUrl}/topics/${topicId}/mentions/`,\n    `?apiKey=${apiKey}`,\n    `&from=${dtFrom}&to=${dtTo}`,\n    `&sinceSeq=${sinceSeq}&size=${PAGE_SIZE}&orderBy=seqAsc`\n  ].join('');\n\n  let lastErr;\n  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {\n    const resp = await fetch(url, { signal: AbortSignal.timeout(30000) });\n\n    if (resp.status === 200) {\n      return await resp.json();\n    }\n\n    if (resp.status === 429 || resp.status >= 500) {\n      const wait = Math.pow(2, attempt) * 1000;\n      console.log(`[RETRY] HTTP ${resp.status} attempt ${attempt}/${MAX_RETRIES} for topic ${topicId}. Waiting ${wait}ms`);\n      await new Promise(r => setTimeout(r, wait));\n      continue;\n    }\n\n    const body = await resp.text();\n    throw new Error(`Non-retryable HTTP ${resp.status}: ${body}`);\n  }\n  throw new Error(`Exhausted retries for topic ${topicId}`);\n}\n\n// Validate topic access via history endpoint first\nconst historyUrl = `${baseUrl}/topics/${topicId}/history?apiKey=${apiKey}`;\nconst histResp = await fetch(historyUrl, { signal: AbortSignal.timeout(30000) });\nif (!histResp.ok) {\n  throw new Error(`History endpoint returned ${histResp.status} for topic ${topicId}`);\n}\n\n// Paginate\nlet sinceSeq = '';\nconst allMentions = [];\n\nwhile (true) {\n  const page = await fetchPage(sinceSeq);\n  const batch = page.mentions || [];\n  allMentions.push(...batch);\n  console.log(`[COLLECT] Topic ${topicId}: ${allMentions.length} mentions so far`);\n\n  if (batch.length < PAGE_SIZE || batch.length === 0) break;\n  sinceSeq = allMentions[allMentions.length - 1].seq;\n}\n\n// Build output payload\nconst uniqueId = crypto.randomUUID().replace(/-/g, '');\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    topic_id:            topicId,\n    uuid:                uniqueId,\n    collection_datetime: now,\n    total:               allMentions.length,\n    topic: {\n      name:    topic.name,\n      query:   topic.query,\n      api_key: apiKey\n    },\n    mentions:   allMentions,\n    // carry meta for the write step\n    startDate:  dtFrom,\n    rawDataDir: topic.rawDataDir,\n    fileName:   `youscan_mentions_${topicId}_${dtFrom}_${uniqueId}.json`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000009",
+      "name": "Collect Mentions (Paginated)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Write the collected mentions to a local JSON file.\n// Uses the Node.js 'fs' module available in n8n's Code node.\n\nconst fs   = require('fs');\nconst path = require('path');\n\nconst data       = $json;\nconst rawDataDir = data.rawDataDir || './data/raw';\nconst fileName   = data.fileName;\n\n// Ensure directory exists\nfs.mkdirSync(rawDataDir, { recursive: true });\n\nconst filePath = path.join(rawDataDir, fileName);\n\n// Serialise — strip the workflow-only meta fields before writing\nconst payload = {\n  topic_id:            data.topic_id,\n  uuid:                data.uuid,\n  collection_datetime: data.collection_datetime,\n  total:               data.total,\n  topic:               data.topic,\n  mentions:            data.mentions\n};\n\nfs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');\n\nconsole.log(`[DONE] Topic ${data.topic_id}: ${data.total} mentions saved to ${filePath}`);\n\nreturn [{\n  json: {\n    topic_id: data.topic_id,\n    total:    data.total,\n    filePath,\n    status:   'saved'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 0],
+      "id": "a1b2c3d4-0001-0001-0001-000000000010",
+      "name": "Write JSON to Disk"
+    }
+  ],
+  "connections": {
+    "Daily at 01:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Build Date Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Range": {
+      "main": [
+        [
+          {
+            "node": "Get Active Topics from DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Topics from DB": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Topic IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Topic IDs": {
+      "main": [
+        [
+          {
+            "node": "Fetch Topics API Key 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Topics API Key 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Topics API Key 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Topics API Key 1": {
+      "main": [
+        [
+          {
+            "node": "Merge & Filter Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Topics API Key 2": {
+      "main": [
+        [
+          {
+            "node": "Merge & Filter Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Topics API Key 3": {
+      "main": [
+        [
+          {
+            "node": "Merge & Filter Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge & Filter Topics": {
+      "main": [
+        [
+          {
+            "node": "Collect Mentions (Paginated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Mentions (Paginated)": {
+      "main": [
+        [
+          {
+            "node": "Write JSON to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  }
+}

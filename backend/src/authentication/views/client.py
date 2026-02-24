@@ -6,6 +6,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from authentication.models.clients import Clients
 from authentication.serializers.client_serializer import ClientSerializer
@@ -13,9 +14,9 @@ from authentication.serializers.client_serializer import ClientSerializer
 
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
-    queryset = Clients.objects.all()
-    permission_classes = []
     queryset = Clients.objects.all().order_by("name")
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_queryset(self):

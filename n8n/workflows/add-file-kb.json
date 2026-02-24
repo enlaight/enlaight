@@ -1,0 +1,594 @@
+{
+  "name": "Add File - KB",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kb/file/add",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1900,
+        80
+      ],
+      "id": "db424f0b-607e-4d4b-88f9-4bf1a83f1518",
+      "name": "Webhook",
+      "webhookId": "59c1d6ae-6280-4b6d-902c-284c4c1a59cd",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "vUzVjEyp7o7am56J",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ $json.body.hash_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1320,
+        -60
+      ],
+      "id": "cc2aa754-b1b2-4a95-973d-558b0b90e7b5",
+      "name": "check_payload1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*) from enlaight_knowledge_bases where hash_id = '{{ $('Webhook').item.json.body.hash_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1020,
+        -180
+      ],
+      "id": "238c9663-fc56-4fd6-9657-01f9f9726f1f",
+      "name": "enlaight_knowledge_bases3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ Number($json.count) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        -180
+      ],
+      "id": "34254c91-ca47-4741-8051-b08f16224daa",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base does not exist\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        -60
+      ],
+      "id": "3f134594-d2fc-415c-aab6-b3079679418c",
+      "name": "respond_error_kb_does_not_exists"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "options": {
+          "collection": {
+            "values": {
+              "useCollection": true,
+              "collectionName": "={{ $('Webhook').item.json.body.hash_id }}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        -460
+      ],
+      "id": "1c534b87-3fce-41e1-b12b-e67b5277f686",
+      "name": "Postgres PGVector Store",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "original_file_name",
+                "value": "={{ $('Read/Write Files from Disk').item.json.fileName.replace('/tmp/', '') }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -220
+      ],
+      "id": "c9b34a40-3b2a-4a79-ab32-8ddb01c6cc49",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -20
+      ],
+      "id": "4980ee45-38ee-45bf-9785-25489f4576fa",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{$binary.file.fileName}}",
+        "dataPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        80
+      ],
+      "id": "b84ca79f-461b-4dec-93c0-dd7d256fd2e8",
+      "name": "Read/Write Files from Disk",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Read/Write Files from Disk').item.json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        140,
+        -460
+      ],
+      "id": "88d1d288-35d7-48af-8cd6-959a68fda26c",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        -220
+      ],
+      "id": "f6bf69f8-5c40-4c85-bede-b1b2a6f7710f",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "bkg01X4pRPKeUvsO",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"file\": \"{{ $('Read/Write Files from Disk').item.json.fileName.replace('/tmp/', '') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        -560
+      ],
+      "id": "c299a224-faa9-4623-8065-a02b6faf8c41",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"Error while indexing file\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        900,
+        -360
+      ],
+      "id": "701f1a28-1ae4-4786-8f33-9800709e33c3",
+      "name": "respond_error_kb_does_not_exists1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ Number($json.count) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        -280
+      ],
+      "id": "23933cc2-3e29-4a33-b568-9413de769be6",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*)\n  from (\n    SELECT DISTINCT\n      metadata->>'original_file_name' AS original_file_name,\n      c.name\n    FROM n8n_vectors v\n      left join n8n_vector_collections c\n      on v.collection_id = c.uuid\n    WHERE metadata ? 'original_file_name'\n      AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n      AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n      AND metadata->>'original_file_name' = '{{ $('Read/Write Files from Disk').item.json.fileName.replace('/tmp/', '') }}'\n    ORDER BY original_file_name\n  )",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -460,
+        -280
+      ],
+      "id": "076b4980-3eae-4d75-8bbd-68d61bdf123b",
+      "name": "check_if_file_already_indexed",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"file already indexed\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        140,
+        -120
+      ],
+      "id": "17ec7642-f2a2-41d0-9ff9-a64bb97e2607",
+      "name": "respond_error_file_already_indexed"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1020,
+        60
+      ],
+      "id": "bc303e68-4500-448d-a90b-3fa678245f54",
+      "name": "respond_error_invalid_input"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid file input\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1320,
+        200
+      ],
+      "id": "2713cb08-eb03-4383-8f86-09fadfee5346",
+      "name": "respond_error_invalid_input1"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_payload1": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_invalid_input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enlaight_knowledge_bases3": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "check_if_file_already_indexed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_kb_does_not_exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "check_payload1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_invalid_input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_kb_does_not_exists1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_if_file_already_indexed": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_file_already_indexed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.enlaight.ai",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "69789",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "multipart/form-data; boundary=--------------------------794698974361355587139454",
+            "key": "f9c1a8e3b72d45f6904ae21c5d78b6ef",
+            "postman-token": "1c0ecf1a-c8c2-4320-a99c-d33ec4b65ab9",
+            "x-forwarded-for": "187.10.137.168",
+            "x-forwarded-host": "n8n.enlaight.ai",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "cc7667c5cd60",
+            "x-real-ip": "187.10.137.168"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "hash_id": "ecyljb1vjtewrg5qe6ynptmc8wtawuzt"
+          },
+          "webhookUrl": "https://n8n.enlaight.ai/webhook/kb/file/add",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

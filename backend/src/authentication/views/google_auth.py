@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework import status
@@ -14,6 +16,45 @@ class GoogleAuthView(APIView):
     authentication_classes = []  # público
     permission_classes = []  # público
 
+    @swagger_auto_schema(
+        operation_id="google_auth",
+        operation_summary="Google OAuth2 login",
+        operation_description="Validates a Google ID token and returns application JWT tokens. Creates the user if they do not exist.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["id_token"],
+            properties={
+                "id_token": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Google Identity Services JWT",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Login successful",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "access": openapi.Schema(type=openapi.TYPE_STRING),
+                        "refresh": openapi.Schema(type=openapi.TYPE_STRING),
+                        "user": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "id": openapi.Schema(type=openapi.TYPE_STRING, format="uuid"),
+                                "email": openapi.Schema(type=openapi.TYPE_STRING),
+                                "first_name": openapi.Schema(type=openapi.TYPE_STRING),
+                                "last_name": openapi.Schema(type=openapi.TYPE_STRING),
+                            },
+                        ),
+                    },
+                ),
+            ),
+            400: openapi.Response("Invalid or missing id_token"),
+        },
+        security=[],
+        tags=["Auth"],
+    )
     def post(self, request):
         """
         Espera: { "id_token": "<JWT do Google Identity Services>" }

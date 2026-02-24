@@ -576,6 +576,17 @@ class MeView(APIView):
     authentication_classes = [FlexibleJWTAuthentication, JWTAuthentication, DebugJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_id="get_me",
+        operation_summary="Get current user profile",
+        operation_description="Returns the profile of the currently authenticated user.",
+        responses={
+            200: openapi.Response("Current user profile", UserProfileSerializer),
+            401: openapi.Response("Not authenticated"),
+        },
+        security=[{"Bearer": []}],
+        tags=["Auth"],
+    )
     def get(self, request):
         serializer = UserProfileSerializer(request.user, context={"request": request})
         return Response(serializer.data)

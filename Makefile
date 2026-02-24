@@ -1,16 +1,18 @@
 .PHONY: start stop clear build reset test
 
+COMPOSE_FILE := docker-compose-dev.yml
+
 start:
-	docker compose up $(filter-out $@,$(MAKECMDGOALS))
+	docker compose -f $(COMPOSE_FILE) up $(filter-out $@,$(MAKECMDGOALS))
 
 stop:
-	docker compose stop
+	docker compose -f $(COMPOSE_FILE) stop
 
 clear:
-	docker compose down --volumes --remove-orphans
+	docker compose -f $(COMPOSE_FILE) down --volumes --remove-orphans
 
 build:
-	docker compose build --no-cache $(filter-out $@,$(MAKECMDGOALS))
+	docker compose -f $(COMPOSE_FILE) build --no-cache $(filter-out $@,$(MAKECMDGOALS))
 
 init:
 	make build
@@ -19,18 +21,18 @@ init:
 
 reset:
 	make clear
-	docker compose build --no-cache
+	docker compose -f $(COMPOSE_FILE) build --no-cache
 	make start
 
 test:
 # 	Run tests in running frontend container:
-# 	docker compose exec frontend npm test
+# 	docker compose -f $(COMPOSE_FILE) exec frontend npm test
 
 #	Run tests in a new container (builds if necessary):
-	docker compose run --rm --build frontend npm test
+	docker compose -f $(COMPOSE_FILE) run --rm --build frontend npm test
 
 logs:
-	docker compose logs -f
+	docker compose -f $(COMPOSE_FILE) logs -f
 
 %:
 	@:

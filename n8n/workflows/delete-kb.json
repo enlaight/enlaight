@@ -1,0 +1,334 @@
+{
+  "name": "Delete - KB",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "/kb/delete",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1940,
+        100
+      ],
+      "id": "0db1c87c-4fac-4450-9c15-9ef22375e156",
+      "name": "Webhook",
+      "webhookId": "2b77a255-175e-4d50-a08d-383c2a516e13",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "vUzVjEyp7o7am56J",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ $json.body.hash_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1720,
+        100
+      ],
+      "id": "cf9bf4f7-fc6b-479a-b2b5-f3b11e9d02ce",
+      "name": "check_payload1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -1320,
+        280
+      ],
+      "id": "9a7f04e6-9399-4345-a9d0-160cc968b3c4",
+      "name": "respond_error_invalid_response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e928902e-f8b6-4e16-94c0-f9e7cdb3d4e2",
+              "leftValue": "={{ Number($json.count) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1100,
+        -60
+      ],
+      "id": "379b935b-7afc-4b9e-a8c6-e7c39eb20168",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*) from enlaight_knowledge_bases where hash_id = '{{ $('Webhook').item.json.body.hash_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1320,
+        -60
+      ],
+      "id": "daf947d6-1d5b-4dee-81bf-95ccfebb785f",
+      "name": "enlaight_knowledge_bases4",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base does not exist\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -780,
+        80
+      ],
+      "id": "7bf6e743-b08b-4a68-b30f-294d53962c3a",
+      "name": "respond_error_kb_does_not_exists1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"Error while editing knowledge base\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -440,
+        -80
+      ],
+      "id": "9ee7975b-b1f8-4c26-a67e-1a185c84c04a",
+      "name": "respond_error_while_creating1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"hash_id\": \"{{ $('Webhook').item.json.body.hash_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        -440,
+        -320
+      ],
+      "id": "1b1f878d-eb43-48f7-9d1a-494bf93f7919",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "enlaight_knowledge_bases",
+          "mode": "list",
+          "cachedResultName": "enlaight_knowledge_bases"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "hash_id",
+              "value": "={{ $('Webhook').item.json.body.hash_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -780,
+        -200
+      ],
+      "id": "36452b71-4d89-4a1b-8f1f-02b7fe2effd7",
+      "name": "enlaight_knowledge_bases1",
+      "credentials": {
+        "postgres": {
+          "id": "cCL19pxDOJh2L8rn",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "check_payload1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_payload1": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_invalid_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enlaight_knowledge_bases4": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "enlaight_knowledge_bases1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_kb_does_not_exists1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enlaight_knowledge_bases1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_while_creating1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.enlaight.ai",
+            "user-agent": "PostmanRuntime/7.45.0",
+            "content-length": "55",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "content-type": "application/json",
+            "key": "f9c1a8e3b72d45f6904ae21c5d78b6ef",
+            "postman-token": "73fddc56-03ab-4369-9277-61ec5d67981b",
+            "x-forwarded-for": "187.74.56.4",
+            "x-forwarded-host": "n8n.enlaight.ai",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "73c5a53fa5bf",
+            "x-real-ip": "187.74.56.4"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "hash_id": "o49odttgj53y6bkuxz6bpps8uwfwfpva"
+          },
+          "webhookUrl": "https://n8n.enlaight.ai/webhook/kb/delete",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
