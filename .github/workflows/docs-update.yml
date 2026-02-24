@@ -1,0 +1,66 @@
+name: Docs Update
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    # Only run when non-doc files change — avoids infinite loops when the bot
+    # commits updated markdown back to the branch.
+    paths-ignore:
+      - "**.md"
+      - ".github/scripts/**"
+
+jobs:
+  update-docs:
+    name: LLM — Auto-update Markdown docs
+    runs-on: ubuntu-latest
+
+    # Skip entirely if the PR was opened by the Actions bot itself
+    if: github.actor != 'github-actions[bot]'
+
+    permissions:
+      contents: write   # needed to push the doc-update commit back to the PR branch
+
+    steps:
+      - name: Checkout PR branch (full history)
+        uses: actions/checkout@v4
+        with:
+          # Check out the actual PR head so we can push back to it
+          ref: ${{ github.head_ref }}
+          # Full history needed for accurate git diff against base branch
+          fetch-depth: 0
+
+      - name: Fetch base branch for diffing
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # No extra packages needed — script uses only stdlib + urllib
+
+      - name: Run docs updater
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: python .github/scripts/update_docs.py
+
+      - name: Commit and push updated docs (if any)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage only the managed markdown files — never stage unrelated changes
+          git add README.md INTEGRATIONS.md docs/architecture.md docs/operations.md docs/security.md 2>/dev/null || true
+
+          # Only commit if there's actually something staged
+          if git diff --cached --quiet; then
+            echo "No documentation changes to commit."
+          else
+            git commit -m "docs: auto-update markdown for PR #${{ github.event.pull_request.number }} changes
+
+            Updated by the Docs Update GitHub Action using ${{ env.MODEL || 'google/gemini-2.0-flash-001' }}.
+            Review these changes as part of the PR review."
+
+            git push origin HEAD:${{ github.head_ref }}
+            echo "Documentation updated and pushed to PR branch."
+          fi

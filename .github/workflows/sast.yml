@@ -1,0 +1,105 @@
+name: SAST
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend — Bandit (Python SAST)
+  # ─────────────────────────────────────────────────────────────────────────────
+  bandit:
+    name: Bandit — Python SAST
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit
+        # -r   recursive scan
+        # -ll  report medium + high severity (low noise)
+        # -ii  report medium + high confidence
+        # -x   exclude test files, migrations, and settings samples
+        # -f   output format (json for structured upload + human-readable for logs)
+        run: |
+          bandit \
+            -r backend/src \
+            -ll -ii \
+            -x backend/src/**/tests,backend/src/**/migrations,backend/src/**/settings.sample.py \
+            -f json \
+            -o bandit-report.json || true
+
+          # Always print human-readable summary to the workflow log
+          bandit \
+            -r backend/src \
+            -ll -ii \
+            -x backend/src/**/tests,backend/src/**/migrations,backend/src/**/settings.sample.py
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Frontend — npm audit (dependency vulnerability scan)
+  # ─────────────────────────────────────────────────────────────────────────────
+  npm-audit:
+    name: npm audit — Frontend SAST
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        # Use --ignore-scripts to avoid running arbitrary postinstall scripts
+        # during a security scan; use legacy-peer-deps for compatibility
+        run: npm ci --ignore-scripts --legacy-peer-deps
+
+      - name: Run npm audit
+        # --audit-level=high   fail only on high/critical vulnerabilities
+        # --json               structured output for artifact upload
+        run: |
+          npm audit --audit-level=high --json > ../npm-audit-report.json || true
+
+          # Always print human-readable summary to the workflow log
+          npm audit --audit-level=high || true
+
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm-audit-report.json
+          retention-days: 30
+
+      - name: Fail on high/critical vulnerabilities
+        # Run audit a final time with no output redirect so the job exit code
+        # reflects the real severity gate. The previous step is --audit-level=high
+        # but we run again here cleanly to ensure the job fails correctly.
+        run: npm audit --audit-level=high
