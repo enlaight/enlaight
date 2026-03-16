@@ -14,7 +14,8 @@ RUN apk update && apk add --no-cache \
     curl \
     nodejs \
     npm \
-    netcat-openbsd
+    netcat-openbsd \
+    postgresql-client
 
 RUN npm install -g mjml
 

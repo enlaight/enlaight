@@ -229,8 +229,6 @@ docker compose exec backend python manage.py migrate authentication [migration_n
 
 ### Database Initialization
 
-**Note:** In this same script file, the Superset database is initialized.
-
 **init-databases.sql** runs on MySQL startup:
 ```sql
 CREATE DATABASE enlaight_database;

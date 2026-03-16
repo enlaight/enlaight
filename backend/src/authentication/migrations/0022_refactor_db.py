@@ -14,32 +14,37 @@ USERINVITES_TABLE = "authentication_userinvites"
 USERPROFILE_TABLE = "authentication_userprofile"
 
 SQL_RENAME_INDEX_AGENTS = f"""
--- renomeia o índice antigo -> novo, só se tabela+índice existirem
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = '{AGENTS_TABLE}');
-SET @idx := (SELECT COUNT(*) FROM information_schema.statistics
-             WHERE table_schema = DATABASE() AND table_name = '{AGENTS_TABLE}'
-               AND index_name = 'agents_name_71fde0_idx');
-SET @stmt := IF(@tbl > 0 AND @idx > 0,
-  'ALTER TABLE `{AGENTS_TABLE}` RENAME INDEX `agents_name_71fde0_idx` TO `agents_name_6f5710_idx`',
-  'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM pg_indexes
+        WHERE tablename = '{AGENTS_TABLE}'
+        AND indexname = 'agents_name_71fde0_idx'
+    ) THEN
+        ALTER INDEX agents_name_71fde0_idx
+        RENAME TO agents_name_6f5710_idx;
+    END IF;
+END
+$$;
 """
 
 
 def sql_drop_column_if_exists(table, column):
     return f"""
-SET @col := (
-  SELECT COUNT(*) FROM information_schema.columns
-  WHERE table_schema = DATABASE() AND table_name = '{table}' AND column_name = '{column}'
-);
-SET @stmt := IF(@col > 0, 'ALTER TABLE `{table}` DROP COLUMN `{column}`', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-""".replace(
-        "{table}", table
-    ).replace(
-        "{column}", column
-    )
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = '{table}'
+        AND column_name = '{column}'
+    ) THEN
+        ALTER TABLE "{table}" DROP COLUMN "{column}";
+    END IF;
+END
+$$;
+"""
 
 
 class Migration(migrations.Migration):

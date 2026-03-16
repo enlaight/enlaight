@@ -29,34 +29,30 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+
     "formatters": {
         "ecs": {
             "()": "ecs_logging.StdlibFormatter",
-            "service_name": "enlaight-backend",
-            "service_version": "1.0.0",
-            "utc": True,
         },
     },
+
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": LOG_LEVEL,
+            "stream": sys.stdout,
             "formatter": "ecs",
         },
     },
+
     "root": {
         "handlers": ["console"],
         "level": LOG_LEVEL,
     },
+
     "loggers": {
         "django": {
             "handlers": ["console"],
             "level": LOG_LEVEL,
-            "propagate": False,
-        },
-        "django.request": {
-            "handlers": ["console"],
-            "level": "ERROR",
             "propagate": False,
         },
     },
@@ -89,10 +85,6 @@ N8N_UI_BASE_URL = os.environ.get("N8N_UI_BASE_URL", "").rstrip("/")
 # Path template to build the UI URL for a workflow (use {id} placeholder)
 # Examples: "/workflow/{id}", "/workflows/{id}", "/workflow/{id}/canvas"
 N8N_UI_WORKFLOW_PATH_TEMPLATE = os.environ.get("N8N_UI_WORKFLOW_PATH_TEMPLATE", "/workflow/{id}")
-
-SUPERSET_BASE_URL = os.environ.get("SUPERSET_BASE_URL").rstrip("/")
-SUPERSET_ADMIN_USER = os.environ.get("SUPERSET_ADMIN_USER", "")
-SUPERSET_ADMIN_PASSWORD = os.environ.get("SUPERSET_ADMIN_PASSWORD", "")
 
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_ACCESS_SECRET = os.getenv("AWS_ACCESS_SECRET")
@@ -226,12 +218,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("BACKEND_DB", "enlaight_database"),
         "USER": os.environ.get("BACKEND_DB_USER", "enlaight"),
         "PASSWORD": os.environ.get("BACKEND_DB_PASSWORD", "enlaight"),
-        "HOST": os.environ.get("MYSQL_HOST", "mysql" if not DEBUG else "localhost"),
-        "PORT": os.environ.get("MYSQL_PORT", "3306"),
+        "HOST": os.environ.get("POSTGRES_HOST", "postgres" if not DEBUG else "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 

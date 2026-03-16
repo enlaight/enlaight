@@ -11,16 +11,16 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql=(
                 """
-                ALTER TABLE `authentication_projects_bots`
-                  MODIFY COLUMN `projects_id` CHAR(36) NOT NULL,
-                  MODIFY COLUMN `bots_id` CHAR(36) NOT NULL;
+                    ALTER TABLE authentication_projects_bots
+                    ALTER COLUMN projects_id TYPE UUID USING projects_id::uuid,
+                    ALTER COLUMN bots_id TYPE UUID USING bots_id::uuid;
                 """
             ),
             reverse_sql=(
                 """
-                ALTER TABLE `authentication_projects_bots`
-                  MODIFY COLUMN `projects_id` CHAR(32) NOT NULL,
-                  MODIFY COLUMN `bots_id` CHAR(32) NOT NULL;
+                    ALTER TABLE authentication_projects_bots
+                    ALTER COLUMN projects_id TYPE CHAR(32) USING REPLACE(projects_id::text, '-', ''),
+                    ALTER COLUMN bots_id TYPE CHAR(32) USING REPLACE(bots_id::text, '-', '');
                 """
             ),
         ),

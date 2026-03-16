@@ -35,7 +35,7 @@ services:
     command: ["sh", "/scripts/run.sh"]
     restart: always
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     ports:
       - "8000:8000"
@@ -44,11 +44,13 @@ services:
     environment:
       SECRET_KEY: ${SECRET_KEY}
       REACT_URL: ${REACT_URL}
-      MYSQL_DATABASE: ${BACKEND_DB}
-      MYSQL_USER: ${BACKEND_DB_USER}
-      MYSQL_PASSWORD: ${BACKEND_DB_PASSWORD}
-      MYSQL_HOST: ${MYSQL_HOST}
-      MYSQL_PORT: ${MYSQL_PORT}
+      
+      POSTGRES_DB: ${BACKEND_DB}
+      POSTGRES_USER: ${BACKEND_DB_USER}
+      POSTGRES_PASSWORD: ${BACKEND_DB_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+
       ALLOWED_HOSTS: ${ALLOWED_HOSTS}
       N8N_BASE_URL: ${N8N_BASE_URL}
       N8N_KB_KEY: ${N8N_KB_KEY}
@@ -62,7 +64,6 @@ services:
       - ./backend/src:/src
       - ./backend/tests:/tests
       - ./backend/scripts:/scripts
-      - ./backend/mysql/init:/sql-init:ro
       - ./n8n:/app/n8n
     networks:
       - internal
@@ -81,30 +82,27 @@ services:
       - public
 
   # Databases
-  mysql:
-    image: mysql:8.4
-    container_name: enlaight_mysql
-    command: >
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --log-bin-trust-function-creators=1
-    restart: always
+  postgres:
+    image: postgres:15
+    container_name: postgres_dev
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      TZ: America/Sao_Paulo
-    ports:
-      - "3306:3306"
+      POSTGRES_DB: ${BACKEND_DB}
+      POSTGRES_USER: ${BACKEND_DB_USER}
+      POSTGRES_PASSWORD: ${BACKEND_DB_PASSWORD}
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./backend/mysql/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 10s
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/sql-init:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
     networks:
       - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BACKEND_DB_USER} -d ${BACKEND_DB} -h localhost -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -118,26 +116,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  postgres:
-    image: postgres:15
-    container_name: postgres_dev
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: n8n_enlaight_db
-      POSTGRES_USER: n8n
-      POSTGRES_PASSWORD: n8n_dev_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n_enlaight_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   # N8N
   n8n:
@@ -156,6 +134,7 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_DIAGNOSTICS_ENABLED=false
       - N8N_PERSONALIZATION_ENABLED=false
+
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
@@ -163,6 +142,7 @@ services:
       - DB_POSTGRESDB_USER=n8n
       - DB_POSTGRESDB_PASSWORD=n8n_dev_password
       - DB_POSTGRESDB_SSL_ENABLED=false
+      
       - N8N_RUN_MIGRATIONS=true
     volumes:
       - n8n_data:/home/node/.n8n
@@ -175,7 +155,6 @@ services:
         condition: service_healthy
 
 volumes:
-  mysql_data:
   postgres_data:
   n8n_data:
   redis:

@@ -75,14 +75,7 @@ make reset
 Upon initialization, the main application creates a default admin user. Additional accounts can be created from the UI. To change the defaults, edit `./backend/src/authentication/management/commands/set_admin.sql`.
 
 **Email:** `admin@localhost.ai`
-**Password:** `admin1234`
-
-### Superset Application
-
-Superset credentials are set from `.env`. The sample file ships with these defaults (not recommended for production):
-
-**User:** `admin`
-**Password:** `admin`
+**Password:** `admin123`
 
 ---
 
@@ -302,8 +295,8 @@ pip install sqlalchemy pymysql python-dateutil
 python n8n/scripts/youscan_normalize_mentions.py
 ```
 
+<!-- 
 ---
-
 ## 🗓️ Sprints
 
 ### Sprint 1 — 12 Jan 2026 – 25 Jan 2026
@@ -341,7 +334,7 @@ python n8n/scripts/youscan_normalize_mentions.py
 
 > **Sprint 6:** 23 Mar 2026 – 05 Apr 2026
 
-> **Sprint 7:** 06 Apr 2026 – 19 Apr 2026
+> **Sprint 7:** 06 Apr 2026 – 19 Apr 2026 -->
 
 ---
 
@@ -361,7 +354,6 @@ python n8n/scripts/youscan_normalize_mentions.py
 
 ### Databases & Services
 
-- MySQL (warehouse + Superset metadata)
 - PostgreSQL + PGVector (Django app + vector embeddings)
 - Redis (cache + queues)
 

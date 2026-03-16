@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-/scripts/wait-for-mysql.sh
+/scripts/wait-for-postgres.sh
 
 python manage.py collectstatic --noinput
 
