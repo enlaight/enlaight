@@ -3,52 +3,48 @@
 from django.db import migrations
 
 SQL_FIX_THROUGH_FK = r"""
+    DO $$
+    DECLARE fk_name text;
+    BEGIN
 
-SET @fk := (
-  SELECT CONSTRAINT_NAME
-  FROM information_schema.KEY_COLUMN_USAGE
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'authentication_projects_bots'
-    AND COLUMN_NAME = 'bots_id'
-    AND REFERENCED_TABLE_NAME = 'bots'
-  LIMIT 1
-);
-SET @stmt := IF(
-  @fk IS NOT NULL,
-  CONCAT('ALTER TABLE `authentication_projects_bots` DROP FOREIGN KEY `', @fk, '`'),
-  'SELECT 1'
-);
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+        SELECT conname
+        INTO fk_name
+        FROM pg_constraint
+        WHERE conrelid = 'authentication_projects_bots'::regclass
+        AND contype = 'f'
+        LIMIT 1;
 
-SET @col := (
-  SELECT CHARACTER_MAXIMUM_LENGTH
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'authentication_projects_bots'
-    AND COLUMN_NAME = 'bots_id'
-);
-SET @stmt := IF(
-  @col IS NOT NULL AND @col <> 36,
-  'ALTER TABLE `authentication_projects_bots` MODIFY `bots_id` CHAR(36) NOT NULL',
-  'SELECT 1'
-);
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+        IF fk_name IS NOT NULL THEN
+            EXECUTE format(
+                'ALTER TABLE authentication_projects_bots DROP CONSTRAINT %I',
+                fk_name
+            );
+        END IF;
 
-SET @fk_agents := (
-  SELECT CONSTRAINT_NAME
-  FROM information_schema.KEY_COLUMN_USAGE
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'authentication_projects_bots'
-    AND COLUMN_NAME = 'bots_id'
-    AND REFERENCED_TABLE_NAME = 'agents'
-  LIMIT 1
-);
-SET @stmt := IF(
-  @fk_agents IS NULL,
-  'ALTER TABLE `authentication_projects_bots`\n   ADD CONSTRAINT `authentication_projects_bots_bots_id_fk_agents`\n   FOREIGN KEY (`bots_id`) REFERENCES `agents`(`id`)\n   ON DELETE CASCADE',
-  'SELECT 1'
-);
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+        IF EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'authentication_projects_bots'
+            AND column_name = 'bots_id'
+            AND data_type <> 'uuid'
+        ) THEN
+            ALTER TABLE authentication_projects_bots
+            ALTER COLUMN bots_id TYPE UUID
+            USING bots_id::uuid;
+        END IF;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'authentication_projects_bots_bots_id_fk_agents'
+        ) THEN
+            ALTER TABLE authentication_projects_bots
+            ADD CONSTRAINT authentication_projects_bots_bots_id_fk_agents
+            FOREIGN KEY (bots_id)
+            REFERENCES agents(id)
+            ON DELETE CASCADE;
+        END IF;
+    END $$;
 """
 
 

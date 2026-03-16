@@ -23,7 +23,6 @@ from authentication.views.client import ClientViewSet
 from authentication.views.debug_check_token import debug_check_token
 from authentication.views.debug_token import debug_token
 from authentication.views.expertise_area import ExpertiseAreaViewSet
-from authentication.views.get_guest_token import GetGuestTokenView
 from authentication.views.google_auth import GoogleAuthView
 from authentication.views.health_db import db_health
 from authentication.views.invite import ConfirmInviteView, InviteUserView
@@ -107,11 +106,6 @@ urlpatterns = [
     path("kb/attach/", KBLinkAttachView.as_view(), name="kb_attach"),
     path("i18n/translate/", TranslateLookupView.as_view(), name="i18n_translate"),
     path("i18n/translate/batch/", TranslateBatchView.as_view(), name="i18n_translate_batch"),
-    path(
-        "superset/guest-token/",
-        GetGuestTokenView.as_view({"post": "create"}),
-        name="get-guest-token",
-    ),
     path("health/db/", db_health, name="health_db"),
     # Development-only debug endpoints
     path("debug/token/", debug_token, name="debug_token"),

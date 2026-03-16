@@ -10,36 +10,27 @@ DDL didn't run (e.g., failed migration or partial restore).
 from django.db import migrations
 
 SQL_UP = """
-SET @col := (
-  SELECT COUNT(*) FROM information_schema.columns
-  WHERE table_schema = DATABASE() AND table_name = 'agents' AND column_name = 'expertise_area_id'
-);
-SET @stmt := IF(@col = 0, 'ALTER TABLE `agents` ADD COLUMN `expertise_area_id` CHAR(32) NULL', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+    ALTER TABLE agents
+    ADD COLUMN IF NOT EXISTS expertise_area_id UUID;
 
-SET @idx := (
-  SELECT COUNT(*) FROM information_schema.statistics
-  WHERE table_schema = DATABASE() AND table_name = 'agents' AND index_name = 'agents_expertise_area_id_idx'
-);
-SET @stmt2 := IF(@idx = 0, 'CREATE INDEX `agents_expertise_area_id_idx` ON `agents` (`expertise_area_id`)', 'SELECT 1');
-PREPARE s2 FROM @stmt2; EXECUTE s2; DEALLOCATE PREPARE s2;
+    ALTER TABLE agents
+    ADD CONSTRAINT fk_agents_expertise_area
+    FOREIGN KEY (expertise_area_id)
+    REFERENCES expertise_areas(id)
+    ON DELETE SET NULL;
+
+    CREATE INDEX IF NOT EXISTS agents_expertise_area_id_idx
+    ON agents (expertise_area_id);
 """
 
-
 SQL_DOWN = """
-SET @idx := (
-  SELECT COUNT(*) FROM information_schema.statistics
-  WHERE table_schema = DATABASE() AND table_name = 'agents' AND index_name = 'agents_expertise_area_id_idx'
-);
-SET @stmt := IF(@idx = 1, 'DROP INDEX `agents_expertise_area_id_idx` ON `agents`', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+    DROP INDEX IF EXISTS agents_expertise_area_id_idx;
 
-SET @col := (
-  SELECT COUNT(*) FROM information_schema.columns
-  WHERE table_schema = DATABASE() AND table_name = 'agents' AND column_name = 'expertise_area_id'
-);
-SET @stmt2 := IF(@col = 1, 'ALTER TABLE `agents` DROP COLUMN `expertise_area_id`', 'SELECT 1');
-PREPARE s2 FROM @stmt2; EXECUTE s2; DEALLOCATE PREPARE s2;
+    ALTER TABLE agents
+    DROP CONSTRAINT IF EXISTS fk_agents_expertise_area;
+
+    ALTER TABLE agents
+    DROP COLUMN IF EXISTS expertise_area_id;
 """
 
 

@@ -1,70 +1,25 @@
-START TRANSACTION;
+BEGIN;
 
-SET FOREIGN_KEY_CHECKS = 0;
+-- Truncate tables safely (CASCADE handles FK dependencies)
+-- Truncate tables individually, ignoring errors if they don't exist
+TRUNCATE TABLE authentication_userprofile_groups RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_userprofile_user_permissions RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_projects_users RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE authentication_projects_agents RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_boards RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_projects RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_clients RESTART IDENTITY CASCADE;
+TRUNCATE TABLE agents RESTART IDENTITY CASCADE;
+TRUNCATE TABLE expertise_areas RESTART IDENTITY CASCADE;
+TRUNCATE TABLE authentication_userprofile RESTART IDENTITY CASCADE;
 
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_groups');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile_groups', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+-- Ensure agents.expertise_area_id exists
+ALTER TABLE agents
+ADD COLUMN IF NOT EXISTS expertise_area_id uuid;
 
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_user_permissions');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile_user_permissions', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_projects_users');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_projects_users', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
--- TRUNCATE TABLE authentication_projects_agents;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_boards');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_boards', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_projects');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_projects', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_clients');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_clients', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'agents');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE agents', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'expertise_areas');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE expertise_areas', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile');
-SET @stmt := IF(@tbl > 0, 'TRUNCATE TABLE authentication_userprofile', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
--- Ensure agents.expertise_area_id exists (some deployments miss this column)
-SET @col := (
-    SELECT COUNT(*) FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'agents' AND column_name = 'expertise_area_id'
-);
-SET @stmt := IF(@col = 0, 'ALTER TABLE `agents` ADD COLUMN `expertise_area_id` CHAR(32) NULL', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-SET @idx := (
-    SELECT COUNT(*) FROM information_schema.statistics
-    WHERE table_schema = DATABASE() AND table_name = 'agents' AND index_name = 'agents_expertise_area_id_idx'
-);
-SET @stmt2 := IF(@idx = 0, 'CREATE INDEX `agents_expertise_area_id_idx` ON `agents` (`expertise_area_id`)', 'SELECT 1');
-PREPARE s2 FROM @stmt2; EXECUTE s2; DEALLOCATE PREPARE s2;
+-- Ensure index exists
+CREATE INDEX IF NOT EXISTS agents_expertise_area_id_idx
+ON agents (expertise_area_id);
 
 
 -- USERS
@@ -73,40 +28,86 @@ INSERT INTO authentication_userprofile (
     email, is_staff, is_active, date_joined, role, password_reset_token,
     password_reset_token_expires_at, created_at, updated_at, job_title, department, active, joined_at
 )
-VALUES
-    (REPLACE(UUID(),'-',''),'pbkdf2_sha256$1000000$kp5n0PiKQuP9BTImZ64EjX$xhinKFqbftleRe2/pYaNXv6OpwvFhMVrAbbzI2RdX0A=',
-    'Admin Account',NULL,TRUE,'Admin','Admin','Account','admin@localhost.ai',
-    TRUE,TRUE,NOW(),'ADMINISTRATOR',NULL,NULL,NOW(),NULL,'Default Admin Account','Administration',TRUE,NOW());
+VALUES (
+    'a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f':: uuid,
+    'pbkdf2_sha256$1000000$MTbgh4oFBsrlHEfkgCgnAj$2MLQejok/pG3Dohq7rVWmkAXYVoajJE/3wjd2JNEFGY=',
+    'Admin Account',
+    NULL,
+    TRUE,
+    'Admin',
+    'Admin',
+    'Account',
+    'admin@localhost.ai',
+    TRUE,
+    TRUE,
+    NOW(),
+    'ADMINISTRATOR',
+    NULL,
+    NULL,
+    NOW(),
+    NULL,
+    'Default Admin Account',
+    'Administration',
+    TRUE,
+    NOW()
+)
+ON CONFLICT DO NOTHING;
+
 
 -- GROUP 'Admins'
 INSERT INTO auth_group (name)
-SELECT 'Admins'
-WHERE NOT EXISTS (SELECT 1 FROM auth_group WHERE name='Admins');
+VALUES ('Admins')
+ON CONFLICT (name) DO NOTHING;
 
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_groups');
-SET @stmt := IF(@tbl > 0, 'INSERT INTO authentication_userprofile_groups (userprofile_id, group_id) SELECT u.id, g.id FROM authentication_userprofile u JOIN auth_group g ON g.name = \'Admins\' WHERE u.username IN (\'Admin\')', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 
-SET @tbl := (SELECT COUNT(*) FROM information_schema.tables
-             WHERE table_schema = DATABASE() AND table_name = 'authentication_userprofile_user_permissions');
-SET @stmt := IF(@tbl > 0, 'INSERT INTO authentication_userprofile_user_permissions (userprofile_id, permission_id) SELECT u.id, 1 FROM authentication_userprofile u WHERE u.username IN (\'Admin\')', 'SELECT 1');
-PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+-- USER → GROUP relation
+INSERT INTO authentication_userprofile_groups (userprofile_id, group_id)
+SELECT u.id, g.id
+FROM authentication_userprofile u
+JOIN auth_group g ON g.name = 'Admins'
+WHERE u.username = 'Admin'
+AND to_regclass('authentication_userprofile_groups') IS NOT NULL;
 
--- CLIENTS
--- include a unique hash_id to avoid duplicate '' when the column has a UNIQUE constraint
-INSERT INTO authentication_clients (id, name, created_at, updated_at)
-VALUES
-    ('18eebde4cf8a42779afac175dbb6083b', 'First Client', NOW(), NULL);
 
--- PROJECTS
-INSERT INTO authentication_projects (id, name, client_id, created_at, updated_at)
-VALUES
-    ('57ba75fbc7564f388d84677adc129ff4','First Project','18eebde4cf8a42779afac175dbb6083b',NOW(),NULL);
+-- USER PERMISSIONS
+INSERT INTO authentication_userprofile_user_permissions (userprofile_id, permission_id)
+SELECT u.id, 1
+FROM authentication_userprofile u
+WHERE u.username = 'Admin'
+AND to_regclass('authentication_userprofile_user_permissions') IS NOT NULL;
 
--- AGENTS
-INSERT INTO agents (id, name, description, avatar, url_n8n, created_at, updated_at)
-VALUES
-    ('b6477ea69d32450b8a4b335f10f51bf2','Data Analyst','You are Nora, the Data Analyst agent for Enlaight AI. Your role is to analyze data, identify trends, generate insights, and answer questions about metrics and performance. Use clear, data-driven reasoning and, when possible, explain findings in simple terms that non-technical users can understand. You can summarize dashboards, analyze KPIs, and assist with reports or visualizations. Maintain a confident, insightful, and collaborative tone.',NULL,'https://n8n.enlaight.ai/webhook/0f1874f7-cfbb-4c8b-8722-411b326dd9d8/chat',NOW(),NULL);
+
+-- -- CLIENTS
+-- INSERT INTO authentication_clients (id, name, created_at, updated_at)
+-- VALUES
+--     ('a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f'::uuid, 'First Client', NOW(), NULL)
+-- ON CONFLICT DO NOTHING;
+
+
+-- -- PROJECTS
+-- INSERT INTO authentication_projects (id, name, client_id, created_at, updated_at)
+-- SELECT
+--     'a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f'::uuid,
+--     'First Project',
+--     'a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f'::uuid,
+--     NOW(),
+--     NULL
+-- FROM authentication_clients c
+-- WHERE c.name = 'First Client'
+-- LIMIT 1;
+
+
+-- -- AGENTS
+-- INSERT INTO agents (id, name, description, avatar, url_n8n, created_at, updated_at)
+-- VALUES (
+--     'a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f'::uuid,
+--     'Data Analyst',
+--     'You are Nora, the Data Analyst agent for Enlaight AI. Your role is to analyze data, identify trends, generate insights, and answer questions about metrics and performance. Use clear, data-driven reasoning and, when possible, explain findings in simple terms that non-technical users can understand. You can summarize dashboards, analyze KPIs, and assist with reports or visualizations. Maintain a confident, insightful, and collaborative tone',
+--     NULL,
+--     'https://n8n.enlaight.ai/webhook/0f1874f7-cfbb-4c8b-8722-411b326dd9d8/chat',
+--     NOW(),
+--     NULL
+-- )
+-- ON CONFLICT DO NOTHING;
 
 COMMIT;

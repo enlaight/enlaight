@@ -253,12 +253,6 @@ VITE_N8N_SUPPORT_ASSISTANT_URL=http://localhost:5678/webhook/<code>/chat
 - Manage client/organization records
 - Role-based access (ADMIN, USER, GUEST)
 
-### 7. Dashboards & Analytics
-- Superset integration for embedded dashboards
-- Chart management
-- Data visualization
-- Analytics queries
-
 ---
 
 ## Error Handling

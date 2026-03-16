@@ -82,20 +82,7 @@ JWT configuration (from `env.sample`):
 **NEVER use defaults (`enlaight`/`enlaight`) in production.**
 
 ```env
-# Backend Database (MySQL)
-BACKEND_DB=enlaight_database
-BACKEND_DB_USER=<production_user>
-BACKEND_DB_PASSWORD=<strong_password_min_16_chars>
-
-# Superset Database (MySQL)
-SUPERSET_DB_NAME=superset_database
-SUPERSET_DB_USER=<production_user>
-SUPERSET_DB_PASSWORD=<strong_password_min_16_chars>
-
-# MySQL Root
-MYSQL_ROOT_PASSWORD=<strong_password_min_16_chars>
-
-# PostgreSQL (n8n)
+# PostgreSQL (db & n8n)
 POSTGRES_PASSWORD=<strong_password_min_16_chars>
 ```
 
@@ -123,9 +110,6 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 | `N8N_KB_KEY` | Knowledge base key | Generated secret | **CRITICAL** |
 | `EMAIL_HOST_USER` | SMTP username | AWS/SMTP credentials | **HIGH** |
 | `EMAIL_HOST_PASSWORD` | SMTP password | AWS/SMTP credentials | **CRITICAL** |
-| `SUPERSET_SECRET_KEY` | Superset secret | Strong 42+ chars | **HIGH** |
-| `SUPERSET_ADMIN_PASSWORD` | Superset admin | Strong password | **HIGH** |
-| `GUEST_TOKEN_JWT_SECRET` | Guest token secret | Strong random secret | **HIGH** |
 
 ### Secrets Management Best Practices
 
@@ -196,11 +180,6 @@ Users have roles that determine permissions:
 - `USER` - Project-based access
 - `GUEST` - Limited read-only access
 
-**Role Configuration (from env.sample):**
-```env
-GUEST_ROLE_NAME=Guest_User
-PUBLIC_ROLE_LIKE=Gamma  # Superset role mapping
-```
 
 **Permission Enforcement:**
 
@@ -313,12 +292,6 @@ MIDDLEWARE = [
 ]
 ```
 
-**Superset CSRF (from env.sample):**
-```env
-WTF_CSRF_ENABLED=true
-WTF_CSRF_TIME_LIMIT=3600  # 1 hour
-```
-
 ---
 
 ## Database Security
@@ -329,9 +302,6 @@ WTF_CSRF_TIME_LIMIT=3600  # 1 hour
 ```sql
 -- Enlaight user - limited to backend database
 GRANT ALL PRIVILEGES ON enlaight_database.* TO 'enlaight'@'%';
-
--- Superset user - limited to superset database
-GRANT ALL PRIVILEGES ON superset_database.* TO 'superset'@'%';
 
 -- Root user - only for administration
 MYSQL_ROOT_PASSWORD=<strong_password>
@@ -549,25 +519,6 @@ WEBHOOK_URL=http://localhost:5678
 # Production: https://n8n.example.com (must be HTTPS)
 ```
 
-### Superset Credentials
-
-**Admin Configuration (from env.sample):**
-```env
-SUPERSET_SECRET_KEY=<your_very_long_random_secret_key_minimum_42_chars>
-SUPERSET_ADMIN_USERNAME=admin
-SUPERSET_ADMIN_EMAIL=admin@example.com
-SUPERSET_ADMIN_PASSWORD=<strong_password>
-SUPERSET_ADMIN_FIRSTNAME=Admin
-SUPERSET_ADMIN_LASTNAME=Admin
-```
-
-**Guest Token Configuration:**
-```env
-GUEST_TOKEN_JWT_SECRET=<generated_guest_token_jwt>
-GUEST_TOKEN_JWT_AUDIENCE=superset
-GUEST_TOKEN_JWT_EXP_SECONDS=3600  # 1 hour
-```
-
 ### Google OAuth (Optional)
 
 If using Google authentication:
@@ -665,34 +616,6 @@ def create_kb_in_n8n(name, description):
     return response.json()
 ```
 
-### Superset Integration Security
-
-**Embedded Dashboards (from env.sample):**
-```env
-FEATURE_FLAGS='{"PLAYWRIGHT_REPORTS_AND_THUMBNAILS": true, "DASHBOARD_RBAC": true}'
-SUPERSET_FEATURE_EMBEDDED_SUPERSET=true
-```
-
-**Guest Token Authentication:**
-```env
-GUEST_ROLE_NAME=Guest_User
-GUEST_TOKEN_JWT_SECRET=<strong_secret>
-GUEST_TOKEN_JWT_AUDIENCE=superset
-GUEST_TOKEN_JWT_EXP_SECONDS=3600
-```
-
-**CORS for Embedding:**
-```env
-ENABLE_CORS=true
-CORS_OPTIONS='{"origins": ["https://app.example.com"], "supports_credentials": true}'
-```
-
-**Frame Policy (from env.sample):**
-```env
-HTTP_HEADERS='{"X-Frame-Options": "ALLOWALL"}'  # Allow embedding
-# Change to "DENY" if not embedding
-```
-
 ### Database URL Security
 
 **Environment Variable Format:**
@@ -712,7 +635,6 @@ SQLALCHEMY_DATABASE_URI=mysql+pymysql://user:password@host:port/database
 - [ ] **Secrets**
   - [ ] Generate `SECRET_KEY` (50+ characters)
   - [ ] Generate `JWT_SIGNING_KEY`
-  - [ ] Generate `SUPERSET_SECRET_KEY` (42+ characters)
   - [ ] Generate `GUEST_TOKEN_JWT_SECRET`
   - [ ] Generate strong database passwords (min 16 chars)
   - [ ] Generate n8n API key
@@ -729,7 +651,6 @@ SQLALCHEMY_DATABASE_URI=mysql+pymysql://user:password@host:port/database
 - [ ] **Database**
   - [ ] Change `BACKEND_DB_USER` and password
   - [ ] Change `BACKEND_DB_PASSWORD`
-  - [ ] Change `SUPERSET_DB_USER` and password
   - [ ] Change `MYSQL_ROOT_PASSWORD`
   - [ ] Change `POSTGRES_PASSWORD`
   - [ ] Enable SSL/TLS for database connections

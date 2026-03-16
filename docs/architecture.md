@@ -1,7 +1,7 @@
 # Enlaight — Architecture Overview
 
 This document describes the purpose and responsibilities of each major part
-of the Enlaight application: **Frontend**, **Backend**, **n8n**, **Superset**, and
+of the Enlaight application: **Frontend**, **Backend**, **n8n** and
 **Docker**.
 
 ---
@@ -72,25 +72,10 @@ Provide webhook endpoints that implement bot logic and KB file management.
 
 ---
 
-## Superset (Data Visualization)
+## ChartsIO (Data Visualization)
 
-### Purpose
-Enterprise-ready data visualization and analytics (dashboards and charts).
+- tbd.
 
-### Responsibilities
-- Connect to metadata and data sources to create interactive dashboards
-- Provide analytics tools and reporting for Enlaight data when configured
-- Run as a separate service integrated via Docker and environment configs
-
-### Integration notes
-- Superset is optional and uses its own metadata database (MySQL) configured
-  in `docker-compose.yml` and `.env`
-- Not directly involved in chat or KB workflows, but useful for product
-  analytics
-
-### Where to find it
-- `superset/`
-- `docker-compose.yml` service `superset`
 
 ---
 
@@ -104,15 +89,13 @@ environment using `docker compose`.
 - Define services, images, networks, and volumes for:
   - `frontend` (React app)
   - `backend` (Django service)
-  - `mysql` (shared MySQL for app data)
   - `postgres` (n8n database)
   - `n8n` (workflow engine)
   - `redis` (cache)
-  - `superset` (dashboards)
+  - `` (dashboards)
   - `traefik` (optional ingress / TLS)
 - Mount local volumes for persistence:
   - `n8n_data`
-  - `mysql_data`
   - `postgres_data`
 - Supply environment variables to services (via `.env` / `env.sample`)
 
