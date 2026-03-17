@@ -46,104 +46,131 @@ def backfill_user_clients(apps, schema_editor):
 
 
 def create_triggers_enforce_same_client(apps, schema_editor):
-    # Enforce: para não-admins, project.client_id == user.client_id
     with connection.cursor() as cursor:
-        # Verifica existência de tabela M2M
-        cursor.execute(
-            """
-            SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema = DATABASE() AND table_name = 'authentication_projects_users'
-            """
-        )
+
+        # check M2M table exists
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = current_schema()
+                AND table_name = 'authentication_projects_users'
+            )
+        """)
         (tbl_exists,) = cursor.fetchone()
+
         if not tbl_exists:
             return
 
-        # Descobre qual coluna de user existe (userprofile_id ou users_id)
+        # detect correct user column
         user_cols = []
+
         for col in ("userprofile_id", "users_id"):
-            cursor.execute(
-                """
-                SELECT COUNT(*) FROM information_schema.columns
-                WHERE table_schema = DATABASE()
-                  AND table_name = 'authentication_projects_users'
-                  AND column_name = %s
-                """,
-                [col],
-            )
-            (cnt,) = cursor.fetchone()
-            if cnt:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                    AND table_name = 'authentication_projects_users'
+                    AND column_name = %s
+                )
+            """, [col])
+
+            (exists,) = cursor.fetchone()
+            if exists:
                 user_cols.append(col)
 
-        def trigger_exists(name: str) -> bool:
-            cursor.execute(
-                """
-                SELECT COUNT(*) FROM information_schema.triggers
-                WHERE trigger_schema = DATABASE() AND trigger_name = %s
-                """,
-                [name],
-            )
-            (c,) = cursor.fetchone()
-            return bool(c)
+        for user_col in user_cols:
 
-        def create_triggers_for_user_col(user_col: str):
-            # BEFORE INSERT
-            trg_bi = (
-                "trg_apu_bi_enforce_client_userprofile"
-                if user_col == "userprofile_id"
-                else "trg_apu_bi_enforce_client_users"
-            )
-            if not trigger_exists(trg_bi):
-                cursor.execute(
-                    f"""
-                    CREATE TRIGGER `{trg_bi}` BEFORE INSERT ON `authentication_projects_users`
-                    FOR EACH ROW BEGIN
-                      DECLARE v_proj_client CHAR(36);
-                      DECLARE v_user_client CHAR(36);
-                      DECLARE v_role VARCHAR(32);
-                      SELECT `client_id` INTO v_proj_client FROM `authentication_projects` WHERE `id` = NEW.`projects_id`;
-                      SELECT `client_id`, `role` INTO v_user_client, v_role FROM `authentication_userprofile` WHERE `id` = NEW.`{user_col}`;
-                      IF v_role <> 'ADMINISTRATOR' AND (v_proj_client IS NULL OR v_user_client IS NULL OR v_proj_client <> v_user_client) THEN
-                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cross-client project/user association not allowed ({user_col} variant)';
-                      END IF;
-                    END
-                    """
-                )
+            func_name = f"fn_enforce_client_{user_col}"
+            trigger_name_insert = f"trg_apu_bi_{user_col}"
+            trigger_name_update = f"trg_apu_bu_{user_col}"
 
-            # BEFORE UPDATE
-            trg_bu = (
-                "trg_apu_bu_enforce_client_userprofile"
-                if user_col == "userprofile_id"
-                else "trg_apu_bu_enforce_client_users"
-            )
-            if not trigger_exists(trg_bu):
-                cursor.execute(
-                    f"""
-                    CREATE TRIGGER `{trg_bu}` BEFORE UPDATE ON `authentication_projects_users`
-                    FOR EACH ROW BEGIN
-                      DECLARE v_proj_client CHAR(36);
-                      DECLARE v_user_client CHAR(36);
-                      DECLARE v_role VARCHAR(32);
-                      SELECT `client_id` INTO v_proj_client FROM `authentication_projects` WHERE `id` = NEW.`projects_id`;
-                      SELECT `client_id`, `role` INTO v_user_client, v_role FROM `authentication_userprofile` WHERE `id` = NEW.`{user_col}`;
-                      IF v_role <> 'ADMINISTRATOR' AND (v_proj_client IS NULL OR v_user_client IS NULL OR v_proj_client <> v_user_client) THEN
-                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cross-client project/user association not allowed ({user_col} variant)';
-                      END IF;
-                    END
-                    """
-                )
+            cursor.execute(f"""
+            CREATE OR REPLACE FUNCTION {func_name}()
+            RETURNS trigger AS $$
+            DECLARE
+                v_proj_client uuid;
+                v_user_client uuid;
+                v_role text;
+            BEGIN
+                SELECT client_id
+                INTO v_proj_client
+                FROM authentication_projects
+                WHERE id = NEW.projects_id;
 
-        for col in user_cols:
-            create_triggers_for_user_col(col)
+                SELECT client_id, role
+                INTO v_user_client, v_role
+                FROM authentication_userprofile
+                WHERE id = NEW.{user_col};
+
+                IF v_role <> 'ADMINISTRATOR'
+                   AND (v_proj_client IS NULL
+                        OR v_user_client IS NULL
+                        OR v_proj_client <> v_user_client)
+                THEN
+                    RAISE EXCEPTION
+                    'Cross-client project/user association not allowed ({user_col})';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+            """)
+
+            # INSERT trigger
+            cursor.execute(f"""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_trigger
+                    WHERE tgname = '{trigger_name_insert}'
+                ) THEN
+                    CREATE TRIGGER {trigger_name_insert}
+                    BEFORE INSERT ON authentication_projects_users
+                    FOR EACH ROW
+                    EXECUTE FUNCTION {func_name}();
+                END IF;
+            END$$;
+            """)
+
+            # UPDATE trigger
+            cursor.execute(f"""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_trigger
+                    WHERE tgname = '{trigger_name_update}'
+                ) THEN
+                    CREATE TRIGGER {trigger_name_update}
+                    BEFORE UPDATE ON authentication_projects_users
+                    FOR EACH ROW
+                    EXECUTE FUNCTION {func_name}();
+                END IF;
+            END$$;
+            """)
 
 
 def drop_triggers_enforce_same_client(apps, schema_editor):
     with connection.cursor() as cursor:
-        # Usar IF EXISTS para evitar erros
-        cursor.execute("DROP TRIGGER IF EXISTS `trg_apu_bi_enforce_client_userprofile`")
-        cursor.execute("DROP TRIGGER IF EXISTS `trg_apu_bu_enforce_client_userprofile`")
-        cursor.execute("DROP TRIGGER IF EXISTS `trg_apu_bi_enforce_client_users`")
-        cursor.execute("DROP TRIGGER IF EXISTS `trg_apu_bu_enforce_client_users`")
+
+        for col in ("userprofile_id", "users_id"):
+
+            cursor.execute(f"""
+                DROP TRIGGER IF EXISTS trg_apu_bi_{col}
+                ON authentication_projects_users
+            """)
+
+            cursor.execute(f"""
+                DROP TRIGGER IF EXISTS trg_apu_bu_{col}
+                ON authentication_projects_users
+            """)
+
+            cursor.execute(f"""
+                DROP FUNCTION IF EXISTS fn_enforce_client_{col}()
+            """)
 
 
 class Migration(migrations.Migration):

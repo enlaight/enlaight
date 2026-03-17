@@ -22,9 +22,8 @@ Enlaight is a multi-service application composed of:
 - **Frontend**: React + TypeScript (Vite) running on port 8080
 - **Backend**: Django REST API with JWT authentication on port 8000
 - **n8n**: Workflow automation engine on port 5678
-- **Superset**: Data visualization and analytics on port 8088
-- **MySQL**: Main application and Superset metadata database
-- **PostgreSQL**: n8n workflow database
+- **ChartsIO**: Data visualization and analytics on port 8088
+- **PostgreSQL**: main application and n8n workflow database
 - **Redis**: Caching and session management
 - **SMTP**: Email service (smtp4dev locally)
 
@@ -34,7 +33,6 @@ Enlaight is a multi-service application composed of:
 - Django 5.2+
 - Django REST Framework
 - JWT authentication (SimpleJWT)
-- MySQL driver (mysqlclient)
 - Boto3 (AWS integration)
 - Gunicorn/Uvicorn for ASGI/WSGI
 
@@ -47,11 +45,9 @@ Enlaight is a multi-service application composed of:
 
 **Infrastructure:**
 - Docker & Docker Compose
-- MySQL 8.4
 - PostgreSQL 15
 - Redis 7
 - n8n Open Source
-- Apache Superset
 
 ---
 
@@ -97,7 +93,6 @@ Enlaight is a multi-service application composed of:
 - [ ] Generate strong database passwords (not defaults)
 - [ ] Set up reverse proxy (Traefik/Nginx) with SSL
 - [ ] Configure Redis with persistence
-- [ ] Set up MySQL backups
 - [ ] Configure log aggregation
 
 ### Using Traefik for SSL/TLS
@@ -177,20 +172,7 @@ docker compose exec backend python manage.py shell
 docker compose exec backend python manage.py collectstatic --noinput
 ```
 
-#### MySQL
-
-```bash
-# Connect to MySQL shell
-docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD}
-
-# Backup database
-docker compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} enlaight_database > backup.sql
-
-# Restore database
-docker compose exec -T mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} enlaight_database < backup.sql
-```
-
-#### PostgreSQL (n8n)
+#### PostgreSQL (db & n8n)
 
 ```bash
 # Connect to PostgreSQL shell
@@ -201,6 +183,17 @@ docker compose exec postgres pg_dump -U n8n n8n_enlaight_db > n8n_backup.sql
 
 # Restore database
 docker compose exec -T postgres psql -U n8n n8n_enlaight_db < n8n_backup.sql
+```
+
+```bash
+# Connect to PostgreSQL shell
+docker compose exec postgres psql -U enlaight -d enlaight_database
+
+# Backup database
+docker compose exec postgres pg_dump -U enlaight enlaight_database > backup.sql
+
+# Restore database
+docker compose exec -T postgres psql -U enlaight enlaight_database < backup.sql
 ```
 
 #### Redis
@@ -254,7 +247,6 @@ docker compose ps
 curl http://localhost:8000/api/    # Backend
 curl http://localhost:8080/        # Frontend
 curl http://localhost:5678/        # n8n
-curl http://localhost:8088/        # Superset
 ```
 
 ---
@@ -314,7 +306,7 @@ docker compose exec backend python manage.py createsuperuser
 ```
 
 **Reset Admin Credentials (default):**
-Edit `backend/mysql/init/set_admin.sql` before initial `make start`:
+Edit `backend/postgres/init/set_admin.sql` before initial `make start`:
 ```sql
 -- Default admin user setup
 INSERT INTO authentication_userprofile (email, password, role, is_active)
@@ -420,9 +412,6 @@ docker compose exec redis redis-cli BGSAVE
 
 # n8n Workflows & Files
 tar -czf ${BACKUP_DIR}/n8n_files_${DATE}.tar.gz ./n8n/
-
-# Superset Backup
-tar -czf ${BACKUP_DIR}/superset_${DATE}.tar.gz ./superset/
 
 # Cleanup old backups (keep 30 days)
 find ${BACKUP_DIR} -type f -mtime +30 -delete

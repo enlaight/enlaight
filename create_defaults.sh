@@ -64,17 +64,5 @@ else
   echo ""
 fi
 
-# Run Superset sample charts creator
-# if [ -f "superset/create_sample_charts.py" ]; then
-#   echo -e "${BLUE}Running Superset sample charts creation...${NC}"
-#   docker compose exec -T backend python superset/create_sample_charts.py 2>/dev/null || {
-#     echo -e "${YELLOW}Warning: Could not run Superset charts in container. Trying from host...${NC}"
-#     python superset/create_sample_charts.py 2>/dev/null || echo -e "${YELLOW}Skipped Superset charts creation${NC}"
-#   }
-#   echo -e "${GREEN}Superset sample charts creation finished.${NC}"
-# else
-#   echo -e "${YELLOW}Superset creation script not found at superset/create_sample_charts.py. Skipping.${NC}"
-# fi
-
 echo ""
 echo -e "${GREEN}create_defaults completed.${NC}"
