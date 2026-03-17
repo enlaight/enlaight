@@ -41,12 +41,15 @@ This document explains every component of the Enlaight platform, what it is resp
               │  Port 8000               │                          │
               └────┬────────┬────────────┘                          │
                    │        │                                        │
-                   ▼        ▼                                        ▼
-         ┌─────────────┐  ┌───────────────┐            ┌────────────────────────┐
-         │    MySQL     │  │    Redis       │            │      PostgreSQL         │
-         │  Port 3306   │  │  Port 6379     │            │  + PGVector extension  │
-         │  (app data)  │  │  (cache)       │            │  Port 5432             │
-         └─────────────┘  └───────────────┘            └────────────────────────┘
+                   │        ▼                                        ▼
+                   │  ┌───────────────┐            ┌────────────────────────┐
+                   │  │    Redis       │            │      PostgreSQL         │
+                   │  │  Port 6379     │            │  + PGVector extension  │
+                   │  │  (cache)       │            │  Port 5432             │
+                   │  └───────────────┘            └───────────┬────────────┘
+                   │                                           ▲
+                   └───────────────────────────────────────────┘
+                                      (app data + n8n data)
 ```
 
 **Communication summary:**
@@ -57,7 +60,7 @@ This document explains every component of the Enlaight platform, what it is resp
 | Frontend | Backend API | HTTPS REST | JWT Bearer token |
 | Frontend | n8n | HTTPS Webhook | None (public chat webhook) |
 | Backend | n8n | HTTPS Webhook | `N8N_KB_KEY` header |
-| Backend | MySQL | TCP | DB credentials |
+| Backend | PostgreSQL | TCP | DB credentials |
 | Backend | Redis | TCP | — |
 | n8n | PostgreSQL | TCP | DB credentials |
 
@@ -202,7 +205,6 @@ The backend forwards these calls to n8n webhooks, injecting the `N8N_KB_KEY` sec
 | `GET` | `/api/search/` | Semantic search (proxied to n8n) |
 | `POST` | `/api/i18n/translate/` | Translate text |
 | `POST` | `/api/i18n/translate/batch/` | Batch translate |
-| `POST` | `/api/superset/guest-token/` | Get Superset embedded guest token |
 | `GET` | `/api/health/` | Service health check |
 | `GET` | `/api/health/db/` | Database health check |
 
@@ -282,11 +284,12 @@ n8n uses PostgreSQL both for its own internal storage **and** as the PGVector st
 
 ## 5. Databases
 
-### MySQL — Application Data
+### PostgreSQL— Application Data
 
-**Container:** `enlaight_mysql` (MySQL 8.4)
-**Internal host:** `mysql:3306`
-**Used by:** Django backend (exclusively)
+**Container:** `postgres_dev` (PostgreSQL)
+**Internal host:** `postgres:5432`
+**Database:** `enlaight_database`
+**Used by:** Django backend
 
 Stores all transactional business data managed by the Django ORM:
 
@@ -309,7 +312,7 @@ Stores all transactional business data managed by the Django ORM:
 **Container:** `postgres_dev` (PostgreSQL with pgvector)
 **Internal host:** `postgres:5432`
 **Database:** `n8n_enlaight_db`
-**Used by:** n8n (exclusively)
+**Used by:** n8n
 
 | Data | Description |
 |---|---|
@@ -466,7 +469,9 @@ INGESTED_DATA_DIR  (local filesystem archive)
 
 ## 9. Superset (BI)
 
-> **Note:** Superset is excluded from the local dev compose (`docker-compose-dev.yml`). It is available in the full `docker-compose.yml` for production / staging use only.
+* Superset is in process of being replaced by QuickChartsIO.
+
+<!-- > **Note:** Superset is excluded from the local dev compose (`docker-compose-dev.yml`). It is available in the full `docker-compose.yml` for production / staging use only.
 
 **Purpose:** Embedded business intelligence dashboards.
 **Integration:** Backend issues guest tokens that allow the frontend to embed Superset charts without requiring users to have a Superset account.
@@ -492,7 +497,7 @@ Frontend                Backend                   Superset
 |---|---|
 | `SUPERSET_BASE_URL` | Superset instance URL |
 | `SUPERSET_ADMIN_USER` | Admin username for guest-token generation |
-| `SUPERSET_ADMIN_PASSWORD` | Admin password for guest-token generation |
+| `SUPERSET_ADMIN_PASSWORD` | Admin password for guest-token generation | -->
 
 ---
 
@@ -511,7 +516,6 @@ Two Docker networks keep services isolated:
 |---|---|---|---|
 | `enlaight_frontend` | public | — | `8080` |
 | `enlaight_backend` | internal, public | `backend` | `8000` |
-| `enlaight_mysql` | internal | `mysql` | `3306` |
 | `postgres_dev` | internal | `postgres` | `5432` |
 | `enlaight_cache` | internal | `redis` | — |
 | `n8n_dev` | internal, public | `n8n` | `5678` |
@@ -520,8 +524,7 @@ Two Docker networks keep services isolated:
 ### Service Start-up Dependencies
 
 ```
-postgres_dev  ──(healthy)──► n8n_dev
-enlaight_mysql ──(healthy)──► enlaight_backend
+postgres_dev  ──(healthy)──► enlaight_backend, n8n_dev
 ```
 
 ---
@@ -544,19 +547,19 @@ enlaight_mysql ──(healthy)──► enlaight_backend
 | `DEBUG` | `true` / `false` |
 | `ALLOWED_HOSTS` | Comma-separated allowed hostnames |
 | `FRONTEND_URL` / `REACT_URL` | Frontend origin (used for CORS) |
-| `BACKEND_DB` | MySQL database name |
-| `BACKEND_DB_USER` | MySQL user |
-| `BACKEND_DB_PASSWORD` | MySQL password |
-| `MYSQL_HOST` | MySQL host (default: `mysql`) |
-| `MYSQL_PORT` | MySQL port (default: `3306`) |
+| `BACKEND_DB` | Postgres database name |
+| `BACKEND_DB_USER` | Postgres user |
+| `BACKEND_DB_PASSWORD` | Postgres password |
+| `POSTGRES_HOST` | PostgreSQL host (default: `postgres`) |
+| `POSTGRES_PORT` | PostgreSQL port (default: `5432`) |
 | `N8N_BASE_URL` | n8n base URL (e.g. `http://n8n:5678`) |
 | `N8N_KB_KEY` | Shared secret for n8n webhook authentication |
 | `N8N_TIMEOUT` | HTTP timeout for n8n calls in seconds (default: `15`) |
 | `JWT_ALGORITHM` | JWT signing algorithm (default: `HS256`) |
 | `JWT_SIGNING_KEY` | JWT signing secret |
-| `SUPERSET_BASE_URL` | Superset instance URL |
+<!-- | `SUPERSET_BASE_URL` | Superset instance URL |
 | `SUPERSET_ADMIN_USER` | Superset admin username |
-| `SUPERSET_ADMIN_PASSWORD` | Superset admin password |
+| `SUPERSET_ADMIN_PASSWORD` | Superset admin password | -->
 
 ### n8n
 
