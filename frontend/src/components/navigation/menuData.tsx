@@ -12,15 +12,15 @@ export const getMenuItems = (activeItem: string, t: TFunction) => {
         <StartChat size={20} className={`group-hover:text-brand-yellow ${activeItem === "home" ? "text-brand-yellow" : "text-white"}`} fill="currentColor" />
       )
     },
-    {
-      id: "dashboard",
-      label: t('nav.dashboard'),
-      isActive: activeItem === "dashboard",
-      icon: (
-        <LayoutDashboard size={18} className={`group-hover:text-brand-yellow ${activeItem === "dashboard" ? "text-brand-yellow" : "text-white"}`} />
-      ),
-      hasSubmenu: false,
-    },
+    // {
+    //   id: "dashboard",
+    //   label: t('nav.dashboard'),
+    //   isActive: activeItem === "dashboard",
+    //   icon: (
+    //     <LayoutDashboard size={18} className={`group-hover:text-brand-yellow ${activeItem === "dashboard" ? "text-brand-yellow" : "text-white"}`} />
+    //   ),
+    //   hasSubmenu: false,
+    // },
     {
       id: "agents",
       label: t('navigation.agents'),
