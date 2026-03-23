@@ -135,7 +135,8 @@
     "managePermissions": "Manage user accounts and permissions"
   },
   "dashboard": {
-    "title": "Welcome to your Dashboard",
+    "title": "Dashboard",
+    "description": "Custom dashboard to visualize your project's data and insights",
     "emptyBoard": "No Boards Yet",
     "emptyBoardNoAdmin": "Get in contact with an Administrator to fill up this space with a dashboard.",
     "emptyBoardAdmin": "Get started by creating and organizing new boards into this page",
@@ -149,7 +150,7 @@
     "uuidPlaceholder": "Superset Dashboard UUID",
     "n8nURL": "Assign n8n URL",
     "htmlCode": "HTML Code",
-    "loadingMessage": "Loading Boards",
+    "loadingMessage": "Loading project's dashboard",
     "deleteTitle": "Are you sure you want to delete \"{{chartTitle}}\"?",
     "deleteMessage": "The board will be removed and the dashboard automatically updated. This action cannot be undone.",
     "cancel": "Cancel",

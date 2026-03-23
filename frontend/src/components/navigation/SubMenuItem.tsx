@@ -7,7 +7,7 @@ type SubMenuItemProps = {
   isCollapsed: boolean;
   submenuOpen: boolean;
   items: SubEntry[];
-  onMenuClick?: (itemId: string) => void;
+  onMenuClick?: (itemId: string, obj: any) => void;
 };
 
 export const SubMenuItem: React.FC<SubMenuItemProps> = ({

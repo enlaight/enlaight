@@ -1,5 +1,5 @@
 import api from "./api";
-import type { Boards, Token } from "@/types/boards";
+import type { Boards } from "@/types/boards";
 
 export const BoardsService = {
 	async get() {
@@ -7,8 +7,8 @@ export const BoardsService = {
 		return data;
 	},
 
-	async update(data: string) {
-		const response = await api.put<Boards>(`boards/`, { data: data });
+	async update(data: string, projectId?: string) {
+		const response = await api.patch<Boards>(`boards/${projectId}`, { data: data });
 		return response;
 	},
 };

@@ -119,7 +119,7 @@
     "managePermissions": "Gestionar cuentas de usuario y permisos"
   },
   "dashboard": {
-    "title": "Bienvenido a tu Panel de Control",
+    "title": "Panel de Control",
     "emptyBoard": "Aún no hay tableros",
     "emptyBoardNoAdmin": "Ponte en contacto con un administrador para llenar este espacio con un panel.",
     "emptyBoardAdmin": "Comienza creando y organizando nuevos paneles en esta página",

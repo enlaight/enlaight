@@ -19,7 +19,7 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Boards.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
-    http_method_names = ["get", "put"]
+    http_method_names = ["get", "patch"]
 
     @swagger_auto_schema(
         operation_summary="Listar todos os charts da Dashboard",
@@ -61,10 +61,10 @@ class BoardViewSet(viewsets.ModelViewSet):
             400: openapi.Response("Dados inválidos"),
             404: openapi.Response("Dados não encontrados"),
         },
-        security=[{"Bearer": []}],
+        # security=[{"Bearer": []}],
         tags=["Boards"],
     )
-    def update(self, request, *args, **kwargs):
+    def partial_update(self, request, *args, **kwargs):
         try:
             data = request.data.get("data")
             if not data:

@@ -119,7 +119,7 @@
     "managePermissions": "Gérer les comptes d'utilisateurs et les permissions"
   },
   "dashboard": {
-    "title": "Bienvenue dans votre Tableau de Bord",
+    "title": "Tableau de Bord",
     "emptyBoard": "Aucun tableau pour le moment",
     "emptyBoardNoAdmin": "Contactez un administrateur pour remplir cet espace avec un tableau de bord.",
     "emptyBoardAdmin": "Commencez par créer et organiser de nouveaux tableaux sur cette page",

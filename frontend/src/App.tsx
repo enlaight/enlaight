@@ -31,6 +31,7 @@ import ProjectsList from "./pages/ProjectsList";
 import ClientManagement from "./pages/ClientManagement";
 import SearchPage from "./pages/SearchPage";
 import Favorites from "./pages/Favorites";
+import DashboardPage from "./pages/DashboardPage";
 
 function MobileGlobalSidebar() {
   const { isSidebarOpen, closeSidebar } = useSidebar();
@@ -112,6 +113,14 @@ const App = () => {
                           </RequireAuth>
                         }
                       />
+                      {/* <Route
+                        path="/dashboard"
+                        element={
+                          <RequireAuth>
+                            <DashboardPage />
+                          </RequireAuth>
+                        }
+                      /> */}
                       <Route
                         path="/search"
                         element={

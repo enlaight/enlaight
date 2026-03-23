@@ -10,7 +10,7 @@ interface EditChartModalProps {
 	chartId: string,
 	prevTitle: string,
 	prevSubtitle: string,
-	prevDashId: string,
+	prevDashConfig: string,
 	prevN8n: string,
 	prevHTML: string,
 	isOpen: boolean;
@@ -22,7 +22,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 	chartId,
 	prevTitle,
 	prevSubtitle,
-	prevDashId,
+	prevDashConfig,
 	prevN8n,
 	prevHTML,
 	isOpen,
@@ -33,7 +33,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 
 	const [title, setTitle] = useState('');
 	const [subtitle, setSubtitle] = useState('');
-	const [dashId, setDashId] = useState('');
+	const [dashConfig, setDashConfig] = useState('');
 	const [n8n, setN8n] = useState('');
 	const [html, setHTML] = useState('');
 
@@ -41,13 +41,13 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 		if (isOpen) {
 			setTitle(prevTitle);
 			setSubtitle(prevSubtitle);
-			setDashId(prevDashId);
+			setDashConfig(prevDashConfig);
 			setN8n(prevN8n);
 			setHTML(prevHTML);
 		} else {
 			setTitle('');
 			setSubtitle('');
-			setDashId('');
+			setDashConfig('');
 			setN8n('');
 			setHTML('');
 		}
@@ -59,7 +59,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title || !dashId) {
+		if (!title || !dashConfig) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -76,7 +76,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 			if (!validHTML) return setErrorMessage(errorHTML);
 		}
 
-		onSave({ i: chartId, title, subtitle, dashId, n8n, html });
+		onSave({ i: chartId, title, subtitle, dashConfig, n8n, html });
 		setErrorMessage('');
 		onClose();
 	}
@@ -121,7 +121,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 							</Tooltip>
 						</TooltipProvider>
 					</h3>
-					<Input placeholder={t('dashboard.uuidPlaceholder')} value={dashId} onChange={(e) => setDashId(e.target.value)} />
+					<Input placeholder={t('dashboard.uuidPlaceholder')} value={dashConfig} onChange={(e) => setDashConfig(e.target.value)} />
 				</div>
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>

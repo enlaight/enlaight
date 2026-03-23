@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { Settings } from 'lucide-react';
+import { LayoutDashboard, Settings } from 'lucide-react';
 import { EnlaightBot, FavoriteChat, Logout, SearchChat, StartChat } from '@/assets/svgs';
 
 export const getMenuItems = (activeItem: string, t: TFunction) => {
@@ -11,6 +11,15 @@ export const getMenuItems = (activeItem: string, t: TFunction) => {
       icon: (
         <StartChat size={20} className={`group-hover:text-brand-yellow ${activeItem === "home" ? "text-brand-yellow" : "text-white"}`} fill="currentColor" />
       )
+    },
+    {
+      id: "dashboard",
+      label: t('nav.dashboard'),
+      isActive: activeItem === "dashboard",
+      icon: (
+        <LayoutDashboard size={18} className={`group-hover:text-brand-yellow ${activeItem === "dashboard" ? "text-brand-yellow" : "text-white"}`} />
+      ),
+      hasSubmenu: false,
     },
     {
       id: "agents",

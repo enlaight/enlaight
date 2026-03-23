@@ -8,23 +8,17 @@ import { BoardsService } from "@/services/BoardsService";
 import { AuthContext } from "@/contexts/AuthContext";
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { SupersetChart } from '@/components/SupersetChart';
-import { LayoutDashboard, Plus } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import QuickChartGraph from '@/components/QuickChartGraph';
+import { LayoutDashboard, Plus, SquareX } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-const displayFlex = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center"
-}
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 const cardId = () => {
   // Creates a 13 char random id
   return (Math.random().toString(16) + Math.random().toString(16)).slice(2, 15);
 }
 
-const Index = () => {
+const DashboardPage = () => {
   const { t } = useTranslation();
   const [isLoading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -36,7 +30,7 @@ const Index = () => {
   const [modalId, setModalId] = useState('');
   const [modalTitle, setModalTitle] = useState('');
   const [modalSubtitle, setModalSubtitle] = useState('');
-  const [modalDashId, setModalDashId] = useState('');
+  const [modalDashConfig, setModalDashConfig] = useState('');
   const [modalN8n, setModalN8n] = useState('');
   const [modalHTML, setModalHTML] = useState('');
 
@@ -97,17 +91,17 @@ const Index = () => {
     return { x: 0, y: 0, w: defaultW, h: defaultH };
   }
 
-  const addCard = ({ title, subtitle, dashId, n8n, html }) => {
+  const addCard = ({ title, subtitle, dashConfig, n8n, html }) => {
     const position = getNextPosition(layout);
     setLayout(prevLayout => [
       ...prevLayout,
-      { i: cardId(), ...position, title, subtitle, dashId, n8n, html }
+      { i: cardId(), ...position, title, subtitle, dashConfig, n8n, html }
     ]);
   }
 
-  const updateCard = ({ i, title, subtitle, dashId, n8n, html }) => {
+  const updateCard = ({ i, title, subtitle, dashConfig, n8n, html }) => {
     const updatedLayout = layout.map(item =>
-      item['i'] === i ? { ...item, title, subtitle, dashId, n8n, html } : item
+      item['i'] === i ? { ...item, title, subtitle, dashConfig, n8n, html } : item
     );
     saveLayout(updatedLayout);
   }
@@ -124,25 +118,26 @@ const Index = () => {
     // Parse through the updated positions array
     const formattedLayout = newLayout.map(newObj => {
       const { i, w, h, x, y } = newObj;
-      let { title, subtitle, dashId, n8n, html } = newObj;
+      let { title, subtitle, dashConfig, n8n, html } = newObj;
       if (!title) {
         const currentObj = currentLayout.get(i);
         if (!currentObj) return { i, w, h, x, y };
         // In case these are not in newObj, we get them from currentObj
         title = currentObj['title'];
         subtitle = currentObj['subtitle'];
-        dashId = currentObj['dashId'];
+        dashConfig = currentObj['dashConfig'];
         n8n = currentObj['n8n'];
         html = currentObj['html'];
       }
       // Return a new object with the id, position keys and info
-      return { i, w, h, x, y, title, subtitle, dashId, n8n, html };
+      return { i, w, h, x, y, title, subtitle, dashConfig, n8n, html };
     });
     setLayout(formattedLayout);
 
     try {
       await BoardsService.update(JSON.stringify(formattedLayout));
     } catch (err) {
+      console.log("error!!")
       console.error(err);
     }
   }
@@ -181,25 +176,33 @@ const Index = () => {
 
   return (
     <>
-      <main className="container mt-5 pt-20">
-        <div className="d-sm-flex" style={displayFlex}>
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">{t('dashboard.title')}</h1>
-          {isAdmin && (<Button onClick={() => setAddOpen(true)}>{t('dashboard.addNewBoard')}</Button>)}
+      <main className="container pt-5 bg-[#F4F4F5] flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <LayoutDashboard className="h-6 w-6 text-primary" />
+              {t('dashboard.title')}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {t('dashboard.description')}
+            </p>
+          </div>
+
         </div>
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-              <p className="text-muted-foreground">{t('dashboard.loadingMessage')}...</p>
-            </div>
+          <div className="h-full flex justify-center items-start pt-[8rem] pb-[3rem] relative">
+            <LoadingAnimation
+              icon={<LayoutDashboard className="h-[100px] w-[100px] text-primary" />}
+              text={<span>{t('dashboard.loadingMessage')}</span>}
+            />
           </div>
         ) : (
           /* Empty Page */
           layout.length === 0 && (
-            <Card className="p-12">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
-                  <LayoutDashboard className="h-12 w-12 text-muted-foreground" />
+            <div className="flex align-center justify-center mb-5 w-full h-[80%]">
+              <div className="flex flex-col align-center justify-center items-center gap-5 text-center space-y-4">
+                <div className="mx-auto w-24 h-24 bg-[#EAEAEA] rounded-full flex items-center justify-center">
+                  <SquareX className="h-12 w-12 text-muted-foreground" />
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">
@@ -216,10 +219,9 @@ const Index = () => {
                   </Button>
                 )}
               </div>
-            </Card>
+            </div>
           )
-        )
-        }
+        )}
         <GridLayout
           className="layout"
           layout={layout}
@@ -258,7 +260,7 @@ const Index = () => {
                         setModalId(item['i']);
                         setModalTitle(item['title']);
                         setModalSubtitle(item['subtitle']);
-                        setModalDashId(item['dashId']);
+                        setModalDashConfig(item['dashConfig']);
                         setModalN8n(item['n8n']);
                         setModalHTML(item['html']);
                         setEditOpen(true);
@@ -278,7 +280,7 @@ const Index = () => {
                   <div style={{ fontSize: 13, lineHeight: 1 }}>{item['subtitle']}</div>
                 </div>
                 <div className="flex w-full h-full" style={{ marginBottom: 10 }}>
-                  <SupersetChart dashboardId={item['dashId']} />
+                  <QuickChartGraph data={item['dashConfig']} />
                 </div>
                 <N8nRender item={item} />
                 {item['html'] && (
@@ -302,7 +304,7 @@ const Index = () => {
         chartId={modalId}
         prevTitle={modalTitle}
         prevSubtitle={modalSubtitle}
-        prevDashId={modalDashId}
+        prevDashConfig={modalDashConfig}
         prevN8n={modalN8n}
         prevHTML={modalHTML}
         onClose={() => setEditOpen(false)}
@@ -326,4 +328,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default DashboardPage;

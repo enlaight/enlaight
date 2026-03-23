@@ -120,7 +120,7 @@
     "managePermissions": "Gerenciar contas de usuários e permissões"
   },
   "dashboard": {
-    "title": "Bem-vindo ao seu Painel de Controle",
+    "title": "Painel de Boards",
     "emptyBoard": "Ainda não há painéis",
     "emptyBoardNoAdmin": "Entre em contato com um administrador para preencher este espaço com um painel.",
     "emptyBoardAdmin": "Comece criando e organizando novos painéis nesta página",

@@ -16,7 +16,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const { t } = useTranslation();
 	const [title, setTitle] = useState('');
 	const [subtitle, setSubtitle] = useState('');
-	const [dashId, setDashId] = useState('');
+	const [dashConfig, setDashConfig] = useState('');
 	const [n8n, setN8n] = useState('');
 	const [html, setHTML] = useState('');
 
@@ -26,7 +26,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title || !dashId) {
+		if (!title || !dashConfig) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -43,7 +43,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 			if (!validHTML) return setErrorMessage(errorHTML);
 		}
 
-		onSave({ title, subtitle, dashId, n8n, html });
+		onSave({ title, subtitle, dashConfig, n8n, html });
 		setErrorMessage('');
 		onClose();
 	}
@@ -88,7 +88,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 							</Tooltip>
 						</TooltipProvider>
 					</h3>
-					<Input placeholder={t('dashboard.uuidPlaceholder')} onChange={(e) => setDashId(e.target.value)} />
+					<Input placeholder={t('dashboard.uuidPlaceholder')} onChange={(e) => setDashConfig(e.target.value)} />
 				</div>
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>

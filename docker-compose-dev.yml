@@ -23,6 +23,9 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=300
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
   # Backend (Django)
   backend:
@@ -153,6 +156,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  
+  quickchart:
+    image: ianw/quickchart:latest
+    ports:
+      - "8001:3400"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

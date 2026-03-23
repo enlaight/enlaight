@@ -92,6 +92,9 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
     if (itemId === "settings") {
       navigate("/settings");
     }
+    if (itemId === "dashboard") {
+      navigate("/dashboard");
+    }
 
     if (itemId === "knowledgebases") {
       navigate("/knowledgebases");
@@ -190,7 +193,6 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
             >
               <MenuItem
                 item={item}
-                disabled={item.disabled}
                 isCollapsed={isCollapsed}
                 onMenuClick={handleMenuClick}
                 submenuOpen={(item.id === "agents" && submenuAgents) || (item.id === "users" && submenuUsers)}
@@ -240,7 +242,6 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
                 }}
                 isCollapsed={false}
                 onMenuClick={() => setOpenHistory(!openHistory)}
-                hasSubmenu={true}
                 submenuOpen={openHistory}
               />
               {openHistory && chatHistory.map((session, index) => (
