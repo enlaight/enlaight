@@ -166,12 +166,16 @@ const DashboardPage = () => {
     }, [item]);
 
     if (!n8nContent) return null;
+    // return (
+    //   <div
+    //     className="flex w-full" style={{ padding: "3px 5px", background: '#202020', borderRadius: 5 }}
+    //     dangerouslySetInnerHTML={{ __html: n8nContent }}
+    //   />
+    // )
     return (
-      <div
-        className="flex w-full" style={{ padding: "3px 5px", background: '#202020', borderRadius: 5 }}
-        dangerouslySetInnerHTML={{ __html: n8nContent }}
-      />
-    )
+      <QuickChartGraph data={n8nContent} />
+    );
+
   }
 
   return (
@@ -278,9 +282,6 @@ const DashboardPage = () => {
                 <div className="flex items-start" style={{ flexDirection: 'column', width: '100%', gap: '0.25rem', marginBottom: '0.25rem' }}>
                   <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1 }}>{item['title']}</div>
                   <div style={{ fontSize: 13, lineHeight: 1 }}>{item['subtitle']}</div>
-                </div>
-                <div className="flex w-full h-full" style={{ marginBottom: 10 }}>
-                  <QuickChartGraph data={item['dashConfig']} />
                 </div>
                 <N8nRender item={item} />
                 {item['html'] && (

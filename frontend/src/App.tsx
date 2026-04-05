@@ -113,14 +113,14 @@ const App = () => {
                           </RequireAuth>
                         }
                       />
-                      {/* <Route
+                      <Route
                         path="/dashboard"
                         element={
                           <RequireAuth>
                             <DashboardPage />
                           </RequireAuth>
                         }
-                      /> */}
+                      />
                       <Route
                         path="/search"
                         element={

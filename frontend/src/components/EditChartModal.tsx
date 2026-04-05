@@ -59,7 +59,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title || !dashConfig) {
+		if (!title) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -76,7 +76,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 			if (!validHTML) return setErrorMessage(errorHTML);
 		}
 
-		onSave({ i: chartId, title, subtitle, dashConfig, n8n, html });
+		onSave({ i: chartId, title, subtitle, n8n, html });
 		setErrorMessage('');
 		onClose();
 	}
@@ -100,7 +100,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 					</div>
 				</div>
 
-				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+				{/* <div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>
 						{t('dashboard.assignChart')}
 						<span style={{ color: 'red', marginLeft: 2 }}>* </span>
@@ -122,7 +122,7 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 						</TooltipProvider>
 					</h3>
 					<Input placeholder={t('dashboard.uuidPlaceholder')} value={dashConfig} onChange={(e) => setDashConfig(e.target.value)} />
-				</div>
+				</div> */}
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>{t('dashboard.n8nURL')}</h3>

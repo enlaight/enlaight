@@ -11,6 +11,14 @@ export default defineConfig(({ mode }) => ({
 			usePolling: true,
 			interval: 300,
 		},
+
+		proxy: {
+			'/charts': {
+				target: 'http://localhost:8001',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/charts/, ''),
+			},
+		},
 	},
 	plugins: [
 		react(),

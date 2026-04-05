@@ -26,7 +26,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title || !dashConfig) {
+		if (!title) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -43,7 +43,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 			if (!validHTML) return setErrorMessage(errorHTML);
 		}
 
-		onSave({ title, subtitle, dashConfig, n8n, html });
+		onSave({ title, subtitle, n8n, html });
 		setErrorMessage('');
 		onClose();
 	}
@@ -67,7 +67,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 					</div>
 				</div>
 
-				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+				{/* <div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>
 						{t('dashboard.assignChart')}
 						<span style={{ color: 'red', marginLeft: 2 }}>* </span>
@@ -89,7 +89,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 						</TooltipProvider>
 					</h3>
 					<Input placeholder={t('dashboard.uuidPlaceholder')} onChange={(e) => setDashConfig(e.target.value)} />
-				</div>
+				</div> */}
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>{t('dashboard.n8nURL')}</h3>
