@@ -11,8 +11,8 @@ vi.mock('react-i18next', () => ({
 		t: (key: string) => {
 			const dict: Record<string, string> = {
 				'listAssistants.title': 'Assistants',
-				'listAssistants.description': 'Available assistants',
-				'listAssistants.search': 'Search assistants',
+				'listAssistants.titleDesc': 'Available assistants',
+				'listAssistants.searchPlaceholder': 'Search assistants',
 				'listAssistants.chatWithAssistant': 'Chat',
 				'listAssistants.noResults': 'No assistants found',
 				'common.previous': 'Previous',

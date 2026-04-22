@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenVerifyView
@@ -107,8 +108,11 @@ urlpatterns = [
     path("i18n/translate/", TranslateLookupView.as_view(), name="i18n_translate"),
     path("i18n/translate/batch/", TranslateBatchView.as_view(), name="i18n_translate_batch"),
     path("health/db/", db_health, name="health_db"),
-    # Development-only debug endpoints
-    path("debug/token/", debug_token, name="debug_token"),
-    path("debug/check-token/", debug_check_token, name="debug_check_token"),
     path("verify-token/", TokenVerifyView.as_view(), name="token_verify"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [
+        path("debug/token/", debug_token, name="debug_token"),
+        path("debug/check-token/", debug_check_token, name="debug_check_token"),
+    ]

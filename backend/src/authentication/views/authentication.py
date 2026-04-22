@@ -1,6 +1,8 @@
 import logging
 import os
 import subprocess
+
+from django.conf import settings
 from datetime import date, datetime
 from uuid import UUID
 
@@ -70,6 +72,21 @@ def _to_claim(value):
                 return value.name
         return None
     return str(value)
+
+
+def _set_refresh_cookie(response, refresh_str: str) -> None:
+    """Attach the refresh token as an httpOnly, path-scoped cookie."""
+    from rest_framework_simplejwt.settings import api_settings as jwt_settings
+    max_age = int(jwt_settings.REFRESH_TOKEN_LIFETIME.total_seconds())
+    response.set_cookie(
+        key="refresh",
+        value=refresh_str,
+        max_age=max_age,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="Lax",
+        path="/api/refresh/",
+    )
 
 
 def enrich_refresh_claims(refresh: RefreshToken, user) -> RefreshToken:
@@ -283,6 +300,7 @@ def enviar_email_convite(destinatario, contexto):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_scope = "login"
 
     @swagger_auto_schema(
         operation_id="login_user",
@@ -336,9 +354,9 @@ class LoginView(APIView):
             for k in CUSTOM_CLAIMS:
                 access[k] = refresh.get(k)
 
-            return Response(
-                {"access": str(access), "refresh": str(refresh)}, status=status.HTTP_200_OK
-            )
+            resp = Response({"access": str(access)}, status=status.HTTP_200_OK)
+            _set_refresh_cookie(resp, str(refresh))
+            return resp
         except IntegrityError as ie:
             # This likely comes from an issue creating OutstandingToken (FK to user missing).
             # Fall back to returning an access token only so login succeeds.
@@ -357,10 +375,9 @@ class LoginView(APIView):
                         if k in stateless_refresh.payload:
                             stateless_access[k] = stateless_refresh.payload.get(k)
 
-                    return Response(
-                        {"access": str(stateless_access), "refresh": str(stateless_refresh)},
-                        status=status.HTTP_200_OK,
-                    )
+                    resp = Response({"access": str(stateless_access)}, status=status.HTTP_200_OK)
+                    _set_refresh_cookie(resp, str(stateless_refresh))
+                    return resp
                 except Exception:
                     # if anything fails, fall back to access-only token
                     access = AccessToken.for_user(user)
@@ -439,14 +456,12 @@ class UserCreateView(generics.CreateAPIView):
         for k in CUSTOM_CLAIMS:
             access[k] = refresh.get(k)
 
-        return Response(
-            {
-                "user": serializer.data,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
+        resp = Response(
+            {"user": serializer.data, "access": str(refresh.access_token)},
             status=status.HTTP_201_CREATED,
         )
+        _set_refresh_cookie(resp, str(refresh))
+        return resp
 
 
 class CustomTokenRefreshView(APIView):
@@ -476,10 +491,10 @@ class CustomTokenRefreshView(APIView):
         security=[],
     )
     def post(self, request, *args, **kwargs):
-        refresh_str = (request.data or {}).get("refresh")
+        refresh_str = (request.data or {}).get("refresh") or request.COOKIES.get("refresh")
         if not refresh_str:
             return Response(
-                {"detail": "Field 'refresh' is required."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Refresh token required (body or cookie)."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -529,9 +544,10 @@ class CustomTokenRefreshView(APIView):
                         )
 
         new_refresh = make_refresh_from_payload(old_refresh)
-        payload["refresh"] = str(new_refresh)
 
-        return Response(payload, status=status.HTTP_200_OK)
+        resp = Response({"access": payload["access"]}, status=status.HTTP_200_OK)
+        _set_refresh_cookie(resp, str(new_refresh))
+        return resp
 
 
 class CustomTokenBlacklistView(APIView):
@@ -567,8 +583,8 @@ class CustomTokenBlacklistView(APIView):
             )
 
         resp = Response({"detail": "Logout realizado."}, status=status.HTTP_200_OK)
-        resp.delete_cookie("access", samesite="Lax")
-        resp.delete_cookie("refresh", samesite="Lax")
+        resp.delete_cookie("access", path="/", samesite="Lax")
+        resp.delete_cookie("refresh", path="/api/refresh/", samesite="Lax")
         return resp
 
 
@@ -641,6 +657,8 @@ class UserProfileUpdateView(APIView):
 
 
 class ForgotPasswordView(APIView):
+    throttle_scope = "password_reset"
+
     @swagger_auto_schema(
         operation_summary="Solicitar recuperação de senha",
         request_body=openapi.Schema(
@@ -665,9 +683,8 @@ class ForgotPasswordView(APIView):
         user.password_reset_token_expires_at = timezone.now() + timezone.timedelta(hours=1)
         user.save()
 
-        frontend_base = "https://platform-v2.enlaight.ai"
         reset_link = (
-            f"{frontend_base.rstrip('/')}/reset-password/?email={email}&token={token}"
+            f"{settings.FRONTEND_URL.rstrip('/')}/reset-password/?email={email}&token={token}"
         )
         expiration_time = localtime(user.password_reset_token_expires_at).strftime(
             "%H:%M:%S de %d/%m/%Y"
@@ -688,6 +705,8 @@ class ForgotPasswordView(APIView):
 
 
 class ResetPasswordView(APIView):
+    throttle_scope = "password_reset"
+
     @swagger_auto_schema(
         operation_summary="Redefinir senha",
         manual_parameters=[

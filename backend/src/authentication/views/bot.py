@@ -97,62 +97,41 @@ class BotViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         user = request.user
-        user_sessions = ChatSession.objects.filter(user=user)
-        sessions_objects = {us.agent_id: [] for us in user_sessions}
-        for us in user_sessions:
-            sessions_objects[us.agent_id].append({
-                "id": str(us.id),
-                "session_key": str(us.session_key),
-                "agent_id": str(us.agent_id),
-                "user_id": str(us.user_id),
-                "data": us.data
-            })
 
         if is_admin_by_role(user):
             qs = self.filter_queryset(self.get_queryset())
-
-            serialized_data = self.get_serializer(qs, many=True).data
-            return_data = []
-            for obj in serialized_data:
-                obj['chat_sessions'] = [{
-                    "id": str(us.id),
-                    "session_key": str(us.session_key),
-                    "agent_id": str(us.agent_id),
-                    "user_id": str(us.user_id),
-                    "data": us.data,
-                    "created_at": us.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
-                } for us in user_sessions if str(us.agent_id) == obj['id']]
-                return_data.append(obj)
-
-            page = self.paginate_queryset(return_data)
-            if page is not None:
-                return self.get_paginated_response(return_data)
-            return Response(return_data)
-
         else:
-            
             user_projects = user.projects.all()
             qs = self.filter_queryset(
                 self.get_queryset().filter(projects__in=user_projects).distinct()
             )
-            serialized_data = self.get_serializer(qs, many=True).data
-            return_data = []
-            for obj in serialized_data:
-                obj['chat_sessions'] = [{
-                    "id": str(us.id),
-                    "session_key": str(us.session_key),
-                    "agent_id": str(us.agent_id),
-                    "user_id": str(us.user_id),
-                    "data": us.data,
-                    "created_at": us.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
-                } for us in user_sessions if str(us.agent_id) == obj['id']]
-                return_data.append(obj)
 
-            page = self.paginate_queryset(return_data)
-            if page is not None:
-                return self.get_paginated_response(return_data)
-            
-            return Response(return_data)
+        page = self.paginate_queryset(qs)
+        agents = page if page is not None else list(qs)
+
+        agent_ids = [obj.id for obj in agents]
+        sessions_by_agent: dict = {}
+        for us in ChatSession.objects.filter(
+            user=user, agent_id__in=agent_ids
+        ).only("id", "session_key", "agent_id", "user_id", "data", "created_at"):
+            sessions_by_agent.setdefault(str(us.agent_id), []).append({
+                "id": str(us.id),
+                "session_key": str(us.session_key),
+                "agent_id": str(us.agent_id),
+                "user_id": str(us.user_id),
+                "data": us.data,
+                "created_at": us.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f%z"),
+            })
+
+        serialized_data = self.get_serializer(agents, many=True).data
+        return_data = []
+        for obj in serialized_data:
+            obj['chat_sessions'] = sessions_by_agent.get(obj['id'], [])
+            return_data.append(obj)
+
+        if page is not None:
+            return self.get_paginated_response(return_data)
+        return Response(return_data)
 
     @swagger_auto_schema(
         operation_summary="Get bot by ID",

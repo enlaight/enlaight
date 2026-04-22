@@ -98,14 +98,18 @@ class GoogleAuthView(APIView):
 
         # emite JWT da sua aplicação
         refresh = RefreshToken.for_user(user)
-        data = {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user": {
-                "id": str(getattr(user, "id", "")),
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
+        from authentication.views.authentication import _set_refresh_cookie
+        resp = Response(
+            {
+                "access": str(refresh.access_token),
+                "user": {
+                    "id": str(getattr(user, "id", "")),
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
             },
-        }
-        return Response(data, status=status.HTTP_200_OK)
+            status=status.HTTP_200_OK,
+        )
+        _set_refresh_cookie(resp, str(refresh))
+        return resp

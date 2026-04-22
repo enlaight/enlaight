@@ -98,7 +98,7 @@ services:
       - ./postgres/init:/sql-init:ro
       - ./postgres/init:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      - "${POSTGRES_BIND_HOST:-127.0.0.1}:5432:5432"
     networks:
       - internal
     healthcheck:
@@ -126,7 +126,7 @@ services:
     container_name: n8n_dev
     restart: always
     ports:
-      - "5678:5678"
+      - "${N8N_BIND_HOST:-127.0.0.1}:5678:5678"
     environment:
       # Core
       - NODE_ENV=development
@@ -134,10 +134,12 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - WEBHOOK_URL=http://localhost:5678
+      - N8N_API_KEY=${N8N_API_KEY}
       - GENERIC_TIMEZONE=UTC
 
-      # Auth / dev convenience
-      - N8N_BASIC_AUTH_ACTIVE=false
+      # Security: sandbox Execute Code nodes from the container env.
+      # Set to "false" only if a workflow legitimately needs process.env access.
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE:-true}
       - N8N_DIAGNOSTICS_ENABLED=false
       - N8N_PERSONALIZATION_ENABLED=false
 
@@ -194,6 +196,23 @@ services:
     networks:
       - public
       - internal
+
+  quickchart:
+    image: ianw/quickchart:latest
+    ports:
+      - "3400"
+    restart: unless-stopped
+    networks:
+      - public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.quickchart.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/charts`)"
+      - "traefik.http.routers.quickchart.entrypoints=web"
+      - "traefik.http.services.quickchart.loadbalancer.server.port=3400"
+
+      # IMPORTANT: strip prefix
+      - "traefik.http.middlewares.quickchart-stripprefix.stripprefix.prefixes=/charts"
+      - "traefik.http.routers.quickchart.middlewares=quickchart-stripprefix"
 
 volumes:
   postgres_data:

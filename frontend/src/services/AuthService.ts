@@ -10,7 +10,7 @@ import type {
 export class AuthService {
 	static async login(email: string, password: string): Promise<LoginResponse> {
 		const { data } = await api.post<LoginResponse>("login/", { email, password });
-		tokens.set(data.access, data.refresh);
+		tokens.set(data.access);
 		return data;
 	}
 
@@ -33,13 +33,8 @@ export class AuthService {
 	}
 
 	static async logout() {
-		const refresh = tokens.refresh;
-		if (!refresh) {
-			tokens.clear();
-			return;
-		}
 		try {
-			await api.post("logout/", { refresh });
+			await api.post("logout/", {});
 		} finally {
 			tokens.clear();
 		}

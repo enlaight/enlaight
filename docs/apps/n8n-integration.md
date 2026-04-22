@@ -25,7 +25,7 @@ created, configured, plugged into the application, and accessed by end users.
 - ORM models: `Agents` model represents each bot/agent
 - API endpoints: REST endpoints for managing agents and chat sessions
 - Proxy layer: Forwards KB operations to n8n webhooks
-- Database: **MySQL** (Enlaight application data)
+- Database: **PostgreSQL** (Enlaight application data)
 
 ### 3. Frontend (React + TypeScript)
 - Displays available agents/assistants to users

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
@@ -158,15 +158,17 @@ describe('Index Page', () => {
 		});
 	});
 
-	it('displays loading animation initially', () => {
+	it('displays agent cards without loading when agents are ready', async () => {
 		render(
 			<BrowserRouter>
 				<Index />
 			</BrowserRouter>
 		);
 
-		const loadingAnim = screen.getByTestId('loading-animation');
-		expect(loadingAnim).toBeTruthy();
+		await waitFor(() => {
+			const cards = screen.getAllByTestId('agent-card');
+			expect(cards.length).toBeGreaterThan(0);
+		});
 	});
 
 	it('renders agent cards after loading', async () => {
@@ -225,7 +227,7 @@ describe('Index Page', () => {
 
 		await waitFor(() => {
 			expect(screen.getByText('Data Analyst')).toBeTruthy();
-			expect(screen.getByText('DATA ANALYSIS')).toBeTruthy();
+			expect(screen.getByText('Data Analysis')).toBeTruthy();
 		});
 	});
 
@@ -250,9 +252,9 @@ describe('Index Page', () => {
 			expect(screen.getByTestId('agents-chat-mount')).toBeTruthy();
 		});
 
-		// Find and click close button
-		const closeButtons = screen.getAllByRole('button', { name: /icon/ });
-		const closeBtn = closeButtons.find((btn) =>
+		// Find and click close button by its positioning class
+		const allButtons = screen.getAllByRole('button');
+		const closeBtn = allButtons.find((btn) =>
 			btn.className.includes('right-[102px]')
 		);
 

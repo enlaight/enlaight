@@ -102,14 +102,22 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 | `SECRET_KEY` | Django secret | Strong 50+ char random | **CRITICAL** |
 | `DEBUG` | Debug mode | `False` | **CRITICAL** |
 | `ALLOWED_HOSTS` | Allowed domains | Production domain only | **HIGH** |
+| `CORS_ALLOWED_ORIGINS` | Frontend origins | Production frontend URL(s) | **HIGH** |
 | `USE_X_FORWARDED_HOST` | Proxy headers | `True` if behind proxy | **HIGH** |
 | `SECURE_SSL_REDIRECT` | Force HTTPS | `True` | **HIGH** |
 | `CSRF_COOKIE_SECURE` | CSRF cookie | `True` | **HIGH** |
 | `SESSION_COOKIE_SECURE` | Session cookie | `True` | **HIGH** |
+| `SECURE_HSTS_SECONDS` | HSTS max-age | `31536000` once HTTPS is confirmed | **MEDIUM** |
+| `X_FRAME_OPTIONS` | Clickjacking defense | `DENY` | **MEDIUM** |
+| `N8N_BIND_HOST` | n8n port bind interface | `127.0.0.1` unless fronted by proxy | **HIGH** |
+| `POSTGRES_BIND_HOST` | Postgres port bind interface | `127.0.0.1` | **HIGH** |
+| `N8N_BLOCK_ENV_ACCESS_IN_NODE` | Sandbox Execute Code nodes | `true` | **HIGH** |
+| `ENABLE_DRF_THROTTLE` | DRF rate limiting | `True` (unless proxy-level throttling) | **MEDIUM** |
+| `ALLOW_UNVERIFIED_JWT` | Debug JWT fallback | **unset** — never set in prod | **CRITICAL** |
 | `N8N_API_KEY` | n8n access | Generated secret | **CRITICAL** |
 | `N8N_KB_KEY` | Knowledge base key | Generated secret | **CRITICAL** |
-| `EMAIL_HOST_USER` | SMTP username | AWS/SMTP credentials | **HIGH** |
-| `EMAIL_HOST_PASSWORD` | SMTP password | AWS/SMTP credentials | **CRITICAL** |
+| `EMAIL_HOST_USER` | SMTP username | SMTP credentials | **HIGH** |
+| `EMAIL_HOST_PASSWORD` | SMTP password | SMTP credentials | **CRITICAL** |
 
 ### Secrets Management Best Practices
 
@@ -176,9 +184,13 @@ Authorization: Bearer <access_token>
 Users have roles that determine permissions:
 
 **Available Roles:**
-- `ADMIN` / `ADMINISTRATOR` - Full system access
-- `USER` - Project-based access
-- `GUEST` - Limited read-only access
+- `ADMINISTRATOR` — Full system access
+- `USER` — Project-based access
+
+The `LoginAs` impersonation endpoint blocks `USER`, so only `ADMINISTRATOR`
+can issue tokens for other accounts. If additional role tiers are added in
+the future, [`login_as.py`](../backend/src/authentication/views/login_as.py)
+must gain a role-rank check to prevent upward impersonation.
 
 
 **Permission Enforcement:**
@@ -263,24 +275,33 @@ traefik:
 
 **Frontend URL Configuration:**
 ```env
-REACT_URL=http://localhost:5173/        # Development
-# Production: https://app.example.com/
-
-FRONTEND_URL=http://localhost:5173      # For redirects
+FRONTEND_URL=http://localhost:8080                # Used in reset/invite email links
+CORS_ALLOWED_ORIGINS=http://localhost:8080        # Comma-separated allowlist
 # Production: https://app.example.com
 ```
 
-**CORS Settings (settings.py):**
-```python
-CORS_ALLOW_ALL_ORIGINS = True  # WARNING: Only for development
-CORS_ALLOW_HEADERS = list(default_headers) + ["authorization"]
+**CORS Settings ([settings.sample.py](../backend/src/core/settings.sample.py)):**
 
-# Production should restrict:
-CORS_ALLOWED_ORIGINS = [
-    "https://app.example.com",
-    "https://www.example.com"
-]
+CORS is env-driven. `CORS_ALLOW_ALL_ORIGINS` is always `False`; the allowlist
+comes from the `CORS_ALLOWED_ORIGINS` env var. If the var is empty the template
+falls back to local dev ports (`http://localhost:8080`, `http://127.0.0.1:8080`).
+
+```python
+# settings.sample.py
+_cors_origins = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+if _cors_origins:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = _cors_origins
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "http://127.0.0.1:8080"]
+
+CORS_ALLOW_CREDENTIALS = True  # required to send the httpOnly refresh cookie
 ```
+
+`CORS_ALLOW_CREDENTIALS = True` is necessary because the refresh token is sent
+as an httpOnly cookie; the CORS spec forbids credentials with a wildcard origin,
+so the allowlist must always be explicit.
 
 ### CSRF Protection
 
@@ -292,66 +313,76 @@ MIDDLEWARE = [
 ]
 ```
 
+### HTTP Security Headers
+
+Default-on headers (set in [`settings.sample.py`](../backend/src/core/settings.sample.py)):
+
+```python
+SECURE_CONTENT_TYPE_NOSNIFF = True              # blocks MIME sniffing
+X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")  # clickjacking defense
+```
+
+**HSTS (opt-in via env var):**
+
+HSTS is off by default because enabling it on a domain that isn't fully HTTPS
+can lock browsers out. Once HTTPS is confirmed end-to-end, enable it via `.env`:
+
+```env
+SECURE_HSTS_SECONDS=31536000        # 1 year (recommended)
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_HSTS_PRELOAD=False           # only set True after submitting to the preload list
+```
+
+The settings file only emits the HSTS headers when `SECURE_HSTS_SECONDS > 0`,
+so forks running on HTTP skip it automatically.
+
 ---
 
 ## Database Security
 
-### MySQL Security
+### PostgreSQL Security
 
-**User Privileges (from init-databases.sql):**
-```sql
--- Enlaight user - limited to backend database
-GRANT ALL PRIVILEGES ON enlaight_database.* TO 'enlaight'@'%';
-
--- Root user - only for administration
-MYSQL_ROOT_PASSWORD=<strong_password>
-```
-
-**Connection Security:**
-```env
-MYSQL_HOST=mysql           # Internal docker network
-MYSQL_PORT=3306
-# Only exposed on port 3306 locally; restrict in production
-```
-
-**Database Configuration (settings.py):**
-```python
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("BACKEND_DB", "enlaight_database"),
-        "USER": os.environ.get("BACKEND_DB_USER", "enlaight"),
-        "PASSWORD": os.environ.get("BACKEND_DB_PASSWORD", "enlaight"),
-        "HOST": os.environ.get("MYSQL_HOST", "mysql"),
-        "CONN_MAX_AGE": 600,
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
-    }
-}
-```
-
-**Recommended MySQL Configuration:**
-```sql
--- In docker-compose.yml command
---character-set-server=utf8mb4
---collation-server=utf8mb4_unicode_ci
---log-bin-trust-function-creators=1
---sql-mode='STRICT_TRANS_TABLES'
---innodb_strict_mode=1
-```
-
-### PostgreSQL Security (n8n)
+The Enlaight backend uses PostgreSQL 15 (single container, two databases:
+the Django app DB and the n8n DB share one Postgres instance).
 
 **Credentials (from env.sample):**
 ```env
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
-POSTGRES_DB=n8n_enlaight_db
-POSTGRES_USER=n8n
-POSTGRES_PASSWORD=<strong_password>
+BACKEND_DB=enlaight_database
+BACKEND_DB_USER=enlaight
+BACKEND_DB_PASSWORD=<strong_password>       # change from the shipped default
+POSTGRES_BIND_HOST=127.0.0.1                # host interface the DB port publishes to
 ```
+
+**Connection Security:**
+
+The Postgres container exposes port 5432 only on `${POSTGRES_BIND_HOST:-127.0.0.1}`
+(see [`docker-compose.yml`](../docker-compose.yml)). Backend and n8n reach the
+DB over the internal Docker network (`POSTGRES_HOST=postgres`). Override
+`POSTGRES_BIND_HOST=0.0.0.0` only if the DB must be reachable from outside
+the host *and* a firewall restricts access to trusted sources.
+
+**Database Configuration ([settings.sample.py](../backend/src/core/settings.sample.py)):**
+```python
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME":     os.environ.get("BACKEND_DB", "enlaight_database"),
+        "USER":     os.environ.get("BACKEND_DB_USER", "enlaight"),
+        "PASSWORD": os.environ.get("BACKEND_DB_PASSWORD", "enlaight"),
+        "HOST":     os.environ.get("POSTGRES_HOST", "postgres"),
+        "PORT":     os.environ.get("POSTGRES_PORT", "5432"),
+    }
+}
+```
+
+**Privilege separation:**
+
+- `BACKEND_DB_USER` owns only `BACKEND_DB` (`enlaight_database` by default).
+- The `n8n` role owns only `n8n_enlaight_db` (created by
+  [`postgres/init/01-init-databases.sql`](../postgres/init/01-init-databases.sql)).
+- Neither application runs as the `postgres` superuser.
 
 **Non-Root User:**
 PostgreSQL runs with dedicated `n8n` user (not root), limiting damage from compromise.
@@ -394,23 +425,40 @@ User.objects.filter(email=user_input)
 User.objects.raw(f"SELECT * FROM users WHERE email = '{user_input}'")
 ```
 
-### Rate Limiting (Recommended)
+### Rate Limiting
 
-Add rate limiting for API endpoints:
+DRF throttling is enabled by default in
+[`settings.sample.py`](../backend/src/core/settings.sample.py) and gated by
+`ENABLE_DRF_THROTTLE` so forks that rate-limit at the proxy/CDN layer
+(Cloudflare, nginx, etc.) can turn it off cleanly:
 
-**Settings Addition:**
 ```python
-REST_FRAMEWORK = {
-    "DEFAULT_THROTTLE_CLASSES": [
+if env_bool("ENABLE_DRF_THROTTLE", True):
+    REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle"
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour"
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ]
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+        "anon":           os.getenv("THROTTLE_ANON",           "30/minute"),
+        "user":           os.getenv("THROTTLE_USER",           "120/minute"),
+        "login":          os.getenv("THROTTLE_LOGIN",          "5/minute"),
+        "password_reset": os.getenv("THROTTLE_PASSWORD_RESET", "3/minute"),
     }
-}
 ```
+
+**Per-view scopes:**
+
+- [`LoginView`](../backend/src/authentication/views/authentication.py) → `throttle_scope = "login"`
+- [`ForgotPasswordView`](../backend/src/authentication/views/authentication.py) → `throttle_scope = "password_reset"`
+- [`ResetPasswordView`](../backend/src/authentication/views/authentication.py) → `throttle_scope = "password_reset"`
+
+These scopes apply on top of the global `anon` / `user` limits, so brute-force
+on authentication is capped tightly (5 login attempts / 3 password resets per
+minute per IP) without crippling normal API traffic.
+
+**Tuning:** override any rate in `.env` — e.g. `THROTTLE_LOGIN=10/minute`.
+The default unit is `minute`; DRF also accepts `second`, `hour`, `day`.
 
 ### API Documentation
 
@@ -582,6 +630,24 @@ def validate_upload(file):
 
 ### n8n Integration Security
 
+**Host port binding:**
+
+The n8n container publishes port 5678 only to the interface defined by
+`N8N_BIND_HOST` (default `127.0.0.1`). On a public VM this prevents the n8n UI
+and REST API from being reachable from the internet before the owner account
+has been set up. To expose n8n through Traefik/nginx in production, keep
+`N8N_BIND_HOST=127.0.0.1` and let the reverse proxy route to the container
+over the Docker network — never set `0.0.0.0` unless you have a firewall
+or authenticating proxy in front.
+
+**Execute Code node sandboxing:**
+
+`N8N_BLOCK_ENV_ACCESS_IN_NODE=true` (default) prevents `Execute Code` nodes
+from calling `process.env` and reading the container's environment — including
+`SECRET_KEY`, `JWT_SIGNING_KEY`, DB passwords, and AWS keys. Only set to
+`false` if a workflow legitimately needs env access, and prefer passing
+specific values through n8n credentials instead.
+
 **API Key Protection:**
 - Store `N8N_API_KEY` in secrets manager
 - Rotate quarterly
@@ -620,8 +686,8 @@ def create_kb_in_n8n(name, description):
 
 **Environment Variable Format:**
 ```env
-DATABASE_URL=mysql+mysqldb://user:password@host:port/database?charset=utf8mb4
-SQLALCHEMY_DATABASE_URI=mysql+pymysql://user:password@host:port/database
+DATABASE_URL=postgresql://user:password@host:port/database
+SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://user:password@host:port/database
 
 # Warning: Do NOT log these URLs (contains credentials)
 ```
@@ -641,18 +707,21 @@ SQLALCHEMY_DATABASE_URI=mysql+pymysql://user:password@host:port/database
 
 - [ ] **Environment Settings**
   - [ ] `DEBUG=False`
+  - [ ] `ALLOW_UNVERIFIED_JWT` **unset** (never set outside local dev)
   - [ ] `SECURE_SSL_REDIRECT=True`
   - [ ] `CSRF_COOKIE_SECURE=True`
   - [ ] `SESSION_COOKIE_SECURE=True`
   - [ ] `USE_X_FORWARDED_HOST=True` (if behind proxy)
   - [ ] `ALLOWED_HOSTS` set to production domain only
-  - [ ] `CORS_ALLOWED_ORIGINS` restricted (not `*`)
+  - [ ] `CORS_ALLOWED_ORIGINS` restricted to production frontend origin(s)
+  - [ ] `X_FRAME_OPTIONS=DENY` (default) or `SAMEORIGIN` if embedded
+  - [ ] `SECURE_HSTS_SECONDS=31536000` once HTTPS is confirmed end-to-end
+  - [ ] `ENABLE_DRF_THROTTLE=True` (or explicitly disabled if proxy handles it)
+  - [ ] Review `THROTTLE_LOGIN` / `THROTTLE_PASSWORD_RESET` rates
 
 - [ ] **Database**
-  - [ ] Change `BACKEND_DB_USER` and password
-  - [ ] Change `BACKEND_DB_PASSWORD`
-  - [ ] Change `MYSQL_ROOT_PASSWORD`
-  - [ ] Change `POSTGRES_PASSWORD`
+  - [ ] Change `BACKEND_DB_USER` and `BACKEND_DB_PASSWORD` (defaults ship as `enlaight`/`enlaight`)
+  - [ ] `POSTGRES_BIND_HOST=127.0.0.1` (default — only change if DB must be reachable outside host)
   - [ ] Enable SSL/TLS for database connections
 
 - [ ] **Email**
@@ -673,19 +742,23 @@ SQLALCHEMY_DATABASE_URI=mysql+pymysql://user:password@host:port/database
   - [ ] Configure `N8N_KB_KEY`
   - [ ] Set `N8N_SSL_HOST` to production domain
   - [ ] Set `WEBHOOK_URL` to HTTPS production URL
+  - [ ] `N8N_BIND_HOST=127.0.0.1` (default — only change if not routing via Traefik/nginx)
+  - [ ] `N8N_BLOCK_ENV_ACCESS_IN_NODE=true` (default) — prevents Execute Code nodes reading container secrets
+  - [ ] Set n8n owner account on first launch
 
 - [ ] **Network**
   - [ ] Configure firewall rules
-  - [ ] Restrict database ports (3306, 5432) to backend only
+  - [ ] Postgres (5432) bound to `127.0.0.1` — see `POSTGRES_BIND_HOST`
+  - [ ] n8n (5678) bound to `127.0.0.1` — see `N8N_BIND_HOST`
   - [ ] Restrict Redis (6379) to internal only
-  - [ ] Restrict n8n (5678) to backend only
   - [ ] Open only 80/443 to public
 
 - [ ] **Reverse Proxy**
   - [ ] Configure TLS/SSL certificates
-  - [ ] Set security headers (X-Frame-Options, X-XSS-Protection, etc.)
-  - [ ] Enable HSTS
-  - [ ] Configure rate limiting
+  - [ ] Django emits `X-Content-Type-Options: nosniff` and `X-Frame-Options` —
+        the proxy should not override or duplicate them
+  - [ ] Enable HSTS via `SECURE_HSTS_SECONDS` (Django) **or** at the proxy — not both
+  - [ ] Proxy-layer rate limiting is optional; DRF throttling is on by default
 
 ### Ongoing Security Tasks
 

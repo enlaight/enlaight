@@ -30,8 +30,14 @@ export default defineConfig(({ mode }) => ({
 		},
 	},
 	test: {
-		environment: 'jsdom', // browser env
-		globals: true, // no need to import "describe", "it" or "expect"
-		setupFiles: './vitest.setup.ts'
+		environment: 'jsdom',
+		globals: true,
+		setupFiles: './vitest.setup.ts',
+		pool: 'forks',
+		poolOptions: {
+			forks: {
+				execArgv: ['--max-old-space-size=4096'],
+			},
+		},
 	}
 }));

@@ -72,10 +72,41 @@ Provide webhook endpoints that implement bot logic and KB file management.
 
 ---
 
-## ChartsIO (Data Visualization)
+## QuickChart.io (Data Visualization)
 
-- tbd.
+### Purpose
+Render chart images (PNG/SVG) from a JSON chart spec. QuickChart is a
+self-hostable HTTP chart-rendering service — you send a Chart.js-style JSON
+config in a GET/POST request and it returns an image.
 
+### How it is used in Enlaight
+- Runs as the `quickchart` service in `docker-compose.yml` (port 3400 by
+  default), so charts render locally with no external dependency.
+- Consumed primarily by **n8n workflows**: a workflow prepares the data,
+  builds a Chart.js JSON payload, and calls QuickChart to produce a chart
+  image URL that can be returned to the chat / agent response or embedded
+  in a report.
+- Can also be called directly from the backend or any script that needs
+  to render a chart on demand.
+
+### Request shape
+```
+GET  http://quickchart:3400/chart?c=<url-encoded JSON>
+POST http://quickchart:3400/chart        # JSON body with { "chart": {...} }
+```
+The JSON follows the [Chart.js config schema](https://www.chartjs.org/) —
+`type`, `data`, `options`.
+
+### Integration notes
+- Because QuickChart is self-hosted, charts can include internal/sensitive
+  data without leaving the deployment.
+- Large charts should use POST (URL-length limits on GET).
+- No authentication by default — keep the service on the internal Docker
+  network; do not expose port 3400 publicly.
+
+### Where to find it in the repo
+- Service definition: `docker-compose.yml` (service `quickchart`)
+- n8n workflows that call it: `n8n/workflows/`
 
 ---
 
@@ -92,7 +123,7 @@ environment using `docker compose`.
   - `postgres` (n8n database)
   - `n8n` (workflow engine)
   - `redis` (cache)
-  - `` (dashboards)
+  - `quickchart` (chart rendering service)
   - `traefik` (optional ingress / TLS)
 - Mount local volumes for persistence:
   - `n8n_data`

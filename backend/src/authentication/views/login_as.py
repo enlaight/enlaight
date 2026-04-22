@@ -16,7 +16,7 @@ class LoginAsView(APIView):
     @swagger_auto_schema(
         operation_id="login_as",
         operation_summary="Impersonate a user (admin only)",
-        operation_description="Generates JWT tokens for another user. Only available to ADMINISTRATOR and MANAGER roles.",
+        operation_description="Generates JWT tokens for another user. Only available to ADMINISTRATOR role.",
         manual_parameters=[
             openapi.Parameter(
                 "user_id",
@@ -56,11 +56,7 @@ class LoginAsView(APIView):
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
         refresh = RefreshToken.for_user(user)
-
-        return Response(
-            {
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
-            status=status.HTTP_200_OK,
-        )
+        from authentication.views.authentication import _set_refresh_cookie
+        resp = Response({"access": str(refresh.access_token)}, status=status.HTTP_200_OK)
+        _set_refresh_cookie(resp, str(refresh))
+        return resp

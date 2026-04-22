@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useEffect, useState } from "react";
 import type { RegisterPayload, User } from "@/types/auth";
-import { tokenStore } from "@/services/api";
 import { AuthService } from "@/services/AuthService";
 import { listClients } from "@/services/ClientService";
 import { listProjects } from "@/services/ProjectService";
@@ -17,12 +16,10 @@ export type AuthContextType = {
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-const getAccess = () => tokenStore.access;
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setLoading] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getAccess());
+    const [isLoading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
     // Token refresh is centrally handled by the API client interceptors.
     // Requests should use the centralized API client from src/services/api.ts
@@ -89,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async () => {
         try {
             await AuthService.logout();
-            tokenStore.clear();
         } finally {
             setUser(null);
             setIsAuthenticated(false);

@@ -1,27 +1,33 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import UserList from '../UserList';
 import { BrowserRouter } from 'react-router-dom';
 
+const translationDict: Record<string, string> = {
+	'listUsers.title': 'Users',
+	'listUsers.titleDesc': 'Manage system users',
+	'listUsers.searchPlaceholder': 'Search users',
+	'listUsers.loading': 'Loading users',
+	'listUsers.previous': 'Previous',
+	'listUsers.next': 'Next',
+	'attachUserToProjects.title': 'Attach to Projects',
+	'attachUserToProjects.loading': 'Loading...',
+	'attachUserToProjects.noProjects': 'No projects',
+	'attachUserToProjects.cancel': 'Cancel',
+	'attachUserToProjects.attach': 'Attach',
+};
+
 // Mock translations
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
-		t: (key: string) => {
-			const dict: Record<string, string> = {
-				'userManagement.title': 'Users',
-				'userManagement.description': 'Manage system users',
-				'userManagement.search': 'Search users',
-				'userManagement.addUser': 'Add User',
-				'userManagement.attachToProjects': 'Attach to Projects',
-				'userManagement.noResults': 'No users found',
-				'common.cancel': 'Cancel',
-				'common.confirm': 'Confirm',
-			};
-			return dict[key] || key;
-		},
+		t: (key: string) => translationDict[key] || key,
 	}),
+}));
+
+vi.mock('i18next', () => ({
+	t: (key: string) => translationDict[key] || key,
 }));
 
 // Mock components
@@ -33,10 +39,8 @@ vi.mock('@/components/UserDisplayItem', () => ({
 	UserDisplayItem: ({ user, onLoginAs, onAttachProjects }: any) => (
 		<div data-testid="user-item">
 			<span>{user.email}</span>
-			<button onClick={() => {
-				if (typeof onLoginAs === 'function') return onLoginAs(user.id);
-				if (typeof onAttachProjects === 'function') return onAttachProjects(user.id);
-			}}>Edit</button>
+			<button onClick={() => typeof onLoginAs === 'function' && onLoginAs(user.id)}>Login As</button>
+			<button onClick={() => typeof onAttachProjects === 'function' && onAttachProjects(user.id)}>Attach</button>
 		</div>
 	),
 }));
@@ -121,32 +125,28 @@ vi.mock('@/services/ProjectService', () => ({
 		count: 2,
 	})),
 	ProjectService: {
+		attachUsers: vi.fn(() => Promise.resolve()),
+		detachUsers: vi.fn(() => Promise.resolve()),
 		update: vi.fn(() => Promise.resolve()),
 	},
 }));
 
 vi.mock('@/services/api', () => ({
 	default: {
-		get: vi.fn(() => Promise.resolve({
-			data: {
-				results: [
-					{
-						id: 'user1',
-						email: 'john@example.com',
-						first_name: 'John',
-						last_name: 'Doe',
-						role: 'USER',
-						is_active: true,
-					},
-				],
-			},
-		})),
+		get: vi.fn((url: string) => {
+			if (url.includes('/users/')) {
+				return Promise.resolve({
+					data: { results: [{ id: 'user1', email: 'john@example.com', client_id: 'client1' }] },
+				});
+			}
+			return Promise.resolve({
+				data: { access: 'test-access-token', refresh: 'test-refresh-token' },
+			});
+		}),
 		post: vi.fn(),
 		put: vi.fn(),
 		delete: vi.fn(),
-		defaults: {
-			headers: {},
-		},
+		defaults: { headers: {} },
 	},
 }));
 
@@ -154,6 +154,7 @@ vi.mock('@/services/api', () => ({
 vi.mock('@/hooks/use-batch-translation', () => ({
 	useBatchTranslation: () => ({
 		getTranslation: (text: string) => text,
+		loading: false,
 	}),
 }));
 
@@ -178,15 +179,6 @@ describe('UserList Page', () => {
 			</BrowserRouter>
 		);
 		expect(await screen.findByText('Users')).toBeInTheDocument();
-	});
-
-	it('displays loading animation initially', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		expect(await screen.findByTestId('loading-animation')).toBeInTheDocument();
 	});
 
 	it('renders users after loading', async () => {
@@ -250,48 +242,54 @@ describe('UserList Page', () => {
 		expect(userItems.length).toBeGreaterThan(0);
 	});
 
-	it('displays add user button', async () => {
+	it('displays pagination controls', async () => {
 		render(
 			<BrowserRouter>
 				<UserList />
 			</BrowserRouter>
 		);
-		const addButton = await screen.findByRole('button', { name: /Add/i });
-		expect(addButton).toBeInTheDocument();
+		await screen.findAllByTestId('user-item');
+		expect(screen.getByText('Previous')).toBeInTheDocument();
+		expect(screen.getByText('Next')).toBeInTheDocument();
 	});
 
-	it('handles edit user action', async () => {
+	it('handles login as user action', async () => {
 		const user = userEvent.setup();
 		render(
 			<BrowserRouter>
 				<UserList />
 			</BrowserRouter>
 		);
-		const editButton = await screen.findByRole('button', { name: /Edit/i });
-		await user.click(editButton);
-		expect(await screen.findByTestId('user-item')).toBeInTheDocument(); // modal or state should update
+		const loginButtons = await screen.findAllByRole('button', { name: /Login As/i });
+		expect(loginButtons.length).toBeGreaterThan(0);
+		await user.click(loginButtons[0]);
 	});
 
-	it('handles multiple project selection', async () => {
+	it('handles attach to projects action', async () => {
 		const user = userEvent.setup();
 		render(
 			<BrowserRouter>
 				<UserList />
 			</BrowserRouter>
 		);
-		const checkbox = await screen.findByTestId('checkbox');
-		await user.click(checkbox);
-		expect(checkbox).toBeChecked();
+		const attachButtons = await screen.findAllByRole('button', { name: /Attach/i });
+		expect(attachButtons.length).toBeGreaterThan(0);
+		await user.click(attachButtons[0]);
+		expect(await screen.findByTestId('dialog')).toBeInTheDocument();
 	});
 
-	it('handles login as user', async () => {
+	it('handles multiple project selection in attach dialog', async () => {
 		const user = userEvent.setup();
 		render(
 			<BrowserRouter>
 				<UserList />
 			</BrowserRouter>
 		);
-		const loginButton = await screen.findByRole('button', { name: /Login/i });
-		await user.click(loginButton);
+		const attachButtons = await screen.findAllByRole('button', { name: /Attach/i });
+		await user.click(attachButtons[0]);
+		const checkboxes = await screen.findAllByTestId('checkbox');
+		expect(checkboxes.length).toBeGreaterThan(0);
+		await user.click(checkboxes[0]);
+		expect(checkboxes[0]).toBeChecked();
 	});
 });

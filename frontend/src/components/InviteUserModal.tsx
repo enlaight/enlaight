@@ -36,7 +36,6 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
   // Current user state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isManager, setIsManager] = useState(false);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -56,17 +55,10 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
   const [fieldErrors, setFieldErrors] = useState<FieldError>({});
   const [generalError, setGeneralError] = useState("");
 
-  // Available roles based on inviter role
-  const availableRoles: { value: UserRole; label: string }[] = isAdmin
-    ? [
-      { value: "ADMINISTRATOR", label: "Administrator" },
-      { value: "MANAGER", label: "Manager" },
-      { value: "USER", label: "User" },
-    ]
-    : [
-      { value: "MANAGER", label: "Manager" },
-      { value: "USER", label: "User" },
-    ];
+  const availableRoles: { value: UserRole; label: string }[] = [
+    { value: "ADMINISTRATOR", label: "Administrator" },
+    { value: "USER", label: "User" },
+  ];
 
   // Initialize: Load user data and determine role
   useEffect(() => {
@@ -107,15 +99,10 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
       setCurrentUser(user);
 
       const admin = user.role === "ADMINISTRATOR";
-      const manager = user.role === "MANAGER";
-
       setIsAdmin(admin);
-      setIsManager(manager);
 
       if (admin) {
         await loadAdminData();
-      } else if (manager) {
-        await loadManagerData(user);
       } else {
         setGeneralError("You don't have permission to invite users.");
       }
@@ -140,32 +127,6 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
     } catch (error: any) {
       console.error("Error loading admin data:", error);
       setGeneralError("Failed to load clients and projects.");
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  const loadManagerData = async (user: User) => {
-    setIsLoadingData(true);
-    try {
-      // Pre-fill client from user's client_id
-      if (user.client_id) {
-        setSelectedClient(user.client_id);
-      }
-
-      // Load projects
-      const projectsData = await listProjects(1, 1000);
-      let managerProjects = projectsData.results || [];
-
-      // Filter to only projects the manager belongs to (if available)
-      if (user.projects && user.projects.length > 0) {
-        managerProjects = managerProjects.filter((p) => user.projects?.includes(p.id));
-      }
-
-      setProjects(managerProjects);
-    } catch (error: any) {
-      console.error("Error loading manager data:", error);
-      setGeneralError("Failed to load projects.");
     } finally {
       setIsLoadingData(false);
     }
@@ -393,16 +354,14 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                   setSelectedClient(value);
                   setFieldErrors((prev) => ({ ...prev, client_id: undefined }));
                 }}
-                disabled={isManager || isSubmitting || (isAdmin && !!selectedProject)}
+                disabled={isSubmitting || !!selectedProject}
               >
                 <SelectTrigger id="client">
                   <SelectValue
                     placeholder={
-                      isManager
-                        ? "Assigned from your account"
-                        : selectedProject
-                          ? "Auto-selected from project"
-                          : "Select client"
+                      selectedProject
+                        ? "Auto-selected from project"
+                        : "Select client"
                     }
                   />
                 </SelectTrigger>

@@ -5,40 +5,24 @@ export const API_BASE = API_BASE_URL;
 
 const AUTH_SCHEME = ((import.meta.env.VITE_AUTH_SCHEME as string) || "Bearer").trim();
 
-const ACCESS_KEY = "enlaight_access_token";
-const REFRESH_KEY = "enlaight_refresh_token";
+// Access token lives only in memory — never written to localStorage.
+// It is lost on page close/hard refresh and silently restored via the
+// httpOnly refresh cookie by the 401 interceptor below.
+let _accessToken: string | null = null;
 
 export const tokenStore = {
-	set(access?: string | null, refresh?: string | null) {
-		if (access) localStorage.setItem(ACCESS_KEY, access);
-		else localStorage.removeItem(ACCESS_KEY);
-
-		if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
-		else localStorage.removeItem(REFRESH_KEY);
+	set(access?: string | null) {
+		_accessToken = access ?? null;
 	},
 	clear() {
-		localStorage.removeItem(ACCESS_KEY);
-		localStorage.removeItem(REFRESH_KEY);
+		_accessToken = null;
 	},
 	get access() {
-		return (
-			localStorage.getItem(ACCESS_KEY) ||
-			localStorage.getItem("accessToken") ||
-			localStorage.getItem("access")
-		);
-	},
-	get refresh() {
-		return (
-			localStorage.getItem(REFRESH_KEY) ||
-			localStorage.getItem("refreshToken") ||
-			localStorage.getItem("refresh")
-		);
+		return _accessToken;
 	},
 };
 
-const api = axios.create({ baseURL: `${API_BASE}/` });
-const existing = tokenStore.access;
-if (existing) (api.defaults.headers.common as any).Authorization = `${AUTH_SCHEME} ${existing}`;
+const api = axios.create({ baseURL: `${API_BASE}/`, withCredentials: true });
 
 api.interceptors.request.use((cfg) => {
 	const t = tokenStore.access;
@@ -52,12 +36,12 @@ api.interceptors.request.use((cfg) => {
 let refreshing: Promise<string | null> | null = null;
 
 async function doRefresh(): Promise<string | null> {
-	const r = tokenStore.refresh;
-	if (!r) return null;
 	try {
-		const { data } = await axios.post(`${API_BASE}/refresh/`, { refresh: r });
+		// No body needed — the browser sends the httpOnly refresh cookie automatically
+		// because withCredentials: true is set on both the instance and this call.
+		const { data } = await axios.post(`${API_BASE}/refresh/`, {}, { withCredentials: true });
 		if ((data as any)?.access) {
-			tokenStore.set((data as any).access, r);
+			tokenStore.set((data as any).access);
 			return (data as any).access as string;
 		}
 	} catch (e) {

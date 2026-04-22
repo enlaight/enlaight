@@ -78,7 +78,7 @@ vi.mock('@/components/ui/alert-dialog', () => ({
 
 // Mock services
 vi.mock('@/services/PasswordService', () => ({
-	resetPassword: vi.fn((email, token, newPassword) => Promise.resolve()),
+	resetPassword: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock hooks
@@ -135,8 +135,8 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		expect(inputs.length).toBeGreaterThanOrEqual(2);
+		expect(screen.getByTestId('input-newPassword')).toBeInTheDocument();
+		expect(screen.getByTestId('input-confirmPassword')).toBeInTheDocument();
 	});
 
 	it('allows user to enter new password', async () => {
@@ -148,10 +148,11 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		await user.type(inputs[0], 'NewPassword123');
+		const input = screen.getByTestId('input-newPassword') as HTMLInputElement;
+		await user.clear(input);
+		await user.type(input, 'NewPassword123');
 
-		expect((inputs[0] as HTMLInputElement).value).toBe('NewPassword123');
+		expect(input.value).toBe('NewPassword123');
 	});
 
 	it('allows user to confirm password', async () => {
@@ -163,10 +164,10 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		await user.type(inputs[1], 'NewPassword123');
+		const input = screen.getByTestId('input-confirmPassword') as HTMLInputElement;
+		await user.type(input, 'NewPassword123');
 
-		expect((inputs[1] as HTMLInputElement).value).toBe('NewPassword123');
+		expect(input.value).toBe('NewPassword123');
 	});
 
 	it('displays password visibility toggles', () => {
@@ -233,9 +234,10 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		await user.type(inputs[0], 'short');
-		await user.type(inputs[1], 'short');
+		const newPasswordInput = screen.getByTestId('input-newPassword') as HTMLInputElement;
+		const confirmPasswordInput = screen.getByTestId('input-confirmPassword') as HTMLInputElement;
+		await user.type(newPasswordInput, 'short');
+		await user.type(confirmPasswordInput, 'short');
 
 		const resetButton = screen.getAllByRole('button').find(btn => !btn.className.includes('absolute'));
 		if (resetButton) {
@@ -252,13 +254,13 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		await user.type(inputs[0], 'Password123');
-		await user.type(inputs[1], 'DifferentPassword123');
+		const newPasswordInput = screen.getByTestId('input-newPassword') as HTMLInputElement;
+		const confirmPasswordInput = screen.getByTestId('input-confirmPassword') as HTMLInputElement;
+		await user.type(newPasswordInput, 'Password123');
+		await user.type(confirmPasswordInput, 'DifferentPassword123');
 
-		// Both passwords should be entered
-		expect((inputs[0] as HTMLInputElement).value).toBe('Password123');
-		expect((inputs[1] as HTMLInputElement).value).toBe('DifferentPassword123');
+		expect(newPasswordInput.value).toBe('Password123');
+		expect(confirmPasswordInput.value).toBe('DifferentPassword123');
 	});
 
 	it('displays back to login link', () => {
@@ -281,9 +283,10 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		await user.type(inputs[0], 'NewPassword123');
-		await user.type(inputs[1], 'NewPassword123');
+		const newPasswordInput = screen.getByTestId('input-newPassword');
+		const confirmPasswordInput = screen.getByTestId('input-confirmPassword');
+		await user.type(newPasswordInput, 'NewPassword123');
+		await user.type(confirmPasswordInput, 'NewPassword123');
 
 		const submitButton = screen.getAllByRole('button').find(btn => !btn.className.includes('absolute'));
 		if (submitButton) {
@@ -295,18 +298,15 @@ describe('ResetPassword Page', () => {
 		}
 	});
 
-	it('disables submit button with invalid password', async () => {
-		const user = userEvent.setup();
-
+	it('disables submit button with invalid password', () => {
 		render(
 			<BrowserRouter>
 				<ResetPassword />
 			</BrowserRouter>
 		);
 
-		// Don't fill in passwords
-		const inputs = screen.getAllByRole('textbox');
-		expect(inputs.length).toBeGreaterThanOrEqual(2);
+		expect(screen.getByTestId('input-newPassword')).toBeInTheDocument();
+		expect(screen.getByTestId('input-confirmPassword')).toBeInTheDocument();
 	});
 
 	it('shows alert dialog on reset confirmation', async () => {
@@ -328,7 +328,9 @@ describe('ResetPassword Page', () => {
 			</BrowserRouter>
 		);
 
-		const inputs = screen.getAllByRole('textbox');
-		expect(inputs.length).toBeGreaterThanOrEqual(2);
+		const newPasswordInput = screen.getByTestId('input-newPassword') as HTMLInputElement;
+		const confirmPasswordInput = screen.getByTestId('input-confirmPassword') as HTMLInputElement;
+		expect(newPasswordInput.type).toBe('password');
+		expect(confirmPasswordInput.type).toBe('password');
 	});
 });

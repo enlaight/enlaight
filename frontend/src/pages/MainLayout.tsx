@@ -16,7 +16,7 @@ const MainLayout = () => {
 	const { isModalOpen } = useAgentsChat();
 
 	const { user } = useAuth();
-	const hasPermissions = ["ADMINISTRATOR", "MANAGER"].includes(user?.role);
+	const hasPermissions = user?.role === "ADMINISTRATOR";
 
 	const toggleSidebarCollapse = () => {
 		setSidebarCollapsed(!sidebarCollapsed);

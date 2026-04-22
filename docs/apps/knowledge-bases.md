@@ -35,7 +35,7 @@ Knowledge Bases (KBs) in Enlaight are document repositories that assistants can 
 - REST API for KB operations
 - Proxies requests to n8n
 - Enforces tenant isolation
-- Database: MySQL (references only, no files)
+- Database: PostgreSQL (references only, no files)
 
 ---
 
@@ -98,7 +98,7 @@ POST /api/kb/attach/?project_id=<project_id>
 
 #### Method 3: Python Automation
 
-File: `n8n/create_sample_kb.py`
+File: `n8n/scripts/create_sample_kb.py`
 
 * Creates KB via webhook
 * Links KB to project
@@ -108,7 +108,7 @@ File: `n8n/create_sample_kb.py`
 
 ## Database Structure & Storage
 
-### Local Database (MySQL)
+### Local Database (PostgreSQL)
 
 **Table:** `kb_links`
 

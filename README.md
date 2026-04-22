@@ -294,48 +294,6 @@ Reads raw JSON files produced by the collector, normalizes and deduplicates them
 pip install sqlalchemy pymysql python-dateutil
 python n8n/scripts/youscan_normalize_mentions.py
 ```
-
-<!-- 
----
-## 🗓️ Sprints
-
-### Sprint 1 — 12 Jan 2026 – 25 Jan 2026
-
-- Single Docker Compose with the full stack (n8n, Superset, Postgres, Redis, API, Frontend)
-- Makefile with `start`, `stop`, `clear`, `build`, `test` commands
-- All credentials moved to environment variables; `env.sample` added
-- Public repo with initial README
-
-### Sprint 2 — 26 Jan 2026 – 08 Feb 2026
-
-- OpenAPI spec + Swagger for API endpoints
-- Basic unit test and linting structure
-- Bootstrap script for first-time spin-up:
-  - n8n: KB flows + endpoints, sample KB + document indexing, sample agent
-  - DB: sample data points for analytics
-  - Superset: sample visualisations (line, bar, pie charts)
-  - API + Client: sample board with visualisations and demo agent
-
-### Sprint 3 — 09 Feb 2026 – 22 Feb 2026
-
-- Architecture documentation (components, responsibilities, integration patterns)
-- Guide: how to create and plug in new n8n agents
-- Guide: how to create and plug in new knowledge bases
-- YouScan connector + normalization pipeline (scripts and n8n workflows)
-- Lint coverage to 100%; unit test coverage to ≥ 70%
-- Basic logging structure
-- Fallback logging n8n flow
-
-### Upcoming Sprints
-
-> **Sprint 4:** 23 Feb 2026 – 08 Mar 2026
-
-> **Sprint 5:** 09 Mar 2026 – 22 Mar 2026
-
-> **Sprint 6:** 23 Mar 2026 – 05 Apr 2026
-
-> **Sprint 7:** 06 Apr 2026 – 19 Apr 2026 -->
-
 ---
 
 ## 🛠️ Technologies Used

@@ -14,7 +14,7 @@ This document explains every component of the Enlaight platform, what it is resp
 6. [Authentication & Authorization](#6-authentication--authorization)
 7. [Knowledge Base Pipeline](#7-knowledge-base-pipeline)
 8. [Data Ingestion Pipeline (YouScan)](#8-data-ingestion-pipeline-youscan)
-9. [Superset (BI)](#9-superset-bi)
+9. [QuickChart.io (Chart Rendering)](#9-quickchartio-chart-rendering)
 10. [Docker Networking](#10-docker-networking)
 11. [Environment Variables Reference](#11-environment-variables-reference)
 
@@ -75,7 +75,7 @@ This document explains every component of the Enlaight platform, what it is resp
 - Renders the full Enlaight SPA (single-page application).
 - Manages JWT token lifecycle (storage, refresh, injection into every request).
 - Embeds the n8n chat widget for agent conversations.
-- Optionally embeds Superset dashboards via guest token.
+- Displays chart images rendered by the self-hosted QuickChart.io service (URLs produced by n8n workflows).
 
 ### Pages & Routes
 
@@ -192,7 +192,7 @@ The backend forwards these calls to n8n webhooks, injecting the `N8N_KB_KEY` sec
 | `POST` | `/api/kb/file/add/` | `POST /webhook/kb/file/add/` |
 | `PATCH` | `/api/kb/file/update/` | `PATCH /webhook/kb/file/update/` |
 | `DELETE` | `/api/kb/file/delete/` | `DELETE /webhook/kb/file/delete/` |
-| `POST` | `/api/kb/attach/` | Links KB to a project in MySQL |
+| `POST` | `/api/kb/attach/` | Links KB to a project in PostgreSQL |
 
 #### Other Endpoints
 
@@ -467,37 +467,67 @@ INGESTED_DATA_DIR  (local filesystem archive)
 
 ---
 
-## 9. Superset (BI)
+## 9. QuickChart.io (Chart Rendering)
 
-* Superset is in process of being replaced by QuickChartsIO.
+**Stack:** [QuickChart](https://quickchart.io/) — self-hosted HTTP chart-rendering API, based on Chart.js.
 
-<!-- > **Note:** Superset is excluded from the local dev compose (`docker-compose-dev.yml`). It is available in the full `docker-compose.yml` for production / staging use only.
+### Responsibilities
 
-**Purpose:** Embedded business intelligence dashboards.
-**Integration:** Backend issues guest tokens that allow the frontend to embed Superset charts without requiring users to have a Superset account.
+- Renders charts (PNG/SVG/PDF) from a Chart.js-style JSON configuration.
+- Serves as the visualization layer for n8n workflows that need to return a chart image to the user as part of an agent response.
+- Runs entirely inside the Docker network — no data leaves the deployment.
 
+### How it runs
+
+- Service name in `docker-compose.yml`: `quickchart`
+- Default host port: `3400` (internal container port: `3400`)
+- No authentication by default — relies on network isolation (do **not** expose port 3400 publicly).
+
+### Request shape
+
+QuickChart accepts either a GET with the chart config in the query string or a POST with a JSON body. n8n workflows typically POST because charts can exceed URL length limits.
+
+```http
+POST http://quickchart:3400/chart
+Content-Type: application/json
+
+{
+  "chart": {
+    "type": "bar",
+    "data": {
+      "labels": ["Jan", "Feb", "Mar"],
+      "datasets": [{ "label": "Mentions", "data": [12, 19, 7] }]
+    },
+    "options": { "title": { "display": true, "text": "Monthly mentions" } }
+  },
+  "width": 800,
+  "height": 400,
+  "format": "png"
+}
 ```
-Frontend                Backend                   Superset
-   │                       │                          │
-   │  POST /api/superset/  │                          │
-   │  guest-token/  ───────►                          │
-   │                        │  POST /api/v1/          │
-   │                        │  security/guest_token/──►
-   │                        │◄─────────────────────────
-   │◄───────────────────────│  { token }              │
-   │                        │                          │
-   │  Embed Superset chart  │                          │
-   │  via @superset-ui/ ───────────────────────────────►
-   │  embedded-sdk          │                          │
-```
 
-**Relevant environment variables:**
+Response: the raw image bytes (or a JSON object with a URL if you use the `/chart/create` endpoint to pre-render and cache).
+
+### n8n integration pattern
+
+1. A workflow gathers raw data (from the warehouse DB, a KB, an external API, etc.).
+2. A **Code** or **Set** node transforms that data into a Chart.js JSON payload.
+3. An **HTTP Request** node POSTs that payload to `http://quickchart:3400/chart`.
+4. The response is either:
+   - attached to the agent's chat reply as an image URL, or
+   - uploaded / embedded in a document the workflow returns.
+
+### Integration notes
+
+- Because QuickChart is self-hosted, charts may contain internal / sensitive data safely.
+- Chart configs can reference the full Chart.js feature set (mixed types, annotations, custom colors). Refer to the [Chart.js docs](https://www.chartjs.org/docs/) for the schema.
+- If a fork needs higher rendering throughput, scale the `quickchart` service horizontally behind the internal Docker network — it is stateless.
+
+### Environment variables
 
 | Variable | Description |
 |---|---|
-| `SUPERSET_BASE_URL` | Superset instance URL |
-| `SUPERSET_ADMIN_USER` | Admin username for guest-token generation |
-| `SUPERSET_ADMIN_PASSWORD` | Admin password for guest-token generation | -->
+| *(none required)* | The service runs with defaults; consumers reference it via the internal hostname `quickchart`. |
 
 ---
 
@@ -519,6 +549,7 @@ Two Docker networks keep services isolated:
 | `postgres_dev` | internal | `postgres` | `5432` |
 | `enlaight_cache` | internal | `redis` | — |
 | `n8n_dev` | internal, public | `n8n` | `5678` |
+| `quickchart` | internal | `quickchart` | `3400` |
 | `smtp4dev` | internal, public | `smtp4dev` | `3000`, `2525` |
 
 ### Service Start-up Dependencies
@@ -557,9 +588,6 @@ postgres_dev  ──(healthy)──► enlaight_backend, n8n_dev
 | `N8N_TIMEOUT` | HTTP timeout for n8n calls in seconds (default: `15`) |
 | `JWT_ALGORITHM` | JWT signing algorithm (default: `HS256`) |
 | `JWT_SIGNING_KEY` | JWT signing secret |
-<!-- | `SUPERSET_BASE_URL` | Superset instance URL |
-| `SUPERSET_ADMIN_USER` | Superset admin username |
-| `SUPERSET_ADMIN_PASSWORD` | Superset admin password | -->
 
 ### n8n
 

@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import SearchPage from '../SearchPage';
@@ -21,6 +20,21 @@ vi.mock('react-i18next', () => ({
 			return dict[key] || key;
 		},
 	}),
+}));
+
+// Mock lucide-react to avoid loading full icon library
+vi.mock('lucide-react', () => ({
+	BotMessageSquare: () => null,
+	MessageSquareShare: () => null,
+	Search: () => null,
+	SearchX: () => null,
+	TextSearch: () => null,
+}));
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+	BrowserRouter: ({ children }: any) => <>{children}</>,
+	useNavigate: () => mockNavigate,
 }));
 
 // Mock components
@@ -82,6 +96,7 @@ vi.mock('@/contexts/AgentsChatContext', () => ({
 describe('SearchPage', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockNavigate.mockClear();
 	});
 
 	it('renders search title and description', async () => {
@@ -213,7 +228,6 @@ describe('SearchPage', () => {
 	});
 
 	it('opens chat when result clicked', async () => {
-		const user = userEvent.setup();
 		const mockOpenModal = vi.fn();
 
 		vi.doMock('@/contexts/AgentsChatContext', () => ({

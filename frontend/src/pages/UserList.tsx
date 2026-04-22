@@ -12,7 +12,7 @@ import type { User } from "@/types/user";
 import type { Project } from "@/types/project";
 import { UserDisplayItem } from "@/components/UserDisplayItem";
 import { useBatchTranslation } from "@/hooks/use-batch-translation";
-import api from "@/services/api";
+import api, { tokenStore } from "@/services/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { t } from "i18next";
 import LoadingAnimation from "@/components/LoadingAnimation";
@@ -23,16 +23,11 @@ const handleLoginAs = async (userId: string, navigate: ReturnType<typeof useNavi
   try {
     const response = await api.get(`/login-as/${userId}/`);
 
-    if (!response.data || !response.data.access || !response.data.refresh) {
+    if (!response.data?.access) {
       throw new Error("Invalid response from server");
     }
 
-    localStorage.setItem("accessToken", response.data.access);
-    localStorage.setItem("refreshToken", response.data.refresh);
-    localStorage.setItem("enlaight_access_token", response.data.access);
-    localStorage.setItem("enlaight_refresh_token", response.data.refresh);
-
-    api.defaults.headers["Authorization"] = `Bearer ${response.data.access}`;
+    tokenStore.set(response.data.access);
 
     window.location.reload();
   } catch (error) {

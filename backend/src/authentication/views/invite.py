@@ -1,6 +1,7 @@
 from urllib.parse import quote_plus
 from uuid import UUID, uuid4
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db import transaction
@@ -36,13 +37,9 @@ class InviteUserView(APIView):
         operation_summary="Invite a user",
         operation_description=(
             "Sends an invitation for the user to register.\n\n"
-            "Who can use it:\n"
-            "- ADMINISTRATOR and MANAGER.\n\n"
-            "Rules by profile:\n"
-            "- ADMINISTRATOR: can invite to any project. Can send `client_id`; if omitted, the client is inferred from `project_id`.\n"
-            "When sending `client_id`, the project must belong to that client.\n"
-            "- MANAGER: can only invite to projects to which they belong and cannot invite `ADMINISTRATOR`.\n"
-            "For MANAGER, `client_id` is ignored (it is always inferred from `project_id`).\n\n"
+            "Only ADMINISTRATOR users can send invitations.\n\n"
+            "The client is inferred from `project_id` if `client_id` is omitted. "
+            "When `client_id` is provided, the project must belong to that client.\n\n"
             "Required fields: `email`, `project_id`.\n"
             "The guest's `role` field is optional (default: USER)."
         ),
@@ -50,23 +47,17 @@ class InviteUserView(APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 "email": openapi.Schema(
-                    type=openapi.TYPE_STRING, description="Email do usuário a ser convidado"
+                    type=openapi.TYPE_STRING, description="Email of the user to invite"
                 ),
                 "role": openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description=(
-                        "Role of invited user (ADMINISTRATOR, MANAGER ou USER).\n"
-                        "Managers cannot invite ADMINISTRATOR."
-                    ),
+                    description="Role of the invited user (ADMINISTRATOR or USER).",
                     enum=[role.value for role in UserRole],
                     default=UserRole.USER.value,
                 ),
                 "client_id": openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description=(
-                        "ID of cliente. Optional for ADMINISTRATOR (if omitted, it is inferred from `project_id`).\n"
-                        "Ignored for MANAGER (always inferred from `project_id`)."
-                    ),
+                    description="ID of client. Optional — inferred from `project_id` if omitted.",
                 ),
                 "project_id": openapi.Schema(
                     type=openapi.TYPE_STRING,
@@ -78,7 +69,7 @@ class InviteUserView(APIView):
         responses={
             200: openapi.Response("Invitation sent successfully"),
             400: openapi.Response("Validation or business error"),
-            403: openapi.Response("No permission or MANAGER rules violated"),
+            403: openapi.Response("Insufficient permissions"),
             404: openapi.Response("Client or Project not found"),
         },
         tags=["Invites"],
@@ -86,7 +77,7 @@ class InviteUserView(APIView):
     )
     def post(self, request):
         inviter_role = getattr(request.user, "role", None)
-        if inviter_role not in (UserRole.ADMINISTRATOR.value, UserRole.MANAGER.value):
+        if inviter_role != UserRole.ADMINISTRATOR.value:
             return Response({"error": "User does not have permission to invite"}, status=403)
 
         email = request.data.get("email")
@@ -198,16 +189,6 @@ class InviteUserView(APIView):
                     {"error": "Project does not belong to the informed client"}, status=400
                 )
 
-            # Regras específicas para MANAGER
-            if inviter_role == UserRole.MANAGER.value:
-                # manager pode convidar apenas para projetos onde participa e não pode convidar ADMINISTRATOR
-                if not request.user.projects.filter(id=project.id).exists():
-                    return Response({"error": "Manager não associado ao projeto"}, status=403)
-                if invited_role == UserRole.ADMINISTRATOR.value:
-                    return Response(
-                        {"error": "Manager cannot invite an ADMINISTRATOR"}, status=403
-                    )
-
             token = uuid4()
 
             invite_kwargs = {
@@ -222,9 +203,8 @@ class InviteUserView(APIView):
 
         # Build link that points to the frontend confirmation route.
         # Use token first and email second (email URL-encoded).
-        frontend_base = "https://platform-v2.enlaight.ai"
         link = (
-            f"{frontend_base.rstrip('/')}/confirm-invite?"
+            f"{settings.FRONTEND_URL.rstrip('/')}/confirm-invite?"
             f"token={token}&email={quote_plus(email)}"
         )
         contexto_email = {
@@ -252,9 +232,9 @@ class ConfirmInviteView(APIView):
     def get(self, request):
         qs = request.META.get("QUERY_STRING", "")
         url = (
-            f"https://platform-v2.enlaight.ai/confirm-invite?{qs}"
+            f"{settings.FRONTEND_URL.rstrip('/')}/confirm-invite?{qs}"
             if qs
-            else "https://platform-v2.enlaight.ai/confirm-invite"
+            else f"{settings.FRONTEND_URL.rstrip('/')}/confirm-invite"
         )
         return redirect(url)
 

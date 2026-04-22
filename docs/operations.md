@@ -22,7 +22,7 @@ Enlaight is a multi-service application composed of:
 - **Frontend**: React + TypeScript (Vite) running on port 8080
 - **Backend**: Django REST API with JWT authentication on port 8000
 - **n8n**: Workflow automation engine on port 5678
-- **ChartsIO**: Data visualization and analytics on port 8088
+- **QuickChart.io**: Self-hosted chart-rendering HTTP API on port 3400 (consumed by n8n workflows to turn a Chart.js-style JSON payload into a chart image)
 - **PostgreSQL**: main application and n8n workflow database
 - **Redis**: Caching and session management
 - **SMTP**: Email service (smtp4dev locally)
@@ -287,7 +287,7 @@ bash create_defaults.sh
 ```
 
 This runs:
-1. `n8n/create_sample_kb.py` - Creates sample knowledge bases
+1. `n8n/scripts/create_sample_kb.py` - Creates sample knowledge bases
 2. `backend/scripts/populate_db.py` - Populates backend database
 
 **To repopulate after reset:**
@@ -335,7 +335,7 @@ docker compose logs -f
 ```bash
 docker compose logs -f backend
 docker compose logs -f frontend
-docker compose logs -f mysql
+docker compose logs -f postgres
 docker compose logs -f n8n
 ```
 
@@ -399,11 +399,11 @@ Implement daily automated backups for production:
 BACKUP_DIR="/backups/enlaight"
 DATE=$(date +%Y%m%d_%H%M%S)
 
-# MySQL Backup
-docker compose exec -T mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} \
-  --all-databases > ${BACKUP_DIR}/mysql_${DATE}.sql
+# Backend DB (PostgreSQL) backup
+docker compose exec -T postgres pg_dump -U ${BACKEND_DB_USER} ${BACKEND_DB} \
+  > ${BACKUP_DIR}/backend_${DATE}.sql
 
-# PostgreSQL Backup (n8n)
+# n8n DB backup (same Postgres instance, separate database)
 docker compose exec -T postgres pg_dump -U n8n n8n_enlaight_db \
   > ${BACKUP_DIR}/n8n_${DATE}.sql
 
@@ -428,15 +428,18 @@ echo "Backup completed: ${DATE}"
 
 #### Full System Recovery
 
-1. **Restore MySQL Database**
+1. **Restore Backend Database (PostgreSQL)**
    ```bash
-   docker compose exec -T mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} < mysql_backup.sql
+   docker compose exec postgres dropdb -U ${BACKEND_DB_USER} ${BACKEND_DB}
+   docker compose exec postgres createdb -U ${BACKEND_DB_USER} ${BACKEND_DB}
+   docker compose exec -T postgres psql -U ${BACKEND_DB_USER} ${BACKEND_DB} < backend_backup.sql
    ```
 
-2. **Restore PostgreSQL Database**
+2. **Restore n8n Database (PostgreSQL)**
    ```bash
    docker compose exec postgres dropdb -U n8n n8n_enlaight_db
-   docker compose exec -T postgres psql -U n8n < n8n_backup.sql
+   docker compose exec postgres createdb -U n8n -O n8n n8n_enlaight_db
+   docker compose exec -T postgres psql -U n8n n8n_enlaight_db < n8n_backup.sql
    ```
 
 3. **Restore n8n Files**
@@ -457,7 +460,7 @@ echo "Backup completed: ${DATE}"
 **Restore Backend Database Only:**
 ```bash
 docker compose stop backend
-docker compose exec -T mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} enlaight_database < enlaight_database_backup.sql
+docker compose exec -T postgres psql -U ${BACKEND_DB_USER} ${BACKEND_DB} < backend_backup.sql
 docker compose start backend
 ```
 
@@ -529,15 +532,15 @@ server {
 
 #### Database Scaling
 
-**Read Replicas:**
+**Read Replicas (PostgreSQL):**
 ```bash
-# For PostgreSQL (n8n)
-docker compose exec postgres pg_basebackup -D /var/lib/postgresql/replica1
+docker compose exec postgres pg_basebackup -D /var/lib/postgresql/replica1 \
+  -U replication -Fp -Xs -P -R
 ```
 
-**MySQL Replication:**
-- Set up binary logging on primary
-- Create read replicas for analytics queries
+- Configure streaming replication on the primary (`wal_level=replica`,
+  `max_wal_senders`, a `replication` role).
+- Point read-only analytics queries at the replica.
 
 ### Vertical Scaling
 
@@ -554,7 +557,7 @@ backend:
         cpus: '1'
         memory: 1G
 
-mysql:
+postgres:
   deploy:
     resources:
       limits:
@@ -575,8 +578,8 @@ mysql:
 docker compose logs backend
 
 # Common causes:
-# 1. MySQL not ready
-docker compose logs mysql
+# 1. Postgres not ready
+docker compose logs postgres
 
 # 2. Failed migrations
 docker compose exec backend python manage.py migrate --noinput
@@ -604,14 +607,14 @@ curl -H "Origin: http://localhost:8080" http://localhost:8000/api/
 #### Database Connection Errors
 
 ```bash
-# Check MySQL health
-docker compose exec mysql mysqladmin ping -uroot -p${MYSQL_ROOT_PASSWORD}
+# Check Postgres health
+docker compose exec postgres pg_isready -U ${BACKEND_DB_USER} -d ${BACKEND_DB}
 
 # Check connection from backend
 docker compose exec backend python manage.py dbshell
 
 # Verify credentials in .env
-docker compose exec backend printenv | grep MYSQL
+docker compose exec backend printenv | grep -E 'POSTGRES_|BACKEND_DB'
 ```
 
 #### n8n Integration Issues
@@ -640,7 +643,7 @@ docker system prune -a
 docker volume prune
 
 # Check container sizes
-docker compose exec backend du -sh /var/lib/mysql/*
+docker compose exec postgres du -sh /var/lib/postgresql/data/*
 ```
 
 #### Memory Issues (OOMKilled)
@@ -663,16 +666,18 @@ docker compose up -d
 #### Slow Queries
 
 ```bash
-# Enable MySQL query log
-docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e \
-  "SET GLOBAL slow_query_log = 'ON';"
+# Enable slow-query logging in Postgres (runtime; persist via postgresql.conf)
+docker compose exec postgres psql -U ${BACKEND_DB_USER} -d ${BACKEND_DB} -c \
+  "ALTER SYSTEM SET log_min_duration_statement = 500;"  # ms
+docker compose exec postgres psql -U ${BACKEND_DB_USER} -d ${BACKEND_DB} \
+  -c "SELECT pg_reload_conf();"
 
-# View slow queries
-docker compose exec mysql tail -f /var/log/mysql/slow.log
+# Tail Postgres logs for slow queries
+docker compose logs -f postgres | grep 'duration:'
 
-# Analyze query
-docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} \
-  -e "EXPLAIN SELECT * FROM authentication_userprofile;"
+# Analyze a query
+docker compose exec postgres psql -U ${BACKEND_DB_USER} -d ${BACKEND_DB} \
+  -c "EXPLAIN ANALYZE SELECT * FROM authentication_userprofile;"
 ```
 
 ---
@@ -704,18 +709,21 @@ docker compose exec backend gunicorn core.wsgi:application \
   --workers 4 --worker-class gevent --worker-connections 1000
 ```
 
-### MySQL Optimization
+### PostgreSQL Optimization
 
-```sql
--- Key configurations in docker-compose.yml
---character-set-server=utf8mb4
---collation-server=utf8mb4_unicode_ci
---innodb_buffer_pool_size=2G
---innodb_log_file_size=512M
---max_connections=1000
---query_cache_type=1
---query_cache_size=256M
+```conf
+# Key tunables (postgresql.conf or ALTER SYSTEM ...)
+shared_buffers = 2GB                # ~25% of host memory
+effective_cache_size = 6GB          # ~50–75% of host memory
+work_mem = 16MB                     # per-operation sort/hash
+maintenance_work_mem = 512MB        # VACUUM / CREATE INDEX
+max_connections = 200               # pair with pgbouncer if higher
+wal_compression = on
+log_min_duration_statement = 500    # ms — log slow queries
 ```
+
+Run `ANALYZE;` after large imports and enable `auto_explain` if you need
+per-query plan logging.
 
 ### Redis Optimization
 
@@ -815,8 +823,8 @@ docker stats                         # Real-time resource usage
 docker compose logs -f               # Follow all logs
 
 # Database Operations
-docker compose exec mysql mysql -u...  # MySQL shell
-docker compose exec postgres psql -U...  # PostgreSQL shell
+docker compose exec postgres psql -U ${BACKEND_DB_USER} -d ${BACKEND_DB}   # backend DB shell
+docker compose exec postgres psql -U n8n -d n8n_enlaight_db                # n8n DB shell
 
 # Cleanup
 docker system prune                  # Remove unused images
@@ -834,9 +842,9 @@ bash create_defaults.sh              # Initialize sample data
 
 ## Emergency Contacts & Escalation
 
-- **Database Down**: Check MySQL logs, verify disk space, attempt restore
+- **Database Down**: Check Postgres logs, verify disk space, attempt restore
 - **API Down**: Check Django logs, verify database connectivity, restart backend
-- **n8n Issues**: Check PostgreSQL, verify workflow status, review n8n logs
+- **n8n Issues**: Check PostgreSQL (shared instance), verify workflow status, review n8n logs
 - **Performance Degradation**: Check resource usage, database load, cache hit rate
 
 For production emergencies, maintain runbooks in `/docs/runbooks/`.

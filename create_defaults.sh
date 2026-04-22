@@ -25,16 +25,16 @@ echo -e "${GREEN}✓ Backend container is running${NC}"
 echo ""
 
 # Run n8n sample KB creation first
-if [ -f "n8n/create_sample_kb.py" ]; then
+if [ -f "n8n/scripts/create_sample_kb.py" ]; then
   echo -e "${BLUE}Running n8n sample KB creation...${NC}"
 
   N8N_OK=false
 
-  if docker compose exec -T backend python /app/n8n/create_sample_kb.py 2>/dev/null; then
+  if docker compose exec -T backend python /app/n8n/scripts/create_sample_kb.py 2>/dev/null; then
     N8N_OK=true
   else
     echo -e "${YELLOW}Warning: Could not run n8n KB creation in container. Trying from host...${NC}"
-    if python /app/n8n/create_sample_kb.py 2>/dev/null; then
+    if python /app/n8n/scripts/create_sample_kb.py 2>/dev/null; then
       N8N_OK=true
     fi
   fi
@@ -47,7 +47,7 @@ if [ -f "n8n/create_sample_kb.py" ]; then
 
   echo ""
 else
-  echo -e "${YELLOW}N8N KB creation script not found at n8n/create_sample_kb.py. Skipping.${NC}"
+  echo -e "${YELLOW}N8N KB creation script not found at n8n/scripts/create_sample_kb.py. Skipping.${NC}"
   echo ""
 fi
 

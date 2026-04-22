@@ -70,7 +70,7 @@ class DebugJWTAuthentication(JWTAuthentication):
             if not user:
                 # In debug mode, allow creating a temporary user from token claims
                 # only when explicitly allowed by env var ALLOW_CREATE_USERS_FROM_TOKEN
-                allow_create = settings.DEBUG or os.getenv("ALLOW_CREATE_USERS_FROM_TOKEN") == "1"
+                allow_create = settings.DEBUG and os.getenv("ALLOW_CREATE_USERS_FROM_TOKEN") == "1"
                 if allow_create:
                     email = payload.get("email")
                     username = payload.get("username") or (email.split("@")[0] if email else None)

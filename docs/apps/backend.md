@@ -8,7 +8,7 @@ The Enlaight backend is a **Django REST API** built with modern best practices. 
 - **Framework**: Django 5.2+
 - **API**: Django REST Framework (DRF)
 - **Authentication**: JWT via djangorestframework-simplejwt
-- **Database**: MySQL 8.4
+- **Database**: PostgreSQL 15
 - **ORM**: Django ORM
 - **API Documentation**: drf-yasg (Swagger/OpenAPI)
 - **CORS**: django-cors-headers
@@ -229,11 +229,18 @@ docker compose exec backend python manage.py migrate authentication [migration_n
 
 ### Database Initialization
 
-**init-databases.sql** runs on MySQL startup:
+The backend DB is provisioned automatically by the Postgres container from
+the `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` env vars (see
+[`docker-compose.yml`](../../docker-compose.yml)). Additional roles and
+databases (e.g. the n8n DB that shares the same Postgres instance) are
+created by [`postgres/init/01-init-databases.sql`](../../postgres/init/01-init-databases.sql),
+which Postgres runs automatically from `/docker-entrypoint-initdb.d` on
+first startup:
+
 ```sql
-CREATE DATABASE enlaight_database;
-CREATE USER 'enlaight'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON enlaight_database.* TO 'enlaight'@'%';
+CREATE ROLE n8n WITH LOGIN PASSWORD 'n8n_dev_password';
+CREATE DATABASE n8n_enlaight_db OWNER n8n ENCODING 'UTF8';
+GRANT ALL PRIVILEGES ON DATABASE n8n_enlaight_db TO n8n;
 ```
 
 ### ORM Queries
@@ -279,12 +286,12 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 ```python
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("BACKEND_DB"),
         "USER": os.getenv("BACKEND_DB_USER"),
         "PASSWORD": os.getenv("BACKEND_DB_PASSWORD"),
-        "HOST": os.getenv("MYSQL_HOST"),
-        "PORT": 3306
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
 ```
