@@ -5,7 +5,7 @@ How to safely unwind a bad deploy of Enlaight. Ordered from least invasive
 try the lowest tier that addresses the problem first.**
 
 ---
-
+ 
 ## Guiding principles
 
 - **Most recent changes are env-gated.** Security hardening (throttling, HSTS,
