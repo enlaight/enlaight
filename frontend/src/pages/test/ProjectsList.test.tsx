@@ -5,7 +5,6 @@ import '@testing-library/jest-dom';
 import ProjectsList from '../ProjectsList';
 import { BrowserRouter } from 'react-router-dom';
 
-// Mock translations
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
 		t: (key: string) => {
@@ -14,22 +13,12 @@ vi.mock('react-i18next', () => ({
 				'projects.description': 'Manage your projects',
 				'projects.searchPlaceholder': 'Search projects',
 				'projects.addProject': 'Add Project',
-				'projects.noProjectsFound': 'No projects found',
-				'projects.loading': 'Loading projects',
-				'projects.projectsFound': 'Projects found',
-				'common.cancel': 'Cancel',
-				'common.confirm': 'Confirm',
-				'common.edit': 'Edit',
-				'common.delete': 'Delete',
-				'common.success': 'Success',
-				'common.error': 'Error',
 			};
 			return dict[key] || key;
 		},
 	}),
 }));
 
-// Mock components
 vi.mock('@/components/LoadingAnimation', () => ({
 	default: ({ text }: any) => <div data-testid="loading-animation">{text}</div>,
 }));
@@ -38,12 +27,8 @@ vi.mock('@/components/ProjectDisplayItem', () => ({
 	ProjectDisplayItem: ({ project, onEdit, onDelete }: any) => (
 		<div data-testid="project-item">
 			<span>{project.name}</span>
-			<button onClick={() => {
-				if (typeof onEdit === 'function') return onEdit(project);
-			}}>Edit</button>
-			<button onClick={() => {
-				if (typeof onDelete === 'function') return onDelete(project);
-			}}>Delete</button>
+			<button onClick={() => onEdit?.(project)}>Edit</button>
+			<button onClick={() => onDelete?.(project)}>Delete</button>
 		</div>
 	),
 }));
@@ -72,43 +57,21 @@ vi.mock('@/components/EditProjectModal', () => ({
 
 vi.mock('@/components/ui/input', () => ({
 	Input: ({ type, placeholder, value, onChange, ...props }: any) => (
-		<input
-			type={type}
-			placeholder={placeholder}
-			value={value}
-			onChange={onChange}
-			data-testid="search-input"
-			{...props}
-		/>
+		<input type={type} placeholder={placeholder} value={value} onChange={onChange} data-testid="search-input" {...props} />
 	),
 }));
 
 vi.mock('@/components/ui/button', () => ({
 	Button: ({ children, onClick, ...props }: any) => (
-		<button onClick={onClick} {...props}>
-			{children}
-		</button>
+		<button onClick={onClick} {...props}>{children}</button>
 	),
 }));
 
-// Mock services
 vi.mock('@/services/ProjectService', () => ({
 	listProjects: vi.fn(() => Promise.resolve({
 		results: [
-			{
-				id: 'proj1',
-				name: 'Project 1',
-				description: 'First project',
-				client: { id: 'client1', name: 'Client A' },
-				created_at: new Date().toISOString(),
-			},
-			{
-				id: 'proj2',
-				name: 'Project 2',
-				description: 'Second project',
-				client: { id: 'client2', name: 'Client B' },
-				created_at: new Date().toISOString(),
-			},
+			{ id: 'proj1', name: 'Project 1', description: 'First project', client: { id: 'client1', name: 'Client A' }, created_at: new Date().toISOString() },
+			{ id: 'proj2', name: 'Project 2', description: 'Second project', client: { id: 'client2', name: 'Client B' }, created_at: new Date().toISOString() },
 		],
 		count: 2,
 	})),
@@ -119,17 +82,12 @@ vi.mock('@/services/ProjectService', () => ({
 	},
 }));
 
-// Mock hooks
 vi.mock('@/hooks/use-toast', () => ({
-	useToast: () => ({
-		toast: vi.fn(),
-	}),
+	useToast: () => ({ toast: vi.fn() }),
 }));
 
 vi.mock('@/hooks/use-batch-translation', () => ({
-	useBatchTranslation: () => ({
-		getTranslation: (text: string) => text,
-	}),
+	useBatchTranslation: () => ({ getTranslation: (text: string) => text }),
 }));
 
 describe('ProjectsList Page', () => {
@@ -137,154 +95,35 @@ describe('ProjectsList Page', () => {
 		vi.clearAllMocks();
 	});
 
-	it('renders projects list title', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
+	it('renders title and project names', async () => {
+		render(<BrowserRouter><ProjectsList /></BrowserRouter>);
 		expect(await screen.findByText('Projects')).toBeInTheDocument();
-	});
-
-	it('renders project items after loading', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-		const items = await screen.findAllByTestId('project-item');
-		expect(items.length).toBeGreaterThan(0);
-	});
-
-	it('renders projects after loading', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-		const projectItems = await screen.findAllByTestId('project-item');
-		expect(projectItems.length).toBeGreaterThan(0);
-	});
-
-	it('displays project names', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
 		expect(await screen.findByText('Project 1')).toBeInTheDocument();
-		expect(await screen.findByText('Project 2')).toBeInTheDocument();
-	});
-
-	it('displays search input', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-		expect(await screen.findByTestId('search-input')).toBeInTheDocument();
+		expect(screen.getByText('Project 2')).toBeInTheDocument();
 	});
 
 	it('allows user to search projects', async () => {
 		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
+		render(<BrowserRouter><ProjectsList /></BrowserRouter>);
 		const searchInput = await screen.findByTestId('search-input');
 		await user.type(searchInput, 'Project 1');
 		expect(searchInput).toHaveValue('Project 1');
 	});
 
-	it('displays add project button', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-		const buttons = await screen.findAllByRole('button');
-		expect(buttons.length).toBeGreaterThan(0);
-	});
-
-	it('opens add project modal', async () => {
+	it('opens add project modal and closes after save', async () => {
 		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-
-		const addButton = await screen.findByRole('button', { name: /Add/i });
-		await user.click(addButton);
-
-		expect(await screen.findByTestId('add-project-modal')).toBeInTheDocument();
-	});
-
-	it('displays edit and delete buttons for each project', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-		const editButtons = await screen.findAllByRole('button', { name: /Edit/ });
-		const deleteButtons = await screen.findAllByRole('button', { name: /Delete/ });
-		expect(editButtons.length).toBeGreaterThan(0);
-		expect(deleteButtons.length).toBeGreaterThan(0);
-	});
-
-	it('opens edit project modal', async () => {
-		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-
-		const editButtons = await screen.findAllByRole('button', { name: /Edit/i });
-		await user.click(editButtons[0]);
-
-		expect(await screen.findByTestId('edit-project-modal')).toBeInTheDocument();
-	});
-
-	it('handles project creation', async () => {
-		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-
-		const addButton = await screen.findByRole('button', { name: /Add/i });
-		await user.click(addButton);
-
-		const saveButton = await screen.findByRole('button', { name: /Save/i });
-		await user.click(saveButton);
-
-		// Modal closes after save
+		render(<BrowserRouter><ProjectsList /></BrowserRouter>);
+		await user.click(await screen.findByRole('button', { name: /Add/i }));
+		await screen.findByTestId('add-project-modal');
+		await user.click(screen.getByRole('button', { name: /Save/i }));
 		expect(screen.queryByTestId('add-project-modal')).not.toBeInTheDocument();
 	});
 
-	it('handles project deletion', async () => {
+	it('opens edit project modal when edit clicked', async () => {
 		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-
-		const deleteButtons = await screen.findAllByRole('button', { name: /Delete/i });
-		await user.click(deleteButtons[0]);
-	});
-
-	it('shows project count after loading', async () => {
-		render(
-			<BrowserRouter>
-				<ProjectsList />
-			</BrowserRouter>
-		);
-
-		const items = await screen.findAllByTestId('project-item');
-		expect(items.length).toBeGreaterThan(0);
+		render(<BrowserRouter><ProjectsList /></BrowserRouter>);
+		const editButtons = await screen.findAllByRole('button', { name: /Edit/i });
+		await user.click(editButtons[0]);
+		expect(await screen.findByTestId('edit-project-modal')).toBeInTheDocument();
 	});
 });

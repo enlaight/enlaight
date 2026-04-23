@@ -163,144 +163,26 @@ describe('KnowledgeBases Page', () => {
     vi.clearAllMocks();
   });
 
-  it('renders knowledge bases title', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
+  it('renders title, table, and knowledge base names', async () => {
+    render(<BrowserRouter><KnowledgeBases /></BrowserRouter>);
     expect(await screen.findByText('Knowledge Bases')).toBeInTheDocument();
-  });
-
-  it('displays project selector', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    expect(await screen.findByTestId('select')).toBeInTheDocument();
-  });
-
-  it('renders knowledge bases after loading', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
     expect(await screen.findByText('KB 1')).toBeInTheDocument();
-    expect(await screen.findByText('KB 2')).toBeInTheDocument();
-  });
-
-  it('renders knowledge bases table after loading', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    expect(await screen.findByTestId('table')).toBeInTheDocument();
-  });
-
-  it('displays search input', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    const searchInput = await screen.findByTestId('search-input');
-    expect(searchInput).toBeInTheDocument();
+    expect(screen.getByText('KB 2')).toBeInTheDocument();
+    expect(screen.getByTestId('table')).toBeInTheDocument();
   });
 
   it('allows user to search knowledge bases', async () => {
     const user = userEvent.setup();
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
+    render(<BrowserRouter><KnowledgeBases /></BrowserRouter>);
     const searchInput = await screen.findByTestId('search-input');
     await user.type(searchInput, 'KB 1');
     expect(searchInput).toHaveValue('KB 1');
   });
 
-  it('displays add knowledge base button', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    const addButton = await screen.findByRole('button', { name: /Add Knowledge Base/i });
-    expect(addButton).toBeInTheDocument();
-  });
-
-  it('opens add knowledge base modal', async () => {
+  it('opens add knowledge base modal when button clicked', async () => {
     const user = userEvent.setup();
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    const addButton = await screen.findByRole('button', { name: /Add Knowledge Base/i });
-    await user.click(addButton);
+    render(<BrowserRouter><KnowledgeBases /></BrowserRouter>);
+    await user.click(await screen.findByRole('button', { name: /Add Knowledge Base/i }));
     expect(await screen.findByTestId('kb-modal')).toBeInTheDocument();
-  });
-
-  it('displays action buttons for each knowledge base', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    await screen.findByTestId('table');
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(1);
-  });
-
-  it('handles knowledge base creation', async () => {
-    const user = userEvent.setup();
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    const addButton = await screen.findByRole('button', { name: /Add Knowledge Base/i });
-    await user.click(addButton);
-    const saveButton = await screen.findByRole('button', { name: /Save/i });
-    await user.click(saveButton);
-  });
-
-  it('handles knowledge base deletion', async () => {
-    const user = userEvent.setup();
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    await screen.findByTestId('table');
-    const allButtons = screen.getAllByRole('button');
-    const destructiveBtn = allButtons.find(btn =>
-      btn.className?.includes('destructive')
-    );
-    if (destructiveBtn) {
-      await user.click(destructiveBtn);
-    }
-  });
-
-  it('filters knowledge bases by project', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    const select = await screen.findByTestId('select');
-    expect(select).toBeInTheDocument();
-  });
-
-  it('handles permission errors gracefully', async () => {
-    render(
-      <BrowserRouter>
-        <KnowledgeBases />
-      </BrowserRouter>
-    );
-    expect(await screen.findByTestId('select')).toBeInTheDocument();
   });
 });

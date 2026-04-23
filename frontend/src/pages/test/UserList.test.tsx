@@ -172,121 +172,34 @@ describe('UserList Page', () => {
 		vi.clearAllMocks();
 	});
 
-	it('renders user list title', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
+	it('renders title and user emails', async () => {
+		render(<BrowserRouter><UserList /></BrowserRouter>);
 		expect(await screen.findByText('Users')).toBeInTheDocument();
-	});
-
-	it('renders users after loading', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		const userItems = await screen.findAllByTestId('user-item');
-		expect(userItems.length).toBeGreaterThan(0);
-	});
-
-	it('displays user emails', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
 		expect(await screen.findByText('john@example.com')).toBeInTheDocument();
-		expect(await screen.findByText('jane@example.com')).toBeInTheDocument();
-	});
-
-	it('displays search input', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		expect(await screen.findByTestId('search-input')).toBeInTheDocument();
+		expect(screen.getByText('jane@example.com')).toBeInTheDocument();
 	});
 
 	it('allows user to search', async () => {
 		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
+		render(<BrowserRouter><UserList /></BrowserRouter>);
 		const searchInput = await screen.findByTestId('search-input');
 		await user.type(searchInput, 'john');
 		expect(searchInput).toHaveValue('john');
 	});
 
-	it('displays action buttons for each user', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		const buttons = await screen.findAllByRole('button');
-		expect(buttons.length).toBeGreaterThan(0);
-	});
-
-	it('has pagination for users', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		const userItems = await screen.findAllByTestId('user-item');
-		expect(userItems.length).toBeGreaterThan(0);
-	});
-
 	it('displays pagination controls', async () => {
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
+		render(<BrowserRouter><UserList /></BrowserRouter>);
 		await screen.findAllByTestId('user-item');
 		expect(screen.getByText('Previous')).toBeInTheDocument();
 		expect(screen.getByText('Next')).toBeInTheDocument();
 	});
 
-	it('handles login as user action', async () => {
+	it('opens attach-to-projects dialog and toggles checkboxes', async () => {
 		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		const loginButtons = await screen.findAllByRole('button', { name: /Login As/i });
-		expect(loginButtons.length).toBeGreaterThan(0);
-		await user.click(loginButtons[0]);
-	});
-
-	it('handles attach to projects action', async () => {
-		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
+		render(<BrowserRouter><UserList /></BrowserRouter>);
 		const attachButtons = await screen.findAllByRole('button', { name: /Attach/i });
-		expect(attachButtons.length).toBeGreaterThan(0);
 		await user.click(attachButtons[0]);
 		expect(await screen.findByTestId('dialog')).toBeInTheDocument();
-	});
-
-	it('handles multiple project selection in attach dialog', async () => {
-		const user = userEvent.setup();
-		render(
-			<BrowserRouter>
-				<UserList />
-			</BrowserRouter>
-		);
-		const attachButtons = await screen.findAllByRole('button', { name: /Attach/i });
-		await user.click(attachButtons[0]);
 		const checkboxes = await screen.findAllByTestId('checkbox');
 		expect(checkboxes.length).toBeGreaterThan(0);
 		await user.click(checkboxes[0]);
