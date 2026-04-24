@@ -571,7 +571,7 @@ class CustomTokenBlacklistView(APIView):
         refresh_str = request.data.get("refresh") or request.COOKIES.get("refresh")
         if not refresh_str:
             return Response(
-                {"error": "Campo 'refresh' obrigatório ou cookie ausente."},
+                {"detail": "Campo 'refresh' obrigatório ou cookie ausente."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
@@ -579,7 +579,7 @@ class CustomTokenBlacklistView(APIView):
             token.blacklist()
         except TokenError:
             return Response(
-                {"error": "Token inválido ou já invalidado."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Token inválido ou já invalidado."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         resp = Response({"detail": "Logout realizado."}, status=status.HTTP_200_OK)
@@ -676,7 +676,7 @@ class ForgotPasswordView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)
 
         token = get_random_string(length=64)
         user.password_reset_token = token
@@ -734,13 +734,13 @@ class ResetPasswordView(APIView):
 
         if not all([email, token, new_password]):
             return Response(
-                {"error": "Campos obrigatórios: email, token, new_password"}, status=400
+                {"detail": "Campos obrigatórios: email, token, new_password"}, status=400
             )
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)
 
         if (
             not user.password_reset_token
@@ -748,7 +748,7 @@ class ResetPasswordView(APIView):
             or not user.password_reset_token_expires_at
             or user.password_reset_token_expires_at < timezone.now()
         ):
-            return Response({"error": "Token inválido ou expirado"}, status=400)
+            return Response({"detail": "Token inválido ou expirado"}, status=400)
 
         user.set_password(new_password)
         user.password_reset_token = None
@@ -796,7 +796,7 @@ class UserRolesView(APIView):
             roles = user.groups.values_list("name", flat=True)
             return Response({"roles": list(roles)}, status=200)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)
 
 
 class AddUserRoleView(APIView):
@@ -833,7 +833,7 @@ class AddUserRoleView(APIView):
     def post(self, request, user_id):
         role = request.data.get("role")
         if not role:
-            return Response({"error": "Campo 'role' obrigatório."}, status=400)
+            return Response({"detail": "Campo 'role' obrigatório."}, status=400)
 
         try:
             user = User.objects.get(id=user_id)
@@ -841,7 +841,7 @@ class AddUserRoleView(APIView):
             user.groups.add(group)
             return Response({"detail": f"Role '{role}' adicionada ao usuário."}, status=200)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)
 
 
 class RemoveUserRoleView(APIView):
@@ -878,7 +878,7 @@ class RemoveUserRoleView(APIView):
     def delete(self, request, user_id):
         role = request.data.get("role")
         if not role:
-            return Response({"error": "Campo 'role' obrigatório."}, status=400)
+            return Response({"detail": "Campo 'role' obrigatório."}, status=400)
 
         try:
             user = User.objects.get(id=user_id)
@@ -887,6 +887,6 @@ class RemoveUserRoleView(APIView):
                 user.groups.remove(group)
                 return Response({"detail": f"Role '{role}' removida do usuário."}, status=200)
             except Group.DoesNotExist:
-                return Response({"error": "Role não encontrada."}, status=404)
+                return Response({"detail": "Role não encontrada."}, status=404)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)

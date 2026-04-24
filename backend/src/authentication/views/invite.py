@@ -78,24 +78,24 @@ class InviteUserView(APIView):
     def post(self, request):
         inviter_role = getattr(request.user, "role", None)
         if inviter_role != UserRole.ADMINISTRATOR.value:
-            return Response({"error": "User does not have permission to invite"}, status=403)
+            return Response({"detail": "User does not have permission to invite"}, status=403)
 
         email = request.data.get("email")
         project_id = request.data.get("project_id")
         invited_role = request.data.get("role", UserRole.USER.value)
 
         if not email or not project_id:
-            return Response({"error": "Missing required fields: email, project_id"}, status=400)
+            return Response({"detail": "Missing required fields: email, project_id"}, status=400)
 
         if invited_role not in UserRole._value2member_map_:
-            return Response({"error": "Invalid invited role"}, status=400)
+            return Response({"detail": "Invalid invited role"}, status=400)
 
         with transaction.atomic():
             existing_user = User.objects.filter(email=email).first()
             if existing_user:
                 if getattr(existing_user, "is_active", False):
                     return Response(
-                        {"error": "User with this email already exists."},
+                        {"detail": "User with this email already exists."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
@@ -164,7 +164,7 @@ class InviteUserView(APIView):
             try:
                 project = Projects.objects.get(id=project_id)
             except Projects.DoesNotExist:
-                return Response({"error": "Project não encontrado"}, status=404)
+                return Response({"detail": "Project não encontrado"}, status=404)
 
             # Resolve client_id conforme a role do convidante
             client_id_from_req = request.data.get("client_id")
@@ -176,17 +176,17 @@ class InviteUserView(APIView):
                 resolved_client_id = getattr(project, "client_id", None)
 
             if not resolved_client_id:
-                return Response({"error": "Cannot determine client"}, status=400)
+                return Response({"detail": "Cannot determine client"}, status=400)
 
             # Busca client e valida relação com o projeto
             try:
                 client = Clients.objects.get(id=resolved_client_id)
             except Clients.DoesNotExist:
-                return Response({"error": "Client not found"}, status=404)
+                return Response({"detail": "Client not found"}, status=404)
 
             if project.client_id != client.id:
                 return Response(
-                    {"error": "Project does not belong to the informed client"}, status=400
+                    {"detail": "Project does not belong to the informed client"}, status=400
                 )
 
             token = uuid4()
@@ -244,12 +244,12 @@ class ConfirmInviteView(APIView):
         new_password = request.data.get("password")
 
         if not all([email, token, new_password]):
-            return Response({"error": "Campos obrigatórios: email, token, password"}, status=400)
+            return Response({"detail": "Campos obrigatórios: email, token, password"}, status=400)
 
         try:
             token_uuid = UUID(token)
         except ValueError:
-            return Response({"error": "Token malformado"}, status=400)
+            return Response({"detail": "Token malformado"}, status=400)
 
         # Try to locate invite by email+token. Prefer matching project if provided.
         project_q = request.query_params.get("project_id")
@@ -259,15 +259,15 @@ class ConfirmInviteView(APIView):
             else:
                 invite = Invite.objects.get(email=email, token=token_uuid)
         except Invite.DoesNotExist:
-            return Response({"error": "Convite não encontrado"}, status=400)
+            return Response({"detail": "Convite não encontrado"}, status=400)
 
         if invite.expires_at < timezone.now():
-            return Response({"error": "Convite expirado"}, status=400)
+            return Response({"detail": "Convite expirado"}, status=400)
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "Usuário não encontrado"}, status=404)
 
         user.set_password(new_password)
         user.is_active = True

@@ -99,7 +99,7 @@ export default function ConfirmInvite() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.error || "Failed to confirm invitation. The link may be expired.",
+        description: error.response?.data?.detail || "Failed to confirm invitation. The link may be expired.",
         variant: "destructive",
       });
     } finally {
