@@ -159,19 +159,14 @@ const DashboardPage = () => {
         }
       }
 
-      // If we have a n8n link, we fetch the content
+      // If we have a n8n webhook, we fetch the content
+      // to display as a graph
       if (item['n8n']) {
         fetchN8n();
       }
     }, [item]);
 
     if (!n8nContent) return null;
-    // return (
-    //   <div
-    //     className="flex w-full" style={{ padding: "3px 5px", background: '#202020', borderRadius: 5 }}
-    //     dangerouslySetInnerHTML={{ __html: n8nContent }}
-    //   />
-    // )
     return (
       <QuickChartGraph data={n8nContent} />
     );

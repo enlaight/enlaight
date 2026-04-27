@@ -20,8 +20,8 @@ init:
 	make start
 
 reset:
-	make clear
-	docker compose -f $(COMPOSE_FILE) build --no-cache
+	docker compose down
+	docker compose -f $(COMPOSE_FILE) build
 	make start
 
 test:

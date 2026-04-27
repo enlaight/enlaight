@@ -105,6 +105,21 @@ To access n8n locally you may need to add an entry to your `/etc/hosts`:
 
 The `n8n/` directory contains reference workflows and data-pipeline scripts that new developers can use to bootstrap a local n8n instance.
 
+### Initial Setup (required before using Knowledge Bases)
+
+> ⚠️ **You must complete these steps before creating or using any Knowledge Base (KB) in Enlaight.** The KB features call n8n via its REST API, which requires an API key.
+
+1. Open the n8n UI at [http://localhost:5678](http://localhost:5678) (or `http://n8n.localhost:5678` if you added the `/etc/hosts` entry above).
+2. Create the **owner / admin account** by completing the n8n setup form on first launch.
+3. Once logged in, go to **Settings → n8n API → Create an API key** and copy the generated token.
+4. Paste the token into your `.env` file as the n8n API key variable, then restart the stack so the backend picks up the new value:
+
+   ```bash
+   make reset
+   ```
+
+5. Import the KB workflows from `n8n/workflows/` (see [Workflows](#workflows) below) and reassign their credentials.
+
 ### Workflows
 
 All workflow JSON files live in `n8n/workflows/`. Import them via **n8n UI → Settings → Import workflow** or through the n8n REST API.
