@@ -65,7 +65,14 @@ const ResetPassword = () => {
   };
 
   const handlePasswordReset = async () => {
-    if (!validateForm() || !email) {
+    if (!validateForm() || !email || !token) {
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Missing reset token. Please use the password reset link.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -93,7 +100,7 @@ const ResetPassword = () => {
   };
 
   const isFormValid = () => {
-    return email && newPassword && confirmPassword &&
+    return token && email && newPassword && confirmPassword &&
       newPassword.length >= 8 && newPassword === confirmPassword;
   };
 

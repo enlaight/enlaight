@@ -25,16 +25,15 @@ const DashboardPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteChart, setDeleteChart] = useState(false);
 
-  const [selectedChart, setSelected] = useState({});
+  const [selectedChart, setSelected] = useState<any>(null);
 
   const [modalId, setModalId] = useState('');
   const [modalTitle, setModalTitle] = useState('');
   const [modalSubtitle, setModalSubtitle] = useState('');
-  const [modalDashConfig, setModalDashConfig] = useState('');
   const [modalN8n, setModalN8n] = useState('');
   const [modalHTML, setModalHTML] = useState('');
 
-  const [layout, setLayout] = useState<object[]>([]);
+  const [layout, setLayout] = useState<Array<{ i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string }>>([]);
 
   // Checking for admin role
   const { user } = useContext(AuthContext);
@@ -45,7 +44,7 @@ const DashboardPage = () => {
     const getLayout = async () => {
       try {
         const response = await BoardsService.get();
-        const layoutData = JSON.parse(response[0].data);
+        const layoutData = JSON.parse(Array.isArray(response) ? response[0].data : response);
         setLayout(layoutData);
       } catch (err) {
         console.error(err);
@@ -56,8 +55,8 @@ const DashboardPage = () => {
     getLayout();
   }, []);
 
-  const getNextPosition = (layout, cols = 5, defaultW = 2, defaultH = 1) => {
-    const gridMap = {};
+  const getNextPosition = (layout: any[], cols = 5, defaultW = 2, defaultH = 1) => {
+    const gridMap: Record<string, boolean> = {};
 
     // Creating gridmap
     layout.forEach(({ x, y, w, h }) => {
@@ -91,58 +90,56 @@ const DashboardPage = () => {
     return { x: 0, y: 0, w: defaultW, h: defaultH };
   }
 
-  const addCard = ({ title, subtitle, dashConfig, n8n, html }) => {
+  const addCard = ({ title, subtitle, n8n, html }: { title?: string; subtitle?: string; n8n?: string; html?: string }) => {
     const position = getNextPosition(layout);
     setLayout(prevLayout => [
       ...prevLayout,
-      { i: cardId(), ...position, title, subtitle, dashConfig, n8n, html }
+      { i: cardId(), ...position, title, subtitle, n8n, html }
     ]);
   }
 
-  const updateCard = ({ i, title, subtitle, dashConfig, n8n, html }) => {
+  const updateCard = ({ i, title, subtitle, n8n, html }: { i: string; title?: string; subtitle?: string; n8n?: string; html?: string }) => {
     const updatedLayout = layout.map(item =>
-      item['i'] === i ? { ...item, title, subtitle, dashConfig, n8n, html } : item
+      item['i'] === i ? { ...item, title, subtitle, n8n, html } : item
     );
     saveLayout(updatedLayout);
   }
 
-  const removeCard = (i) => {
+  const removeCard = (i: string) => {
     const updatedLayout = layout.filter(item => item['i'] !== i);
     setLayout(updatedLayout);
   }
 
-  const saveLayout = async (newLayout) => {
+  const saveLayout = async (newLayout: any[]) => {
     // Creates an easy map to get an item by the id
     const currentLayout = new Map(layout.map(item => [item['i'], item]));
 
     // Parse through the updated positions array
-    const formattedLayout = newLayout.map(newObj => {
+    const formattedLayout = newLayout.map((newObj: any) => {
       const { i, w, h, x, y } = newObj;
-      let { title, subtitle, dashConfig, n8n, html } = newObj;
+      let { title, subtitle, n8n, html } = newObj;
       if (!title) {
         const currentObj = currentLayout.get(i);
         if (!currentObj) return { i, w, h, x, y };
         // In case these are not in newObj, we get them from currentObj
-        title = currentObj['title'];
-        subtitle = currentObj['subtitle'];
-        dashConfig = currentObj['dashConfig'];
-        n8n = currentObj['n8n'];
-        html = currentObj['html'];
+        title = currentObj.title;
+        subtitle = currentObj.subtitle;
+        n8n = currentObj.n8n;
+        html = currentObj.html;
       }
       // Return a new object with the id, position keys and info
-      return { i, w, h, x, y, title, subtitle, dashConfig, n8n, html };
+      return { i, w, h, x, y, title, subtitle, n8n, html };
     });
     setLayout(formattedLayout);
 
     try {
       await BoardsService.update(JSON.stringify(formattedLayout));
     } catch (err) {
-      console.log("error!!")
       console.error(err);
     }
   }
 
-  const N8nRender = (props) => {
+  const N8nRender = (props: any) => {
     const { item } = props;
     const [n8nContent, setN8nContent] = useState('');
 
@@ -231,7 +228,7 @@ const DashboardPage = () => {
           draggableCancel='.stop-drag'
           isDraggable={true}
           isResizable={isAdmin}
-          onLayoutChange={(ItemCallback) => saveLayout(ItemCallback)}
+          onLayoutChange={(ItemCallback: any) => saveLayout(ItemCallback)}
         >
           {layout.map(item => {
             return (
@@ -257,11 +254,10 @@ const DashboardPage = () => {
                       style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
                       onClick={() => {
                         setModalId(item['i']);
-                        setModalTitle(item['title']);
-                        setModalSubtitle(item['subtitle']);
-                        setModalDashConfig(item['dashConfig']);
-                        setModalN8n(item['n8n']);
-                        setModalHTML(item['html']);
+                        setModalTitle(item['title'] ?? '');
+                        setModalSubtitle(item['subtitle'] ?? '');
+                        setModalN8n(item['n8n'] ?? '');
+                        setModalHTML(item['html'] ?? '');
                         setEditOpen(true);
                       }}
                     >
@@ -300,7 +296,6 @@ const DashboardPage = () => {
         chartId={modalId}
         prevTitle={modalTitle}
         prevSubtitle={modalSubtitle}
-        prevDashConfig={modalDashConfig}
         prevN8n={modalN8n}
         prevHTML={modalHTML}
         onClose={() => setEditOpen(false)}

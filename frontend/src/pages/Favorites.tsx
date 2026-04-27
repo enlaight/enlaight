@@ -34,15 +34,16 @@ const Favorites = () => {
 
 	useEffect(() => {
 		try {
-			const agentMap = new Map(agents.map(agent => [agent.id, agent.name]));
-			const items = favorites.map(item => {
-				const agentName = agentMap.get(item.agent) || "Assistant";
-				if (!item.agent) return;
-				return {
-					...item,
-					agent_name: agentName
-				};
-			});
+			const agentMap = new Map(agents.map((agent: any) => [agent.id, agent.name]));
+			const items = favorites
+				.filter((item: any) => item.agent)
+				.map((item: any) => {
+					const agentName = agentMap.get(item.agent) || "Assistant";
+					return {
+						...item,
+						agent_name: agentName
+					};
+				});
 			setItems(items);
 		} catch (err) {
 			console.error(err);
@@ -52,24 +53,24 @@ const Favorites = () => {
 	}, [favorites, agents]);
 
 
-	const truncate = (text, len) => {
+	const truncate = (text: string, len: number) => {
 		if (text.length > len) {
 			return text.slice(0, len) + '...';
 		}
 		return text;
 	}
 
-	const handleOpen = (item) => {
+	const handleOpen = (item: any) => {
 		openAgentChat(item.agent, item.session, item.text);
 		navigate("/");
 	}
 
-	const deleteFavorite = (item) => {
+	const deleteFavorite = (item: any) => {
 		const deleteAsync = async () => {
 			try {
 				const success = await FavoritesService.delete(item.message_id);
 				if (success) {
-					const updatedFavorites = favorites.filter(fav => fav.message_id !== item.message_id);
+					const updatedFavorites = favorites.filter((fav: any) => fav.message_id !== item.message_id);
 					update("favorites", updatedFavorites);
 				}
 			} catch (err) {
@@ -131,7 +132,7 @@ const Favorites = () => {
 								</div>
 								<div className="rounded-md">
 									<div className="grid gap-3 max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg">
-										{searchItems.map((item, index) => {
+										{searchItems.map((item: any, index) => {
 											if (!item) return;
 											return (
 												<Card key={index} className="duration-200 bg-white/30 hover:bg-white/50 shadow-none">

@@ -13,7 +13,7 @@ and analytics, orchestrated through Docker containers.
 5. [n8n Configuration](#-n8n-configuration)
    - [Workflows](#workflows)
    - [Scripts](#scripts)
-6. [Sprints](#-sprints)
+6. [FAQ](#-faq)
 7. [Technologies Used](#-technologies-used)
 
 📐 For a detailed breakdown of every component and how they connect, see **[INTEGRATIONS.md](./INTEGRATIONS.md)**.
@@ -105,9 +105,9 @@ To access n8n locally you may need to add an entry to your `/etc/hosts`:
 
 The `n8n/` directory contains reference workflows and data-pipeline scripts that new developers can use to bootstrap a local n8n instance.
 
-### Initial Setup (required before using Knowledge Bases)
+### Initial Setup (required before using Knowledge Bases or Agents)
 
-> ⚠️ **You must complete these steps before creating or using any Knowledge Base (KB) in Enlaight.** The KB features call n8n via its REST API, which requires an API key.
+> ⚠️ **You must complete these steps before creating or using any Knowledge Base (KB) or Agent in Enlaight.** Both the KB and Agent features call n8n via its REST API, which requires an API key — without it, agent creation, agent chat, and KB operations will fail.
 
 1. Open the n8n UI at [http://localhost:5678](http://localhost:5678) (or `http://n8n.localhost:5678` if you added the `/etc/hosts` entry above).
 2. Create the **owner / admin account** by completing the n8n setup form on first launch.
@@ -118,7 +118,7 @@ The `n8n/` directory contains reference workflows and data-pipeline scripts that
    make reset
    ```
 
-5. Import the KB workflows from `n8n/workflows/` (see [Workflows](#workflows) below) and reassign their credentials.
+5. Import the KB and Agent workflows from `n8n/workflows/` (see [Workflows](#workflows) below) and reassign their credentials.
 
 ### Workflows
 
@@ -309,6 +309,31 @@ Reads raw JSON files produced by the collector, normalizes and deduplicates them
 pip install sqlalchemy pymysql python-dateutil
 python n8n/scripts/youscan_normalize_mentions.py
 ```
+---
+
+## ❓ FAQ
+
+### Why do my Knowledge Base or Agent operations fail right after a fresh install?
+
+n8n must be fully configured **before** you create or use any KB or Agent in Enlaight. In particular:
+
+1. The n8n owner/admin account must be created and an n8n API key generated and saved into your `.env` (see [Initial Setup](#initial-setup-required-before-using-knowledge-bases-or-agents)).
+2. **All workflows** under `n8n/workflows/` must be imported into your local n8n instance, and their credentials reassigned to the ones you created locally.
+
+If either step is skipped, the backend will return errors when the UI tries to call n8n.
+
+### I ran `create_defaults` and got default agents, but their chat doesn't work — why?
+
+The `create_defaults` script (and `n8n/scripts/create_sample_kb.py`) seeds the database with default Knowledge Bases and Agents. These defaults reference n8n chat webhook URLs, **but n8n generates a new webhook URL every time a workflow is imported** — so the seeded URLs will not match your local n8n instance.
+
+To fix it, for each default-created agent:
+
+1. Open the corresponding agent workflow in n8n (e.g. `agent-data-analyst.json`).
+2. Open the **Chat Trigger** (or webhook) node and copy its **production webhook URL**.
+3. In Enlaight, edit the agent and paste the new URL into its webhook field, then save.
+
+The `agent-data-analyst.json` workflow is included as a **reference / template** — you can duplicate it in n8n to model new agents after it, then register them in Enlaight using the same webhook-update flow.
+
 ---
 
 ## 🛠️ Technologies Used

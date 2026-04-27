@@ -38,7 +38,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
             document.body.appendChild(el);
         }
 
-        let chat;
+        let chat: ReturnType<typeof createChat> | undefined;
 
         try {
             chat = createChat({
@@ -72,7 +72,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
         if (chatContainer) {
 
             // Saving session and updating store
-            const saveSession = async (userFirstMessage) => {
+            const saveSession = async (userFirstMessage: string) => {
                 await ChatSessionService.post(customSessionId, agentId, userFirstMessage);
             }
 

@@ -44,7 +44,7 @@ const Index = () => {
 	const { agents, loading, deleteSessionFromAgent } = useAgents();
 	const { clients, projects } = useStore() as any;
 	const [selectedAgent, setSelectedAgent] = useState<Bot>(null);
-	const [localSessionKey, setLocalSessionKey] = useState(null);
+	const [localSessionKey, setLocalSessionKey] = useState<string | null>(null);
 	const {
 		isModalOpen,
 		selectedAgentId,

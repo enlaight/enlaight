@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 interface AddChartModalProps {
 	isOpen: boolean;
@@ -16,7 +15,6 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const { t } = useTranslation();
 	const [title, setTitle] = useState('');
 	const [subtitle, setSubtitle] = useState('');
-	const [dashConfig, setDashConfig] = useState('');
 	const [n8n, setN8n] = useState('');
 	const [html, setHTML] = useState('');
 
@@ -66,30 +64,6 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 						<Input onChange={(e) => setSubtitle(e.target.value)} />
 					</div>
 				</div>
-
-				{/* <div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-					<h3>
-						{t('dashboard.assignChart')}
-						<span style={{ color: 'red', marginLeft: 2 }}>* </span>
-						<TooltipProvider delayDuration={0}>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<span
-										className='material-symbols-outlined'
-										style={{ fontSize: 13, color: '#bdbdbdff', cursor: 'pointer' }}
-									>info</span>
-								</TooltipTrigger>
-								<TooltipContent side="right" style={{ width: '50%' }}>
-									<Trans i18nKey="dashboard.embedInstructions" components={{
-										bold: <b />,
-										code: <span className="rounded-sm" style={{ padding: '2px 5px', border: '1px solid' }} />
-									}} />
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-					</h3>
-					<Input placeholder={t('dashboard.uuidPlaceholder')} onChange={(e) => setDashConfig(e.target.value)} />
-				</div> */}
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>{t('dashboard.n8nURL')}</h3>

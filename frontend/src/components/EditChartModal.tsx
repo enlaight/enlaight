@@ -3,14 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 interface EditChartModalProps {
 	chartId: string,
 	prevTitle: string,
 	prevSubtitle: string,
-	prevDashConfig: string,
 	prevN8n: string,
 	prevHTML: string,
 	isOpen: boolean;
@@ -22,7 +20,6 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 	chartId,
 	prevTitle,
 	prevSubtitle,
-	prevDashConfig,
 	prevN8n,
 	prevHTML,
 	isOpen,
@@ -33,7 +30,6 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 
 	const [title, setTitle] = useState('');
 	const [subtitle, setSubtitle] = useState('');
-	const [dashConfig, setDashConfig] = useState('');
 	const [n8n, setN8n] = useState('');
 	const [html, setHTML] = useState('');
 
@@ -41,13 +37,11 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 		if (isOpen) {
 			setTitle(prevTitle);
 			setSubtitle(prevSubtitle);
-			setDashConfig(prevDashConfig);
 			setN8n(prevN8n);
 			setHTML(prevHTML);
 		} else {
 			setTitle('');
 			setSubtitle('');
-			setDashConfig('');
 			setN8n('');
 			setHTML('');
 		}
@@ -99,30 +93,6 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 						<Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
 					</div>
 				</div>
-
-				{/* <div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-					<h3>
-						{t('dashboard.assignChart')}
-						<span style={{ color: 'red', marginLeft: 2 }}>* </span>
-						<TooltipProvider delayDuration={0}>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<span
-										className='material-symbols-outlined'
-										style={{ fontSize: 13, color: '#bdbdbdff', cursor: 'pointer' }}
-									>info</span>
-								</TooltipTrigger>
-								<TooltipContent side="right" style={{ width: '50%' }}>
-									<Trans i18nKey="dashboard.embedInstructions" components={{
-										bold: <b />,
-										code: <span className="rounded-sm" style={{ padding: '2px 5px', border: '1px solid' }} />
-									}} />
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-					</h3>
-					<Input placeholder={t('dashboard.uuidPlaceholder')} value={dashConfig} onChange={(e) => setDashConfig(e.target.value)} />
-				</div> */}
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
 					<h3>{t('dashboard.n8nURL')}</h3>
