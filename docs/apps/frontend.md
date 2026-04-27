@@ -30,14 +30,15 @@ The Enlaight frontend is a modern, responsive React application built with **Typ
 **Login Process:**
 1. User enters credentials (email/password)
 2. Frontend calls `AuthService.login(email, password)`
-3. Backend validates credentials, returns `access_token` + `refresh_token`
-4. Tokens stored: access_token in memory, refresh_token in httpOnly cookie
-5. User redirected to dashboard
+3. Backend validates credentials and returns `{ access }` in the JSON body. The `refresh` token is delivered as an `httpOnly`, path-scoped cookie (`Path=/api/refresh/`) — never visible to JS.
+4. Frontend stores `access` only in memory (`tokenStore` in [`src/services/api.ts`](../../frontend/src/services/api.ts)). Nothing is written to `localStorage`.
+5. User is redirected to the dashboard.
 
 **Token Refresh:**
-- On API 401 response, axios interceptor automatically refreshes token
-- New access_token obtained via refresh_token
-- Original request retried with new token
+- On any `401`, the axios response interceptor calls `POST /api/refresh/` with `withCredentials: true` (no body — the browser sends the refresh cookie automatically).
+- Concurrent refreshes are deduplicated via a single in-flight promise.
+- A new access token is stored in memory; the original request is retried with it.
+- On hard refresh / page reload, the in-memory access token is lost; the first authenticated call 401s and silently re-bootstraps via the refresh cookie.
 
 ### 2. API Layer (services/)
 
@@ -158,49 +159,71 @@ Modals are typically controlled by a context/store that manages visibility.
 
 React Router manages application navigation:
 
-**Main Routes:**
-- `/projects` - Project dashboard
-- `/projects/:id` - Project detail
-- `/bots` - Assistant/agent management
-- `/knowledge-bases` - KB management
-- `/chat/:botId` - Chat with assistant
-- `/dashboards` - Analytics & charts
-- `/users` - User administration
-- `/settings` - Application settings
-- `/login` - Authentication page
-- `/invite/:token` - Invitation acceptance
+**Main Routes** (see [`frontend/src/App.tsx`](../../frontend/src/App.tsx)):
 
-Protected routes check JWT token validity before rendering.
+Public:
+
+- `/login` — login page
+- `/signup` — sign up
+- `/forgot-password` — request a reset email
+- `/reset-password` — consume reset token (`?email=...&token=...`)
+- `/confirm-invite` — accept an invitation (`?email=...&token=...`)
+
+Authenticated:
+
+- `/` and `/dashboard` — landing dashboard
+- `/search` — global semantic search
+- `/favorites` — bookmarked chat threads
+- `/assistantmanagement` — admin: create / edit agents (bots)
+- `/assistantlist` — browse available agents
+- `/knowledgebases` — manage knowledge bases
+- `/projectslist` — manage projects
+- `/clientmanagement` — manage client organisations
+- `/userlist`, `/usermanagement`, `/user/:id` — user administration
+- `/addusers` — invite users
+
+Anything else falls through to `Navigate to="/login"`.
+
+Protected routes check JWT validity before rendering.
 
 ---
 
 ## API Integration
 
-### Axios Configuration (api.ts)
+### Axios Configuration ([`frontend/src/services/api.ts`](../../frontend/src/services/api.ts))
 
 ```typescript
-const apiClient = axios.create({
-  baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
-  timeout: 10000
+// Access token lives only in memory — never written to localStorage.
+let _accessToken: string | null = null;
+export const tokenStore = {
+  set(t?: string | null) { _accessToken = t ?? null; },
+  clear() { _accessToken = null; },
+  get access() { return _accessToken; },
+};
+
+const api = axios.create({
+  baseURL: `${API_BASE}/`,
+  withCredentials: true,            // sends the httpOnly `refresh` cookie
 });
 
-// Add JWT token to all requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+// Inject the access token (header scheme is configurable via VITE_AUTH_SCHEME).
+api.interceptors.request.use((cfg) => {
+  const t = tokenStore.access;
+  if (t) cfg.headers.set("Authorization", `Bearer ${t}`);
+  return cfg;
 });
 
-// Handle token refresh on 401
-apiClient.interceptors.response.use(
-  (response) => response,
+// Refresh on 401 — single in-flight promise to coalesce concurrent retries.
+api.interceptors.response.use(
+  (r) => r,
   async (error) => {
-    if (error.response?.status === 401) {
-      // Refresh token and retry
+    if (error.response?.status === 401 && !error.config._retry) {
+      error.config._retry = true;
+      const newAccess = await doRefresh();   // POST /api/refresh/ with cookie
+      if (newAccess) return api(error.config);
     }
-  }
+    return Promise.reject(error);
+  },
 );
 ```
 
@@ -251,7 +274,7 @@ VITE_N8N_SUPPORT_ASSISTANT_URL=http://localhost:5678/webhook/<code>/chat
 - Create users and admins
 - Send invitations via email
 - Manage client/organization records
-- Role-based access (ADMIN, USER, GUEST)
+- Role-based access (`ADMINISTRATOR`, `USER`)
 
 ---
 

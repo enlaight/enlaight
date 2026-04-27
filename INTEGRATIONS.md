@@ -79,33 +79,38 @@ This document explains every component of the Enlaight platform, what it is resp
 
 ### Pages & Routes
 
+Source: [`frontend/src/App.tsx`](./frontend/src/App.tsx). Anything outside this list falls through to `Navigate to="/login"`.
+
 | Route | Page | Description |
 |---|---|---|
 | `/login` | Login | Email + password authentication |
 | `/signup` | Sign Up | New account registration |
 | `/forgot-password` | Forgot Password | Trigger password reset email |
-| `/reset-password` | Reset Password | Consume reset token |
-| `/confirm-invite` | Confirm Invite | Accept user invitation |
+| `/reset-password` | Reset Password | Consume reset token (`?email=...&token=...`) |
+| `/confirm-invite` | Confirm Invite | Accept user invitation (`?email=...&token=...`) |
 | `/` | Dashboard | Main landing after login |
+| `/dashboard` | Dashboard | Same as `/` |
 | `/search` | Search | Global semantic search (proxied via n8n) |
 | `/favorites` | Favorites | Saved chat threads |
-| `/assistantmanagement` | Bot Management | Create / edit AI agents |
-| `/knowledgebases` | Knowledge Bases | Manage document collections |
-| `/userlist` | User List | Admin: manage users |
+| `/assistantmanagement` | Bot Management | Admin: create / edit AI agents |
 | `/assistantlist` | Assistant List | Browse available agents |
+| `/knowledgebases` | Knowledge Bases | Manage document collections |
 | `/projectslist` | Projects | Manage client projects |
 | `/clientmanagement` | Clients | Manage client organisations |
-| `/addusers` | Add Users | Invite new users |
+| `/userlist` | User List | Admin: list users |
+| `/usermanagement` | User Management | Admin: edit users |
 | `/user/:id` | User Detail | View / edit a single user |
+| `/addusers` | Add Users | Invite new users |
 
 ### API Communication
 
-All HTTP calls go through a shared Axios instance configured in `src/lib/http.ts`:
+All HTTP calls go through a shared Axios instance configured in [`frontend/src/services/api.ts`](./frontend/src/services/api.ts):
 
 - **Base URL:** `VITE_API_BASE_URL` environment variable (e.g. `http://localhost:8000/api` locally).
-- **Auth header:** `Authorization: Bearer <access_token>` injected automatically via request interceptor.
-- **Token storage:** `localStorage` keys `enlaight_access_token` and `enlaight_refresh_token`.
-- **Auto-refresh:** On a `401` response the interceptor silently calls `POST /api/refresh/` with the refresh token and retries the original request.
+- **Auth header:** `Authorization: Bearer <access_token>` injected automatically via request interceptor (scheme overridable via `VITE_AUTH_SCHEME`).
+- **Token storage:** access token kept **in memory only** (`tokenStore` module-local variable). Refresh token is delivered as an `httpOnly`, path-scoped cookie on `/api/refresh/` — never visible to JS, never written to `localStorage`.
+- **Auto-refresh:** on any `401`, the response interceptor calls `POST /api/refresh/` with `withCredentials: true` and an empty body — the browser sends the refresh cookie automatically. Concurrent refreshes are coalesced via a single in-flight promise. The original request is retried with the new access token.
+- **Hard refresh / page reload:** the in-memory access token is lost; the first authenticated call 401s and silently re-bootstraps a new access token from the refresh cookie.
 
 ### n8n Chat Integration
 
@@ -138,11 +143,11 @@ The frontend communicates **directly** with n8n for real-time chat sessions — 
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/login/` | Email + password → access + refresh tokens |
-| `POST` | `/api/refresh/` | Refresh token → new access token |
+| `POST` | `/api/login/` | Email + password → access token in body, refresh token as `httpOnly` cookie |
+| `POST` | `/api/refresh/` | Rotates the refresh cookie, returns new access token |
 | `POST` | `/api/logout/` | Blacklist refresh token |
 | `GET` | `/api/me/` | Current user profile |
-| `POST` | `/api/me/update/` | Update current user profile |
+| `PATCH` | `/api/me/update/` | Update current user profile (`multipart/form-data`) |
 | `POST` | `/api/verify-token/` | Check whether a token is valid |
 | `POST` | `/api/password/forgot/` | Send password-reset email |
 | `POST` | `/api/password/reset/` | Consume reset token + set new password |
@@ -154,7 +159,7 @@ The frontend communicates **directly** with n8n for real-time chat sessions — 
 | `GET` | `/api/users/` | List all users |
 | `GET` | `/api/users/<user_id>/roles/` | Get roles for a user |
 | `POST` | `/api/users/<user_id>/roles/add/` | Assign role to user |
-| `POST` | `/api/users/<user_id>/roles/remove/` | Remove role from user |
+| `DELETE` | `/api/users/<user_id>/roles/remove/` | Remove role from user |
 | `GET` | `/api/roles/` | List all available roles |
 | `POST` | `/api/login-as/<user_id>/` | Admin: impersonate another user |
 | `POST` | `/api/invite/` | Send invitation email |
@@ -198,12 +203,13 @@ The backend forwards these calls to n8n webhooks, injecting the `N8N_KB_KEY` sec
 
 | Method | Path | Description |
 |---|---|---|
-| `GET/POST/DELETE` | `/api/chat-session/` | Manage chat sessions |
+| `GET/POST` | `/api/chat-session/` | List recent / create chat sessions |
+| `DELETE` | `/api/chat-session/delete/` | Delete a chat session |
 | `GET/POST/DELETE` | `/api/chat-favorites/` | Manage favourite chats |
 | `GET/POST/PATCH/DELETE` | `/api/boards/` | Manage dashboard boards |
 | `GET/POST/PATCH/DELETE` | `/api/expertise-areas/` | Manage expertise areas |
-| `GET` | `/api/search/` | Semantic search (proxied to n8n) |
-| `POST` | `/api/i18n/translate/` | Translate text |
+| `POST` | `/api/search/` | Semantic search (proxied to n8n) |
+| `GET` | `/api/i18n/translate/` | Translate a single text (`?text=&lang=`) |
 | `POST` | `/api/i18n/translate/batch/` | Batch translate |
 | `GET` | `/api/health/` | Service health check |
 | `GET` | `/api/health/db/` | Database health check |
@@ -211,15 +217,15 @@ The backend forwards these calls to n8n webhooks, injecting the `N8N_KB_KEY` sec
 ### How the Backend calls n8n
 
 ```python
-# Pattern used in all KB view files
+# Pattern used in every KB / search proxy view
 import requests
 from django.conf import settings
 
 response = requests.post(
     f"{settings.N8N_BASE_URL}/webhook/kb/create/",
-    headers={"key": settings.N8N_KB_KEY},
+    headers={"key": settings.N8N_KB_KEY},   # custom header, NOT Authorization
     json={"name": name, "description": description},
-    timeout=settings.N8N_TIMEOUT,  # default: 15 s
+    timeout=settings.N8N_TIMEOUT,           # default: 15 s
 )
 ```
 
@@ -230,6 +236,9 @@ Relevant environment variables:
 | `N8N_BASE_URL` | Base URL of the n8n instance (e.g. `http://n8n:5678` inside Docker) |
 | `N8N_KB_KEY` | Shared secret injected as the `key` header in every webhook call |
 | `N8N_TIMEOUT` | HTTP request timeout in seconds (default `15`) |
+
+> `N8N_API_KEY` exists in `env.sample` for forks that wire up the n8n
+> management API but is **not** read by any view in the current backend.
 
 ---
 
@@ -333,7 +342,7 @@ Stores all transactional business data managed by the Django ORM:
 ### JWT Token Flow
 
 ```
-1.  POST /api/login/  { email, password }
+1.  POST /api/login/  { email | username, password }
                 │
                 ▼
 2.  Django validates credentials
@@ -341,11 +350,13 @@ Stores all transactional business data managed by the Django ORM:
                 ▼
 3.  SimpleJWT generates:
     ├── Access token  (HS256, 2-hour lifetime)
-    │   Custom claims: id, full_name, email, role, avatar
+    │   Custom claims: id, full_name, email, username, role, avatar, …
     └── Refresh token (1-day lifetime)
                 │
                 ▼
-4.  Frontend stores both tokens in localStorage
+4.  Response:
+    ├── { "access": "..." } in JSON body  → frontend stores in MEMORY only
+    └── Set-Cookie: refresh=…; HttpOnly; Path=/api/refresh/  (not visible to JS)
                 │
                 ▼
 5.  All API requests include:
@@ -354,21 +365,23 @@ Stores all transactional business data managed by the Django ORM:
          ┌──────┴──────┐
          │ 401?         │ OK
          ▼              ▼
-6.  POST /api/refresh/  → new access token
-    Old refresh token blacklisted (rotation)
+6.  POST /api/refresh/  (no body — browser sends the refresh cookie)
+    → new access token; refresh cookie rotated; old refresh blacklisted
 ```
 
 ### Roles & Permissions
 
 | Role | Access |
 |---|---|
-| `ADMIN` | Full system access, including `login-as` impersonation |
+| `ADMINISTRATOR` | Full system access, including `login-as` impersonation |
 | `USER` | Standard access to own data and assigned projects/bots |
+
+Defined in [`backend/src/authentication/models/roles.py`](./backend/src/authentication/models/roles.py). The `is_admin_by_role()` helper in [`permissions.py`](./backend/src/authentication/permissions.py) accepts both `ADMINISTRATOR` and the legacy literal `ADMIN` for backward compatibility.
 
 Custom permission classes in the backend:
 
 - `IsAuthenticated` — valid JWT required.
-- `IsAdminByRole` — user must carry the `ADMIN` role claim.
+- `IsAdminByRole` — user must carry the `ADMINISTRATOR` (or legacy `ADMIN`) role claim.
 - `IsAdminOrRelatedToBot` — admin, or the authenticated user is linked to the bot being accessed.
 
 ### Password Security

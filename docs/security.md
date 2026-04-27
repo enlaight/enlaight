@@ -114,8 +114,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 | `N8N_BLOCK_ENV_ACCESS_IN_NODE` | Sandbox Execute Code nodes | `true` | **HIGH** |
 | `ENABLE_DRF_THROTTLE` | DRF rate limiting | `True` (unless proxy-level throttling) | **MEDIUM** |
 | `ALLOW_UNVERIFIED_JWT` | Debug JWT fallback | **unset** — never set in prod | **CRITICAL** |
-| `N8N_API_KEY` | n8n access | Generated secret | **CRITICAL** |
-| `N8N_KB_KEY` | Knowledge base key | Generated secret | **CRITICAL** |
+| `N8N_KB_KEY` | Backend → n8n shared secret (sent in the `key` header on every webhook proxy call) | Generated secret | **CRITICAL** |
 | `EMAIL_HOST_USER` | SMTP username | SMTP credentials | **HIGH** |
 | `EMAIL_HOST_PASSWORD` | SMTP password | SMTP credentials | **CRITICAL** |
 
@@ -140,7 +139,7 @@ cp env.sample .env
 # GitHub Actions example
 env:
   SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-  N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+  N8N_KB_KEY: ${{ secrets.N8N_KB_KEY }}
   # Never log or echo secrets
 ```
 
@@ -183,7 +182,7 @@ Authorization: Bearer <access_token>
 
 Users have roles that determine permissions:
 
-**Available Roles:**
+**Available Roles** (defined in [`backend/src/authentication/models/roles.py`](../backend/src/authentication/models/roles.py)):
 - `ADMINISTRATOR` — Full system access
 - `USER` — Project-based access
 
@@ -463,10 +462,15 @@ The default unit is `minute`; DRF also accepts `second`, `hour`, `day`.
 ### API Documentation
 
 **Swagger/OpenAPI Endpoint:**
+
 ```
-GET /api/schema/swagger/
-GET /api/schema/redoc/
+GET /swagger/
 ```
+
+Only the Swagger UI is wired up — there is no ReDoc route. The page is gated
+by the `SWAGGER_REQUIRE_AUTH` env flag (admin-only in production by default;
+public when `DEBUG=True`). See [docs/openapi.md](openapi.md) for the full
+explanation.
 
 Security definitions in Swagger (settings.py):
 ```python
@@ -542,24 +546,32 @@ EMAIL_USE_TLS=False
 # smtp4dev service handles email locally without authentication
 ```
 
-### n8n API Credentials
+### n8n Webhook Credentials
 
 **Configuration (from env.sample):**
 ```env
-N8N_API_KEY=<your_n8n_api_key_here>
 N8N_BASE_URL=https://n8n.enlaight.ai
 N8N_KB_KEY=<your_n8n_kb_key_here>
 N8N_TIMEOUT=15
 N8N_SSL_HOST=enlaight.ai
 ```
 
-**Generating n8n API Key:**
+`N8N_KB_KEY` is the shared secret the backend sends in the `key` HTTP
+header on every webhook call (KB CRUD, file ops, semantic search). Each
+n8n workflow that accepts a backend call validates the same value.
+
+**Rotating `N8N_KB_KEY`:**
+
 ```
-1. Access n8n UI: http://localhost:5678
-2. Settings → Personal Settings → API Token
-3. Generate and store securely
-4. Rotate regularly (quarterly)
+1. Generate a new value (e.g. `openssl rand -base64 32`)
+2. Update `.env` for the backend container
+3. Update the matching credential in n8n that the receiving webhooks compare against
+4. Restart both `backend` and `n8n` services
+5. Rotate quarterly
 ```
+
+> `N8N_API_KEY` exists in `env.sample` for forks that wire up the n8n
+> management API, but is **not** consumed anywhere in the current backend.
 
 **Webhook URL Validation:**
 ```env
@@ -582,21 +594,22 @@ GOOGLE_CLIENT_ID=<your_google_client_id>
 
 ### User Assignment to Projects
 
-**Roles in Multi-Tenant Context:**
+**Roles in Multi-Tenant Context** (see [`backend/src/authentication/models/roles.py`](../backend/src/authentication/models/roles.py)):
 
-1. **System Admins** (ADMIN role)
+1. **System Admins** (`ADMINISTRATOR` role)
    - Manage all projects
-   - Create users
+   - Create users and send invitations
    - Modify global settings
+   - Impersonate other users via `POST /api/login-as/<user_id>/`
 
-2. **Project Members** (USER role)
+2. **Project Members** (`USER` role)
    - Manage assigned projects only
-   - Create/modify bots in assigned projects
+   - Create / modify bots in assigned projects
    - Access knowledge bases linked to assigned projects
 
-3. **Guest Users** (GUEST role)
-   - Read-only access to embedded dashboards
-   - Cannot modify any data
+The `is_admin_by_role()` helper accepts both `ADMINISTRATOR` and the legacy
+literal `ADMIN` for backward compatibility, but new accounts always use
+`ADMINISTRATOR`.
 
 **Project Access Model:**
 ```python
@@ -648,39 +661,48 @@ from calling `process.env` and reading the container's environment — including
 `false` if a workflow legitimately needs env access, and prefer passing
 specific values through n8n credentials instead.
 
-**API Key Protection:**
-- Store `N8N_API_KEY` in secrets manager
-- Rotate quarterly
-- Restrict n8n network access to backend only
-- Use dedicated API user for integration
+**Webhook secret protection:**
+- Store `N8N_KB_KEY` in a secrets manager
+- Rotate quarterly (and on any suspected leak — see the Credential Compromise section)
+- Restrict n8n network access to the backend container only
+- The same secret must be configured on the receiving n8n workflows so they reject calls with a missing or stale `key` header
 
 **Webhook URL Security:**
 - Must use HTTPS in production
-- Include API key in every request
-- Validate response signatures
-- Set timeout (N8N_TIMEOUT=15 seconds)
+- Send the shared secret in the `key` header (`headers={"key": settings.N8N_KB_KEY}`); do not put it in the URL
+- Set timeout (`N8N_TIMEOUT=15` seconds, overridable via env)
 
 **Implementation (Backend → n8n):**
+
+The shared secret is sent in a custom `key` HTTP header — **not** as a
+`Authorization: Bearer` token. See e.g.
+[`backend/src/authentication/views/kb_create.py`](../backend/src/authentication/views/kb_create.py).
+
 ```python
-# backend/src/authentication/services/kb_service.py
+# Pattern used in every KB / search proxy view
 import requests
+from django.conf import settings
 
 def create_kb_in_n8n(name, description):
-    headers = {"Authorization": f"Bearer {N8N_API_KEY}"}
+    headers = {
+        "key": settings.N8N_KB_KEY,        # custom header, NOT Authorization
+        "Content-Type": "application/json",
+    }
     payload = {"name": name, "description": description}
-    
+
     response = requests.post(
-        f"{N8N_BASE_URL}/webhook/kb/create/",
+        f"{settings.N8N_BASE_URL}/webhook/kb/create/",
         json=payload,
         headers=headers,
-        timeout=N8N_TIMEOUT
+        timeout=settings.N8N_TIMEOUT,      # default 15s
     )
-    
-    if response.status_code != 200:
-        raise Exception(f"n8n error: {response.text}")
-    
+    response.raise_for_status()
     return response.json()
 ```
+
+`N8N_API_KEY` exists in `env.sample` but is **not** read by any view in
+the current codebase — every backend → n8n call uses `N8N_KB_KEY` in the
+`key` header.
 
 ### Database URL Security
 
@@ -700,10 +722,9 @@ SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://user:password@host:port/database
 
 - [ ] **Secrets**
   - [ ] Generate `SECRET_KEY` (50+ characters)
-  - [ ] Generate `JWT_SIGNING_KEY`
-  - [ ] Generate `GUEST_TOKEN_JWT_SECRET`
+  - [ ] Generate `JWT_SIGNING_KEY` (or reuse `SECRET_KEY`)
   - [ ] Generate strong database passwords (min 16 chars)
-  - [ ] Generate n8n API key
+  - [ ] Generate `N8N_KB_KEY` (used as the `key` header on backend → n8n calls)
 
 - [ ] **Environment Settings**
   - [ ] `DEBUG=False`
@@ -737,9 +758,8 @@ SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://user:password@host:port/database
   - [ ] Enable CSP headers
 
 - [ ] **n8n**
-  - [ ] Configure `N8N_API_KEY`
   - [ ] Configure `N8N_BASE_URL` with production URL
-  - [ ] Configure `N8N_KB_KEY`
+  - [ ] Configure `N8N_KB_KEY` (the `key` header secret used by every backend → n8n proxy call)
   - [ ] Set `N8N_SSL_HOST` to production domain
   - [ ] Set `WEBHOOK_URL` to HTTPS production URL
   - [ ] `N8N_BIND_HOST=127.0.0.1` (default — only change if not routing via Traefik/nginx)
@@ -833,10 +853,10 @@ SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://user:password@host:port/database
 3. Restart backend service
 4. Audit database access logs
 
-**If n8n API Key exposed:**
-1. Regenerate in n8n UI
-2. Update `.env`
-3. Restart backend service
+**If `N8N_KB_KEY` exposed:**
+1. Generate a new secret
+2. Update `.env` and the matching value in n8n credentials (the receiving webhook compares the `key` header against this secret)
+3. Restart both `backend` and `n8n` services
 
 ---
 

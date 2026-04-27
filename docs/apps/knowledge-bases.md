@@ -180,7 +180,12 @@ Access is granted if:
 * KB is linked to a project **AND**
 * User belongs to that project
 
-All failures return `403`.
+A failed permission check returns `403`. Other error responses these
+endpoints can produce: `400` (missing query/body fields), `404` (project or
+KB not found), `500` (n8n config missing — `N8N_BASE_URL` / `N8N_KB_KEY`),
+`502` (n8n returned a non-JSON or otherwise invalid response), `504` (n8n
+request timed out). The full status-code catalogue lives in
+[docs/openapi.md](../openapi.md#4-error-responses).
 
 ---
 

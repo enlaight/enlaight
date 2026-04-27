@@ -96,21 +96,19 @@ Agents must be linked to projects so users can access them.
 * Relationship: Projects ↔ Agents (many-to-many)
 * Result: Users can only see agents assigned to their projects
 
-**API Endpoint**
+**API Endpoints** — agent ↔ project linking is a project-side operation, not
+an agent update. The `PATCH /api/bots/{id}/` body does **not** accept a
+`projects` field; use these instead:
 
 ```
-PATCH /api/bots/{agent_id}/
+POST /api/projects/{project_id}/bots/attach/      { "ids": ["bot_id_1", ...] }
+POST /api/projects/{project_id}/bots/detach/      { "ids": ["bot_id_1", ...] }
+GET  /api/projects/{project_id}/bots/             # list bots linked to a project
 ```
 
-Example body:
-
-```json
-{
-  "projects": ["project_id_1", "project_id_2"]
-}
-```
-
-> Admin-only endpoint
+> Admin-only endpoints. The response includes `attached_now`,
+> `already_attached`, `missing`, and `count_total` arrays — see
+> [`AttachDetachResponse` in `openapi.yml`](../../openapi.yml).
 
 ---
 
@@ -137,29 +135,27 @@ GET /api/bots/
 
 #### 2. Agent Data Structure (API Response)
 
+Canonical `Agent` shape (from [`openapi.yml`](../../openapi.yml)):
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Data Analyst",
   "description": "Analyzes data and provides insights",
+  "avatar": null,
   "url_n8n": "http://n8n:5678/webhook/abc123xyz/chat",
-  "expertise_area": {
-    "id": "...",
-    "name": "Data Analysis"
-  },
-  "projects": [
-    { "id": "...", "name": "Project A" }
-  ],
-  "chat_sessions": [
-    {
-      "id": "...",
-      "session_key": "session_123",
-      "agent_id": "550e8400...",
-      "created_at": "2026-02-10T10:30:00Z"
-    }
-  ]
+  "expertise_area": "5f2c…",
+  "active": true,
+  "created_at": "2026-02-10T10:30:00Z",
+  "updated_at": null
 }
 ```
+
+Project membership and chat sessions are **not** embedded in this response.
+Fetch them via dedicated endpoints:
+
+* `GET /api/projects/{id}/bots/` — agents linked to a project
+* `GET /api/chat-session/` — recent chat sessions for the authenticated user
 
 ---
 
@@ -305,13 +301,21 @@ Required props:
 PATCH /api/bots/{agent_id}/
 ```
 
-Updatable fields:
+Updatable fields (see [`AgentUpdateRequest`](../../openapi.yml)):
 
 * `name`
 * `description`
 * `url_n8n`
+* `active`
 * `expertise_area`
-* `projects`
+
+To set the expertise area only, you can also use:
+
+```
+POST /api/bots/{agent_id}/expertise/   { "expertise_area": "<uuid|null>" }
+```
+
+Project linking is a separate operation — see Step 3 above.
 
 ---
 
@@ -329,11 +333,13 @@ DELETE /api/bots/{agent_id}/
 ### Delete Chat Session (User)
 
 ```
-DELETE /api/chat-session/
+DELETE /api/chat-session/delete/
 ```
 
-* Removes session record
-* Chat history deleted
+Body: `{ "session_key": "...", "agent_id": "<uuid>" }`.
+
+* Removes the session record
+* Chat history is deleted
 
 ---
 

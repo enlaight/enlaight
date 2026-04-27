@@ -244,9 +244,10 @@ Each service has health checks configured:
 docker compose ps
 
 # Manual health verification
-curl http://localhost:8000/api/    # Backend
-curl http://localhost:8080/        # Frontend
-curl http://localhost:5678/        # n8n
+curl http://localhost:8000/health/        # Backend (process)
+curl http://localhost:8000/api/health/db/ # Backend → Postgres round-trip
+curl http://localhost:8080/               # Frontend
+curl http://localhost:5678/healthz        # n8n
 ```
 
 ---
@@ -286,9 +287,10 @@ The `create_defaults.sh` script populates initial data:
 bash create_defaults.sh
 ```
 
-This runs:
-1. `n8n/scripts/create_sample_kb.py` - Creates sample knowledge bases
-2. `backend/scripts/populate_db.py` - Populates backend database
+It runs (each step is skipped gracefully if the script is missing):
+
+1. `n8n/scripts/create_sample_kb.py` — sample knowledge bases (not shipped in this repo; the script falls through with a yellow "skipped" notice)
+2. `backend/scripts/populate_db.py` — populates the backend database
 
 **To repopulate after reset:**
 ```bash
@@ -306,18 +308,41 @@ docker compose exec backend python manage.py createsuperuser
 ```
 
 **Reset Admin Credentials (default):**
-Edit `backend/postgres/init/set_admin.sql` before initial `make start`:
+
+The default admin is seeded by the `seed_admin` management command, which
+runs the SQL at
+[`backend/src/authentication/management/commands/set_admin.sql`](../backend/src/authentication/management/commands/set_admin.sql).
+Edit that file before the first `make start` to change the shipped
+defaults:
+
 ```sql
--- Default admin user setup
-INSERT INTO authentication_userprofile (email, password, role, is_active)
-VALUES ('admin@localhost.ai', '<hashed_password>', 'ADMIN', 1);
+-- Excerpt — see the full file for all required columns.
+INSERT INTO authentication_userprofile (
+    id, password, full_name, ..., email, role, ...
+) VALUES (
+    'a3c2f5d8-1e6a-4b3f-9a8c-2d5b6f7c8e9f'::uuid,
+    'pbkdf2_sha256$1000000$...',          -- pre-hashed (use Django's make_password)
+    'Admin Account',
+    ...
+    'admin@localhost.ai',
+    'ADMINISTRATOR',
+    ...
+)
+ON CONFLICT DO NOTHING;
 ```
+
+The role value is `ADMINISTRATOR` (the only admin tier in
+[`roles.py`](../backend/src/authentication/models/roles.py); `ADMIN` is also
+accepted by `is_admin_by_role()` for backward compatibility).
 
 **Add User via Django Shell:**
 ```bash
 docker compose exec backend python manage.py shell
 >>> from authentication.models import UserProfile
->>> UserProfile.objects.create_user(email='user@example.com', password='password123', role='USER')
+>>> UserProfile.objects.create_user(
+...     username='user', email='user@example.com',
+...     password='password123', role='USER',
+... )
 ```
 
 ---
@@ -621,13 +646,14 @@ docker compose exec backend printenv | grep -E 'POSTGRES_|BACKEND_DB'
 
 ```bash
 # Check n8n health
-curl http://localhost:5678/api/v1/status
+curl http://localhost:5678/healthz
 
-# Verify credentials
+# Verify backend → n8n config
 docker compose exec backend python manage.py shell
 >>> from django.conf import settings
->>> print(settings.N8N_API_KEY)
 >>> print(settings.N8N_BASE_URL)
+>>> print(settings.N8N_KB_KEY)   # secret used in the `key` header on every webhook call
+>>> print(settings.N8N_TIMEOUT)
 ```
 
 #### Out of Disk Space

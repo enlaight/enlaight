@@ -35,51 +35,50 @@ The Enlaight backend is a **Django REST API** built with modern best practices. 
    }
    ```
 
-2. **Response** → Returns tokens:
+2. **Response** → Access token in body; refresh token set as an `httpOnly` cookie:
    ```json
-   {
-     "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-     "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-   }
+   { "access": "eyJ0eXAiOiJKV1QiLCJhbGc..." }
    ```
+   The refresh token is sent as a `Set-Cookie` header (`refresh=...; HttpOnly; Path=/api/refresh/`).
 
 3. **Token Lifetime** (from `settings.py`):
    - `access_token`: 2 hours
    - `refresh_token`: 1 day
-   - Tokens rotate on refresh; old blacktop after rotation
+   - Tokens rotate on refresh; old refresh tokens are blacklisted after rotation
+   - The refresh token is delivered as an `httpOnly`, path-scoped cookie on `/api/refresh/`. The access token is returned in the JSON body and held in memory by the frontend.
 
 4. **Usage** → Include in all requests:
    ```http
    Authorization: Bearer <access_token>
    ```
 
-5. **Refresh** → `POST /api/refresh/`
-   ```json
-   {
-     "refresh": "<refresh_token>"
-   }
-   ```
-   Returns new `access_token`
+5. **Refresh** → `POST /api/refresh/` (no body required — the browser sends the `refresh` cookie automatically with `withCredentials: true`).
+   Returns a new `access_token` in the JSON body and rotates the refresh cookie.
 
 **Token Enrichment:**
 ```python
-# Custom claims added to JWT (from authentication.py):
+# Custom claims added to JWT (CUSTOM_CLAIMS in authentication.py):
 - id (UUID)
-- email
 - full_name
-- role (ADMIN, USER, GUEST)
+- email
+- username
+- job_title
+- department
+- first_name
+- role (ADMINISTRATOR, USER)
 - is_active
 - avatar
+- status
 - joined_at
-- is_staff
 - is_superuser
+- is_staff
 ```
 
 ### 2. Role-Based Access Control (RBAC)
 
-**Available Roles:**
-- `ADMIN` / `ADMINISTRATOR` - Unrestricted access
-- `USER` - Project-based access
+**Available Roles** (see [`backend/src/authentication/models/roles.py`](../../backend/src/authentication/models/roles.py)):
+- `ADMINISTRATOR` — Unrestricted access. The `is_admin_by_role()` helper also accepts the legacy literal `ADMIN` for backward compatibility.
+- `USER` — Project-based access
 
 **Permission Classes** (from `permissions.py`):
 
@@ -170,16 +169,18 @@ class ProjectViewSet(viewsets.ModelViewSet):
 ```python
 class KBCreateProxyView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         # Validate user has project access
         assert_user_project_access(request.user, project)
-        
-        # Forward to n8n with API key
+
+        # Forward to n8n; the shared secret is sent in a custom `key` header
+        # (NOT Authorization: Bearer). See settings.N8N_KB_KEY.
         response = requests.post(
-            f"{N8N_BASE_URL}/webhook/kb/create/",
+            f"{settings.N8N_BASE_URL}/webhook/kb/create/",
             json=request.data,
-            headers={"Authorization": f"Bearer {N8N_API_KEY}"}
+            headers={"key": settings.N8N_KB_KEY},
+            timeout=settings.N8N_TIMEOUT,
         )
         return Response(response.json())
 ```
@@ -188,15 +189,20 @@ class KBCreateProxyView(APIView):
 
 ## URL Routing
 
-**Root URL Config** (`core/urls.py`):
+**Root URL Config** ([`core/urls.py`](../../backend/src/core/urls.py)):
 ```python
 urlpatterns = [
-    path('api/', include('authentication.urls')),
-    path('admin/', admin.site.urls),
-    path('api/schema/swagger/', swagger_view),
-    path('api/schema/redoc/', redoc_view)
+    path("admin/", admin.site.urls),
+    path("health/", health),
+    path("api/health/", health),
+    path("api/", include("authentication.urls")),
+    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
 ]
 ```
+
+Only the Swagger UI is wired up — there is no ReDoc route. Access to
+`/swagger/` is gated by the `SWAGGER_REQUIRE_AUTH` env flag (admin-only in
+production by default; public when `DEBUG=True`).
 
 **App URL Config** (`authentication/urls.py`):
 ```python
@@ -343,25 +349,26 @@ GET /api/health/db/  # Database connectivity
 from rest_framework.exceptions import (
     NotFound,
     PermissionDenied,
-    ValidationError
+    ValidationError,
 )
 
 # Auto-converted to JSON responses:
-{
-    "detail": "Not found",
-    "code": 404
-}
+{ "detail": "Not found." }
 ```
 
-**Custom Error Responses:**
+**Custom Error Responses** — always use the `detail` key to match DRF's
+built-in shape and the `Error` schema in [`openapi.yml`](../../openapi.yml).
+See [docs/openapi.md](../openapi.md#4-error-responses) for the full status-code
+catalogue.
+
 ```python
 # Permission denied
-raise PermissionDenied("You don't have access to this project")
+raise PermissionDenied("You don't have access to this project.")
 
 # Not found
 return Response(
-    {"error": "Project not found"},
-    status=status.HTTP_404_NOT_FOUND
+    {"detail": "Project not found."},
+    status=status.HTTP_404_NOT_FOUND,
 )
 ```
 
@@ -393,7 +400,7 @@ docker compose exec backend python manage.py collectstatic --noinput
 3. Create serializer in `serializers/new_serializer.py`
 4. Create view/viewset in `views/new_view.py`
 5. Register route in `urls.py`
-6. Test via API documentation at `/api/schema/swagger/`
+6. Test via API documentation at `/swagger/`
 
 ### Adding Permission Check
 ```python
