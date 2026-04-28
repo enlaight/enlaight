@@ -118,11 +118,17 @@ The `n8n/` directory contains reference workflows and data-pipeline scripts that
    make reset
    ```
 
-5. Import the KB and Agent workflows from `n8n/workflows/` (see [Workflows](#workflows) below) and reassign their credentials.
+5. Import the KB and Agent workflows from `n8n/workflows/` (see [Workflows](#workflows) below).
+
+6. **Set up the database connections in the n8n dashboard.** The imported workflows query Postgres / PGVector (KB and agent workflows) and the warehouse MySQL (YouScan workflows), so you must create matching credentials before they can run. In the n8n dashboard go to **Credentials → Create credential** and add:
+   - **Postgres** — host, port, database, user, and password matching the Enlaight Postgres / PGVector instance.
+   - **MySQL (`Warehouse MySQL`)** — credentials for the shared warehouse DB (skip if you don't need the YouScan pipelines).
+
+   Then open each imported workflow and reassign the placeholder credentials on every DB node to the ones you just created.
 
 ### Workflows
 
-All workflow JSON files live in `n8n/workflows/`. Import them via **n8n UI → Settings → Import workflow** or through the n8n REST API.
+All workflow JSON files live in `n8n/workflows/`. Import them via the **n8n UI → New workflow → three-dots menu (⋯) → Import from file**, or through the n8n REST API.
 
 > **Credential placeholder:** MySQL/Postgres credential IDs inside the JSONs are placeholders (`WAREHOUSE_DB_CREDENTIAL_ID`, `Postgres account`, etc.). After importing, open each workflow and reassign the credentials to the ones you created in your local n8n instance.
 

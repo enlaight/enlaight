@@ -13,7 +13,7 @@ interface EditChartModalProps {
 	prevHTML: string,
 	isOpen: boolean;
 	onClose: () => void;
-	onSave: (data) => void;
+	onSave: (data: any) => void;
 }
 
 export const EditChartModal: React.FC<EditChartModalProps> = ({

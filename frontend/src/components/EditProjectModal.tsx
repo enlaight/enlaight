@@ -77,9 +77,9 @@ export const EditProjectModal = ({
 
   useEffect(() => {
     if (project) {
-      const clientId = typeof project.client === "string"
-        ? project.client
-        : project.client?.id || project.client_id || "";
+      const clientId = project.client_id
+        || (typeof project.client === "object" ? project.client?.id : "")
+        || "";
 
       form.reset({
         name: project.name,
@@ -201,7 +201,7 @@ export const EditProjectModal = ({
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue>
-                          {field.value || t('projects.selectClient')}
+                          {clients.find(c => c.id === field.value)?.name || t('projects.selectClient')}
                         </SelectValue>
                       </SelectTrigger>
                     </FormControl>

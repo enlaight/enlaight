@@ -44,7 +44,7 @@ export const EditBotModal: React.FC<EditBotModalProps> = ({
     name: bot.name || "",
     description: bot.description || "",
     url_n8n: (bot as any).url_n8n || "",
-    active: bot.active ?? true,
+    active: (bot as any).active ?? true,
     projects: (bot.projects || []).map((p) => p.id),
     expertiseId: (bot as any)?.expertise_area?.id as string | undefined,
   });
@@ -59,7 +59,7 @@ export const EditBotModal: React.FC<EditBotModalProps> = ({
       name: bot.name || "",
       description: bot.description || "",
       url_n8n: (bot as any).url_n8n || "",
-      active: bot.active ?? true,
+      active: (bot as any).active ?? true,
       projects: (bot.projects || []).map((p) => p.id),
       expertiseId: (bot as any)?.expertise_area?.id || "",
     });
@@ -91,7 +91,7 @@ export const EditBotModal: React.FC<EditBotModalProps> = ({
     if (form.name.trim() !== (bot.name || "")) payload.name = form.name.trim();
     if ((form.description ?? "") !== (bot.description ?? "")) payload.description = form.description ?? "";
     if ((form.url_n8n ?? "") !== ((bot as any).url_n8n ?? "")) payload.url_n8n = form.url_n8n ?? "";
-    if ((form.active ?? true) !== (bot.active ?? true)) payload.active = form.active;
+    if ((form.active ?? true) !== ((bot as any).active ?? true)) payload.active = form.active;
 
     const originalProj = (bot.projects || []).map((p) => p.id).sort().join(",");
     const currentProj = [...form.projects].sort().join(",");

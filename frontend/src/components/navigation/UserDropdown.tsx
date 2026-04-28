@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 export const UserDropdown: React.FC = () => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<any>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +27,9 @@ export const UserDropdown: React.FC = () => {
       try {
         const response = await AuthService.me();
         setUserData(response);
-      } catch (error) { }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
     };
     getUserData();
   }, []); // Empty dependency array to run once on component mount

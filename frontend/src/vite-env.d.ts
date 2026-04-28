@@ -12,3 +12,5 @@ declare global {
 
 // Ignore TypeScript module resolution issues
 // @ts-ignore
+
+declare module 'react-grid-layout';

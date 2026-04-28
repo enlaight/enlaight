@@ -2,7 +2,7 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
-const SessionHistoryItem = ({ session, handleSession, handleEditSession, deleteSession, darkmode = false }) => {
+const SessionHistoryItem = ({ session, handleSession, handleEditSession, deleteSession, darkmode = false }: { session: any; handleSession: () => void; handleEditSession: (e?: any) => void; deleteSession: (e: any, session?: any) => void; darkmode?: boolean }) => {
 	const [open, setOpen] = useState(false);
 
 	const hoverColor = darkmode ? 'sidebar-accent' : '[#E9E9E9]';

@@ -137,7 +137,7 @@ const ResetPassword = () => {
                   id="userEmail"
                   type="text"
                   placeholder="Enter User Email"
-                  value={email}
+                  value={email ?? ''}
                   // className="border-green-500"
                   disabled
                 />

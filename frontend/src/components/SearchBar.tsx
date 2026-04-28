@@ -34,7 +34,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className = "" }) => {
     });
   }, [onSearchFocusRequest, isMobile]);
 
-  const handleSetQuery = (value) => {
+  const handleSetQuery = (value: string) => {
     update("currentQuery", value);
   }
 
@@ -55,7 +55,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className = "" }) => {
     update("searchResults", []);
 
     try {
-      const { results } = await SearchService.post(currentQuery);
+      const { results } = await SearchService.post(currentQuery) as any;
       update("searchResults", results);
     } catch (error) {
       console.error('Search error:', error);

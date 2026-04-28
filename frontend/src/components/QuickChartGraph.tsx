@@ -19,7 +19,7 @@ import React from "react";
 // 	},
 // };
 
-function QuickChartGraph({ data }) {
+function QuickChartGraph({ data }: { data: any }) {
 	const chartUrl = `charts/chart?c=${encodeURIComponent(
 		JSON.stringify(data)
 	)}`;

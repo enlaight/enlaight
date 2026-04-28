@@ -116,7 +116,7 @@ const KnowledgeBases = () => {
     try {
       setLoading(true);
       setPermissionError(false);
-      const data = await KnowledgeBaseService.listAll(projectId);
+      const data = await KnowledgeBaseService.listAll(projectId) as any;
 
       if (data?.kbs && Array.isArray(data.kbs)) {
         const sorted = [...data.kbs].sort(
@@ -416,14 +416,14 @@ const KnowledgeBases = () => {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         projectId={selectedProjectId}
-        knowledgeBase={selectedKB}
+        knowledgeBase={selectedKB as any}
         onSuccess={handleKBUpdated}
       />
 
       <ManageFilesModal
         open={filesModalOpen}
         onOpenChange={setFilesModalOpen}
-        knowledgeBase={selectedKB}
+        knowledgeBase={selectedKB as any}
         projectId={selectedProjectId}
       />
     </>

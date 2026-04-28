@@ -1,6 +1,7 @@
+import React from "react";
 import { EnlaightBot } from "@/assets/svgs";
 
-export default function LoadingAnimation(props) {
+export default function LoadingAnimation(props: { icon?: React.ReactNode; text?: React.ReactNode }) {
 	const { icon, text } = props;
 	return (
 		<div className="w-[250px] h-[250px] relative flex flex-col justify-center items-center">
@@ -26,7 +27,7 @@ export default function LoadingAnimation(props) {
 								top: "50%",
 								'--initial-rotation': `${pos}deg`,
 								animationDelay: `${i * -0.05}s`,
-							}}
+							} as React.CSSProperties}
 						>
 						</div>
 					)

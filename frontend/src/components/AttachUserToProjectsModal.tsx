@@ -49,15 +49,15 @@ export function AttachUserToProjectsModal({
         try {
             setLoading(true);
             const userResponse = await api.get(`/users/?search=${encodeURIComponent(userEmail)}`);
-            const userData = userResponse.data?.results?.[0];
+            const userData = (userResponse.data as any)?.results?.[0];
             const targetClientId: string | undefined = userData?.client_id ? String(userData.client_id) : undefined;
 
             const pageSize = 1000;
             const { data } = await api.get("/projects/", { params: { page: 1, page_size: pageSize } });
-            const raw: RawProject[] = data?.results ?? [];
+            const raw: RawProject[] = (data as any)?.results ?? [];
 
             const normalized: ProjectOption[] = raw.map(p => {
-                const resolvedClientId = p.client_id ?? (typeof p.client === 'string' ? p.client : p.client?.id) ?? null;
+                const resolvedClientId = p.client_id ?? (typeof p.client === 'object' ? p.client?.id : null) ?? null;
                 return { id: p.id, name: p.name, client_id: resolvedClientId ? String(resolvedClientId) : null };
             });
             setAllProjects(normalized);

@@ -71,7 +71,7 @@ export const AgentsChatProvider: React.FC<AgentsChatProviderProps> = ({ children
       sessionKey,
       isReset,
       scrollSearch,
-      setResetHomepage,
+      setResetHomepage: (status?: boolean) => setResetHomepage(status ?? false),
       resetHomepage,
       openModal,
       closeModal,

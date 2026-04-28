@@ -63,7 +63,7 @@ const Signup = () => {
         } catch (err: any) {
             const msg =
                 err?.response?.data?.detail ||
-                Object.values(err?.response?.data ?? {})?.[0]?.[0] ||
+                (Object.values(err?.response?.data ?? {})?.[0] as any)?.[0] ||
                 "Could not create account";
             toast({ title: "Sign up failed", description: String(msg), variant: "destructive" });
         }

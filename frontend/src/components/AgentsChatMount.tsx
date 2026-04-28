@@ -73,7 +73,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
 
             // Saving session and updating store
             const saveSession = async (userFirstMessage: string) => {
-                await ChatSessionService.post(customSessionId, agentId, userFirstMessage);
+                await ChatSessionService.post(customSessionId, agentId ?? '', userFirstMessage);
             }
 
             // Tells us if the first message has already been sent
@@ -168,7 +168,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
         };
     }, [webhookUrl, agentId, sessionKey, containerId, metadata, initialMessage]);
 
-    function addToolbar(node) {
+    function addToolbar(node: any) {
         const messageAuthor = node.classList.contains('chat-message-from-user') ? 'user' : 'bot';
 
         if ((node as HTMLElement).dataset?.favAugmented === 'true') return;
@@ -209,7 +209,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
         // Highlight if already favorited
         let isFavorited = false;
         try {
-            const favMsg = favorites.find((f) => f.text === text && f.session === customSessionId);
+            const favMsg = favorites.find((f: any) => f.text === text && f.session === customSessionId);
             if (favMsg) {
                 isFavorited = true;
                 messageId = favMsg.message_id;
@@ -228,7 +228,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
                 try {
                     const res = await FavoritesService.post(
                         customSessionId,
-                        agentId,
+                        agentId ?? '',
                         messageId,
                         text,
                     );

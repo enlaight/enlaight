@@ -22,12 +22,13 @@ const PAGE_SIZE = 10;
 const handleLoginAs = async (userId: string, navigate: ReturnType<typeof useNavigate>) => {
   try {
     const response = await api.get(`/login-as/${userId}/`);
+    const data = response.data as any;
 
-    if (!response.data?.access) {
+    if (!data?.access) {
       throw new Error("Invalid response from server");
     }
 
-    tokenStore.set(response.data.access);
+    tokenStore.set(data.access);
 
     window.location.reload();
   } catch (error) {
@@ -73,7 +74,7 @@ function AttachUserToProjectsModal({
       setLoading(true);
       // Get target user's client_id using search
       const userResponse = await api.get(`/users/?search=${encodeURIComponent(userEmail)}`);
-      const userData = userResponse.data?.results?.[0];
+      const userData = (userResponse.data as any)?.results?.[0];
       const targetClientId = userData?.client_id;
 
       // Filter projects: only show if project's client_id matches target user's client_id

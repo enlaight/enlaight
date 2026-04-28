@@ -220,15 +220,16 @@ export const BotManagementModal: React.FC<BotManagementModalProps> = ({ isOpen, 
       <AddBotModal
         isOpen={isAddBotOpen}
         onClose={() => setIsAddBotOpen(false)}
-        onCreated={handleAddBot}
+        onCreated={handleAddBot as any}
+        projectOptions={[]}
       />
 
       {editingBot && (
         <EditBotModal
           isOpen={!!editingBot}
           onClose={() => setEditingBot(null)}
-          onSave={handleEditBot}
-          bot={editingBot}
+          onSave={handleEditBot as any}
+          bot={editingBot as any}
         />
       )}
 

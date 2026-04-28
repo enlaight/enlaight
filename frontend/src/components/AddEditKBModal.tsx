@@ -111,7 +111,7 @@ export const AddEditKBModal = ({
           name: values.name,
           description: values.description,
           project_id: projectId,
-        });
+        }) as any;
 
         onSuccess({
           hash_id: response.hash_id,

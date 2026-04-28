@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationMenuProps } from './types';
+import type { Bot } from '@/types/bots';
 import { getMenuItems, getSecondaryMenuItems } from './menuData';
 import { MenuItem } from './MenuItem';
 import { SubMenuItem } from './SubMenuItem';
@@ -23,7 +24,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
   const [submenuUsers, setSubmenuUsers] = useState(false);
   const [usersFlyoutVisible, setUsersFlyoutVisible] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [openHistory, setOpenHistory] = useState(false);
 
   const { openModal: openAgentChat, resetHomepage } = useAgentsChat();
@@ -35,19 +36,19 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
   const { agents, deleteSessionFromAgent } = useAgents();
   const hasMoreAgents = agents.length > 3;
   const agentsSubMenu = [
-    ...agents.map(obj => obj?.id && obj?.name ? { id: "assistant", agent: obj, label: obj.name } : null).filter(Boolean).slice(0, 3),
+    ...agents.map((obj: Bot) => obj?.id && obj?.name ? { id: "assistant", agent: obj, label: obj.name } : null).filter(Boolean).slice(0, 3),
     ...(hasMoreAgents ? [{ id: "view-all-assistants", label: t('navigation.viewAllAssistants'), to: "/assistantlist" }] : [])
   ];
 
-  const hasPermissions = ["ADMINISTRATOR"].includes(user?.role);
+  const hasPermissions = ["ADMINISTRATOR"].includes(user?.role ?? '');
 
   useEffect(() => {
     if (chatHistory.length > 0) return;
     const fetchChatHistory = async () => {
       try {
-        const res = await ChatSessionService.get();
-        const agentMap = new Map(agents.map(agent => [agent.id, agent.name]));
-        const namedChatHistory = res.map(item => {
+        const res = await ChatSessionService.get() as any[];
+        const agentMap = new Map(agents.map((agent: Bot) => [agent.id, agent.name]));
+        const namedChatHistory = res.map((item: any) => {
           const agentName = agentMap.get(item.agent) || null;
           if (!item.agent) return;
           return {
@@ -63,7 +64,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
     fetchChatHistory();
   }, [agents]);
 
-  const handleMenuClick = async (itemId, obj) => {
+  const handleMenuClick = async (itemId: string, obj?: any) => {
     if (itemId === "logout") {
       try {
         await logout();
@@ -150,20 +151,20 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
     return true;
   });
 
-  const handleSession = (agentId, sessionKey) => {
-    const agent = agents.find(a => a.id === agentId);
+  const handleSession = (agentId: string, sessionKey: string) => {
+    const agent = agents.find((a: Bot) => a.id === agentId);
     if (agent) {
       openAgentChat(agent.id, sessionKey);
       navigate("/");
     }
   }
 
-  const handleEditSession = (e) => {
+  const handleEditSession = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
   }
 
-  const deleteSession = async (e, session) => {
+  const deleteSession = async (e: React.MouseEvent, session: any) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -171,7 +172,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
     try {
       await ChatSessionService.delete(session.session_key, session.agent);
       deleteSessionFromAgent(session.agent, session.session_key);
-      setChatHistory(chatHistory.filter(s => s.session_key !== session.session_key));
+      setChatHistory(chatHistory.filter((s: any) => s.session_key !== session.session_key));
     } catch (err) {
       console.error(err);
     }
@@ -250,7 +251,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({ isCollapsed = fa
                   session={session}
                   handleSession={() => handleSession(session.agent, session.session_key)}
                   handleEditSession={handleEditSession}
-                  deleteSession={(e) => deleteSession(e, session)}
+                  deleteSession={(e: React.MouseEvent) => deleteSession(e, session)}
                   darkmode={true}
                 />
               ))}

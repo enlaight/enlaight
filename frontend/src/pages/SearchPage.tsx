@@ -9,15 +9,15 @@ import { useNavigate } from "react-router-dom";
 
 const SearchPage = () => {
 	const { t } = useTranslation();
-	const [searchItems, setItems] = useState([]);
+	const [searchItems, setItems] = useState<any[]>([]);
 	const { agents, query, searchResults, loadingSearch, update } = useStore() as any;
 	const navigate = useNavigate();
 	const { openModal: openAgentChat } = useAgentsChat();
 
 	useEffect(() => {
-		const agentMap = new Map(agents.map(agent => [agent.id, agent.name]));
+		const agentMap = new Map(agents.map((agent: any) => [agent.id, agent.name]));
 
-		const fullResults = searchResults.map(item => {
+		const fullResults = searchResults.map((item: any) => {
 			const agentName = agentMap.get(item.agent_id) || "";
 			if (!item.agent_id) return;
 			return {
@@ -29,14 +29,14 @@ const SearchPage = () => {
 
 	}, [searchResults, agents]);
 
-	const truncate = (text, len) => {
+	const truncate = (text: string, len: number) => {
 		if (text.length > len) {
 			return text.slice(0, len) + '...';
 		}
 		return text;
 	}
 
-	const handleOpen = (result) => {
+	const handleOpen = (result: any) => {
 		openAgentChat(result.agent_id, result.session_id, result.message);
 		navigate("/");
 		update("currentQuery", "");

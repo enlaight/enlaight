@@ -35,7 +35,7 @@ const Index = () => {
 	const [isLoading, setLoading] = useState(true);
 	const [chatOpen, setChat] = useState(false);
 	const [timeFilter, setFilter] = useState(t('home.lastDay'));
-	const [filteredSessions, setFilteredSessions] = useState([]);
+	const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
 	const [icon, setIcon] = useState(dataAnalyst);
 
 	const [delConfirm, setDelConfirm] = useState(false);
@@ -43,7 +43,7 @@ const Index = () => {
 
 	const { agents, loading, deleteSessionFromAgent } = useAgents();
 	const { clients, projects } = useStore() as any;
-	const [selectedAgent, setSelectedAgent] = useState<Bot>(null);
+	const [selectedAgent, setSelectedAgent] = useState<Bot | null>(null);
 	const [localSessionKey, setLocalSessionKey] = useState<string | null>(null);
 	const {
 		isModalOpen,
@@ -67,7 +67,7 @@ const Index = () => {
 					specialty: selectedAgent.expertise_area?.name || '',
 					agentId: selectedAgent.id || '',
 				}}
-				sessionKey={localSessionKey}
+				sessionKey={localSessionKey ?? undefined}
 			/>
 		);
 	}, [selectedAgent, localSessionKey]);
@@ -83,7 +83,7 @@ const Index = () => {
 
 	useEffect(() => {
 		if (isModalOpen && selectedAgentId) {
-			const agent = agents.find(a => a.id === selectedAgentId);
+			const agent = agents.find((a: Bot) => a.id === selectedAgentId);
 			setLoading(true);
 			if (agent) {
 				if (contextSessionKey) {
@@ -109,7 +109,7 @@ const Index = () => {
 		}
 	}, [isLoading, isModalOpen, selectedAgent])
 
-	const handleChat = (agent) => {
+	const handleChat = (agent: Bot) => {
 		// Select Chat
 		setChat(true);
 		setSelectedAgent(agent);
@@ -120,8 +120,8 @@ const Index = () => {
 		filter(t('home.lastDay'));
 	}
 
-	const handleSession = (session) => {
-		const agent = agents.find(a => a.id === session.agent_id);
+	const handleSession = (session: any) => {
+		const agent = agents.find((a: Bot) => a.id === session.agent_id);
 		if (agent) {
 			setLocalSessionKey(session.session_key);
 			handleChat(agent);
@@ -129,12 +129,12 @@ const Index = () => {
 		}
 	}
 
-	const handleEditSession = (e) => {
+	const handleEditSession = (e: any) => {
 		e.preventDefault();
 		e.stopPropagation();
 	}
 
-	const deleteSession = async (e, session) => {
+	const deleteSession = async (e: any, session: any) => {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -142,7 +142,7 @@ const Index = () => {
 		try {
 			await ChatSessionService.delete(session.session_key, session.agent_id);
 			deleteSessionFromAgent(session.agent, session.session_key);
-			setFilteredSessions(filteredSessions.filter(s => s.session_key !== session.session_key));
+			setFilteredSessions(filteredSessions.filter((s: any) => s.session_key !== session.session_key));
 			// Close chat if deleting current session
 			if (session.session_key === localSessionKey) closeChat()
 		} catch (err) {
@@ -189,7 +189,7 @@ const Index = () => {
 		filter();
 	}, [selectedAgent])
 
-	function scrollToChatMessage(targetText) {
+	function scrollToChatMessage(targetText: string) {
 		// Find the container of messages
 		const messagesList = document.querySelector('.chat-messages-list');
 		if (!messagesList) return;
@@ -200,9 +200,9 @@ const Index = () => {
 		const scrolltext = targetText.toLowerCase().replace(/\r?\n|\r/g, "").trim();
 
 		// Look for the message containing the text
-		let targetMessage = null;
+		let targetMessage: Element | null = null;
 		messages.forEach((msg) => {
-			if (msg.textContent.toLowerCase().replace(/\r?\n|\r/g, "").trim().includes(scrolltext)) {
+			if ((msg.textContent ?? '').toLowerCase().replace(/\r?\n|\r/g, "").trim().includes(scrolltext)) {
 				targetMessage = msg;
 			}
 		});
@@ -212,7 +212,7 @@ const Index = () => {
 		if (!chatBody) return;
 
 		// Scroll so the message is visible
-		targetMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		(targetMessage as Element | null)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 
 	useEffect(() => {
@@ -297,7 +297,7 @@ const Index = () => {
 											session={session}
 											handleSession={() => handleSession(session)}
 											handleEditSession={handleEditSession}
-											deleteSession={(e) => {
+											deleteSession={(e: any) => {
 												if (session.session_key === localSessionKey) {
 													e.preventDefault();
 													e.stopPropagation();
@@ -342,13 +342,13 @@ const Index = () => {
 							) : (
 								// Assistants container
 								<div className="flex flex-wrap gap-[50px]">
-									{agents.slice(0, 4).map((agent, index) => (
+									{agents.slice(0, 4).map((agent: Bot, index: number) => (
 										<AgentsCard
 											key={index}
 											index={index}
 											name={agent.name}
 											expertise={agent.expertise_area?.name}
-											desc={agent.description}
+											desc={agent.description ?? undefined}
 											icon={agent.image}
 											onClick={() => handleChat(agent)}
 										/>

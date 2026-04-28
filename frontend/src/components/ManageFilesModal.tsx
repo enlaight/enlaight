@@ -49,7 +49,7 @@ export const ManageFilesModal = ({
 
     try {
       setLoading(true);
-      const response = await KnowledgeBaseService.listFiles(hashId);
+      const response = await KnowledgeBaseService.listFiles(hashId) as any;
 
       // Handle different response formats
       let fileList: KBFile[] = [];

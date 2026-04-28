@@ -55,7 +55,7 @@ export const useStore = create<StoreState>((set) => ({
 		})),
 
 	add: (key, item) =>
-		set((state) => {
+		set((state: any) => {
 			if (!Array.isArray(state[key])) return state;
 			const newItem = Array.isArray(item)
 				? item.map((i) => ({ id: i.id || hashId(), ...i }))
@@ -63,26 +63,26 @@ export const useStore = create<StoreState>((set) => ({
 			return { [key]: [...state[key], ...newItem] };
 		}),
 	edit: (key, id, updatedData) =>
-		set((state) => {
+		set((state: any) => {
 			if (!Array.isArray(state[key])) return state;
 			return {
-				[key]: state[key].map((obj) =>
+				[key]: state[key].map((obj: any) =>
 					obj.id === id ? { ...obj, ...updatedData } : obj
 				),
 			};
 		}),
 	remove: (key, id) =>
-		set((state) => {
+		set((state: any) => {
 			if (!Array.isArray(state[key])) return state;
 			return {
-				[key]: state[key].filter((obj) => obj.id !== id),
+				[key]: state[key].filter((obj: any) => obj.id !== id),
 			};
 		}),
 	removeFav: (key, message_id) =>
-		set((state) => {
+		set((state: any) => {
 			if (!Array.isArray(state[key])) return state;
 			return {
-				[key]: state[key].filter((obj) => obj.message_id !== message_id),
+				[key]: state[key].filter((obj: any) => obj.message_id !== message_id),
 			};
 		}),
 	removeSessionFromAgent: (agentId, sessionKey) =>
@@ -94,7 +94,7 @@ export const useStore = create<StoreState>((set) => ({
 						? {
 							...agent,
 							chat_sessions: (agent.chat_sessions || []).filter(
-								(session) => session.session_key !== sessionKey
+								(session: any) => session.session_key !== sessionKey
 							),
 						}
 						: agent

@@ -23,3 +23,5 @@ backend/src/core/settings.py
 frontend/node_modules/
 
 n8n/local-files/
+
+.claude

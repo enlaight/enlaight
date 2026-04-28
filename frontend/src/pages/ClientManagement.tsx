@@ -49,7 +49,7 @@ const ClientManagement = () => {
       setClients(results);
       setCount(results.length);
       update("clients", results);
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message ?? "Error fetching clients");
     } finally {
       setLoading(false);

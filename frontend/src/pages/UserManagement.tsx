@@ -66,7 +66,7 @@ const UserManagement = () => {
 
         if (!cancelled) {
           const results = Array.isArray(userPage?.results) ? userPage.results : [];
-          setUsers(results);
+          setUsers(results as unknown as User[]);
         }
 
       } catch (e: any) {
@@ -491,14 +491,14 @@ const UserManagement = () => {
       <SendResetEmailModal
         open={!!sendResetUser}
         onClose={() => setSendResetUser(null)}
-        user={sendResetUser}
+        user={sendResetUser as any}
         onEmailSent={handleEmailSent}
       />
 
       <ManualResetModal
         open={!!manualResetUser}
         onClose={() => setManualResetUser(null)}
-        user={manualResetUser}
+        user={manualResetUser as any}
         onPasswordReset={handlePasswordReset}
       />
     </>

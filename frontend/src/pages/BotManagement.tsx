@@ -324,7 +324,7 @@ export default function BotManagement() {
         <EditBotModal
           isOpen={!!editingBot}
           onClose={() => setEditingBot(null)}
-          onSave={handleEditBot}
+          onSave={handleEditBot as any}
           bot={editingBot}
           projectOptions={projectOptions}
         />

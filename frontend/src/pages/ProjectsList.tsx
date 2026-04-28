@@ -68,7 +68,7 @@ const ProjectsList = () => {
 					setProjects(results);
 					setCount(total);
 				}
-			} catch (e) {
+			} catch (e: any) {
 				if (!cancelled)
 					setError(
 						(e?.message || String(e)).includes("Invalid URL")
@@ -117,7 +117,7 @@ const ProjectsList = () => {
 	// Get translations for all texts in one batch
 	const { getTranslation, loading: translationLoading } = useBatchTranslation(textsToTranslate, "projects");
 
-	const handleEdit = (project) => {
+	const handleEdit = (project: any) => {
 		setSelectedProject(project);
 		setEditModalOpen(true);
 	};
@@ -133,7 +133,7 @@ const ProjectsList = () => {
 			});
 			// Refresh the list
 			setPage(1);
-		} catch (error) {
+		} catch (error: any) {
 			toast({
 				title: t('common.error'),
 				description: error.response?.data?.detail || t('projects.deleteFailed'),
@@ -216,7 +216,7 @@ const ProjectsList = () => {
 								{projectsForUI.map((project) => (
 									<ProjectDisplayItem
 										key={project.id}
-										project={project}
+										project={project as any}
 										onEdit={() => handleEdit(projects.find(p => p.id === project.id))}
 										onDelete={() => handleDelete(project.id)}
 										getTranslation={getTranslation}

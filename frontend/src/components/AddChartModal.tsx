@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 interface AddChartModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSave: (data) => void;
+	onSave: (data: any) => void;
 }
 
 export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, onSave }) => {

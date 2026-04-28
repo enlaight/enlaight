@@ -96,7 +96,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
     try {
       // Step 1: Get current user info
       const user = await AuthService.me();
-      setCurrentUser(user);
+      setCurrentUser(user as unknown as User);
 
       const admin = user.role === "ADMINISTRATOR";
       setIsAdmin(admin);

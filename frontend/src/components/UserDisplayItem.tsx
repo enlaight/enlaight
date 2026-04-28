@@ -27,7 +27,7 @@ interface UserDisplayItemProps {
   getTranslation: (text: string) => string;
 }
 
-function addExpirationTime(user_joined) {
+function addExpirationTime(user_joined: string) {
   const date = new Date(user_joined);
   date.setDate(date.getDate() + 10);
 
@@ -38,7 +38,7 @@ function addExpirationTime(user_joined) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function checkExpiration(user) {
+function checkExpiration(user: any) {
   if (user.email.includes('+EXPIRED')) return true;
 
   if (user.status === 'inactive') {
@@ -110,7 +110,7 @@ export function UserDisplayItem({
                 )}
               </div>
               {expiredUser && (
-                <p className="text-sm text-muted-foreground text-medium"><b>Expired on:</b> {addExpirationTime(user.joinDate)}</p>
+                <p className="text-sm text-muted-foreground text-medium"><b>Expired on:</b> {addExpirationTime(user.joinDate ?? '')}</p>
               )}
 
               {!expiredUser && (
