@@ -15,8 +15,8 @@ from authentication.serializers.kb_delete_serializer import KBDeleteSerializer
 
 class KBDeleteProxyView(APIView):
     """
-    Proxy para o n8n: DELETE /webhook/kb/delete/
-    Envia JSON com hash_id. (Aceita fallback por query ?hash_id=... para conveniência.)
+    Proxy to n8n: DELETE /webhook/kb/delete/
+    Sends JSON with hash_id. (Accepts fallback via query ?hash_id=... for convenience.)
     """
 
     permission_classes = [IsAuthenticated]

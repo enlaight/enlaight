@@ -13,8 +13,8 @@ User = get_user_model()
 
 
 class GoogleAuthView(APIView):
-    authentication_classes = []  # público
-    permission_classes = []  # público
+    authentication_classes = []  # public
+    permission_classes = []  # public
 
     @swagger_auto_schema(
         operation_id="google_auth",
@@ -57,8 +57,8 @@ class GoogleAuthView(APIView):
     )
     def post(self, request):
         """
-        Espera: { "id_token": "<JWT do Google Identity Services>" }
-        Valida o token, cria/busca o usuário e retorna JWT (access/refresh) da app.
+        Expects: { "id_token": "<JWT from Google Identity Services>" }
+        Validates the token, creates/fetches the user, and returns the app's JWT (access/refresh).
         """
         token = request.data.get("id_token")
         if not token:
@@ -67,7 +67,7 @@ class GoogleAuthView(APIView):
             )
 
         try:
-            # valida o ID token contra o client_id da sua app
+            # validate the ID token against your app's client_id
             payload = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
@@ -76,7 +76,7 @@ class GoogleAuthView(APIView):
         except ValueError:
             return Response({"detail": "id_token inválido."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # payload típico: { email, email_verified, name, picture, given_name, family_name, sub }
+        # typical payload: { email, email_verified, name, picture, given_name, family_name, sub }
         email = payload.get("email")
         if not email or not payload.get("email_verified"):
             return Response(
@@ -96,7 +96,7 @@ class GoogleAuthView(APIView):
             },
         )
 
-        # emite JWT da sua aplicação
+        # emit JWT from your application
         refresh = RefreshToken.for_user(user)
         from authentication.views.authentication import _set_refresh_cookie
         resp = Response(

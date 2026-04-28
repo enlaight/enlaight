@@ -242,7 +242,7 @@ def enviar_email_convite(destinatario, contexto):
     mjml_path = "authentication/templates/email/invite_convite.mjml"
     html_output_path = "authentication/templates/email/invite_convite_compilado.html"
 
-    # Forçar recompilação em deploys (opcional: remover o arquivo compilado)
+    # Force recompilation on deploys (optional: remove the compiled file)
     if os.environ.get("FORCE_MJML_COMPILE") == "1" and os.path.exists(html_output_path):
         os.remove(html_output_path)
     try:
@@ -409,7 +409,7 @@ class LoginView(APIView):
 
 class UserCreateView(generics.CreateAPIView):
     permission_classes = [AllowAny]
-    authentication_classes = []  # signup público
+    authentication_classes = []  # public signup
     serializer_class = UserProfileCreateSerializer
     queryset = UserProfile.objects.all()
 

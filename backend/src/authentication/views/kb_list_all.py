@@ -21,8 +21,8 @@ def _as_bool(value: str) -> bool:
 
 class KBListAllProxyView(APIView):
     """
-    Lista KBs do n8n, mas **só** retorna as que estão vinculadas ao projeto informado.
-    Não realiza sincronização local; retorna apenas a lista filtrada pelo projeto.
+    Lists KBs from n8n, but **only** returns those linked to the given project.
+    Does not perform local sync; returns only the list filtered by project.
     """
 
     permission_classes = [IsAuthenticated]

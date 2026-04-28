@@ -13,8 +13,8 @@ from authentication.serializers.kb_link_serializer import KBLinkSerializer
 
 class KBLinkAttachView(APIView):
     """
-    Associa uma KB já existente (hash_id) a um projeto, criando o vínculo local (KBLink).
-    Não cria KB no n8n, apenas registra a associação para controle de acesso.
+    Associates an existing KB (hash_id) with a project, creating the local link (KBLink).
+    Does not create a KB in n8n, only records the association for access control.
     """
 
     permission_classes = [IsAuthenticated]

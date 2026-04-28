@@ -123,7 +123,7 @@ class TranslateBatchView(APIView):
                 )
             normalized.append({"text": t, "lang": l})
 
-        # coleções para lookup
+        # collections for lookup
         lowers: List[str] = []
         langs: List[str] = []
         for it in normalized:

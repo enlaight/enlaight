@@ -15,8 +15,8 @@ from authentication.serializers.kb_edit_serializer import KBEditSerializer
 
 class KBEditProxyView(APIView):
     """
-    Proxy para o n8n: PATCH /webhook/kb/edit/
-    Aceita JSON com hash_id (obrigatório) e name/description (opcionais).
+    Proxy to n8n: PATCH /webhook/kb/edit/
+    Accepts JSON with hash_id (required) and name/description (optional).
     """
 
     permission_classes = [IsAuthenticated]

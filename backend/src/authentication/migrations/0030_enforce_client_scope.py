@@ -9,15 +9,15 @@ def backfill_user_clients(apps, schema_editor):
     Projects = apps.get_model("authentication", "Projects")
 
     def get_default_client():
-        # Se existir ao menos um cliente, reutiliza o primeiro; caso contrário, retorna None.
+        # If at least one client exists, reuse the first one; otherwise, return None.
         total_clients = Clients.objects.count()
         if total_clients >= 1:
             return Clients.objects.first()
         return None
 
-    # Apenas usuários não-admin devem possuir client; admins permanecem sem client
+    # Only non-admin users should have a client; admins remain without one
     for user in UserProfile.objects.filter(client__isnull=True).exclude(role="ADMINISTRATOR"):
-        # Clientes distintos dos projetos do usuário
+        # Distinct clients from the user's projects
         client_ids = list(
             Projects.objects.filter(users__id=user.id)
             .values_list("client_id", flat=True)
@@ -30,14 +30,14 @@ def backfill_user_clients(apps, schema_editor):
             _c = get_default_client()
             chosen_client = _c.id if _c else None
         else:
-            # múltiplos clientes -> escolher determinístico e remover laços com outros clientes
+            # multiple clients -> pick deterministically and remove links to other clients
             client_ids_sorted = sorted([cid for cid in client_ids if cid is not None])
             if client_ids_sorted:
                 chosen_client = client_ids_sorted[0]
             else:
                 _c = get_default_client()
                 chosen_client = _c.id if _c else None
-            # Remover vínculos M2M com projetos de outros clientes via ORM (independente do nome da tabela M2M)
+            # Remove M2M links to projects of other clients via ORM (independent of the M2M table name)
             for project in user.projects.exclude(client_id=chosen_client).all():
                 user.projects.remove(project)
         if chosen_client is not None:

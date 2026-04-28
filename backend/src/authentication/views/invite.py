@@ -166,19 +166,19 @@ class InviteUserView(APIView):
             except Projects.DoesNotExist:
                 return Response({"detail": "Project não encontrado"}, status=404)
 
-            # Resolve client_id conforme a role do convidante
+            # Resolve client_id according to the inviter's role
             client_id_from_req = request.data.get("client_id")
             if inviter_role == UserRole.ADMINISTRATOR.value:
-                # Admin: usa client_id se fornecido; se não, infere do projeto
+                # Admin: uses client_id if provided; otherwise infers from the project
                 resolved_client_id = client_id_from_req or getattr(project, "client_id", None)
             else:
-                # Manager: sempre infere do projeto
+                # Manager: always infers from the project
                 resolved_client_id = getattr(project, "client_id", None)
 
             if not resolved_client_id:
                 return Response({"detail": "Cannot determine client"}, status=400)
 
-            # Busca client e valida relação com o projeto
+            # Fetch client and validate its relationship with the project
             try:
                 client = Clients.objects.get(id=resolved_client_id)
             except Clients.DoesNotExist:
@@ -214,7 +214,7 @@ class InviteUserView(APIView):
         try:
             enviar_email_convite(email, contexto_email)
         except Exception:
-            # Fallback para comportamento anterior caso a geração/ envio via MJML falhe
+            # Fallback to previous behavior if MJML generation/delivery fails
             send_mail(
                 subject="Invitation to Enlaight Platform",
                 message=f"Use this link to confirm your registration: {link}",

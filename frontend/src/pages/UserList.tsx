@@ -353,7 +353,7 @@ const UserList = () => {
             </div>
           )}
 
-          {/* Paginação */}
+          {/* Pagination */}
           {!loading && !error && (
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <span className="text-sm text-muted-foreground">

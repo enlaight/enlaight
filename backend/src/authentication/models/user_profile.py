@@ -43,7 +43,7 @@ class UserProfile(AbstractUser, Base):
 
     client = models.ForeignKey(
         Clients, on_delete=models.CASCADE, related_name="user_profiles", null=True, blank=True
-    )  # admins podem não ter client; demais usuários devem ter
+    )  # admins may not have a client; other users must
 
     avatar = models.ImageField(upload_to=avatar_upload_to, null=True, blank=True)
 
