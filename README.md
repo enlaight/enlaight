@@ -340,7 +340,7 @@ To fix it, for each default-created agent:
 
 The `agent-data-analyst.json` workflow is included as a **reference / template** — you can duplicate it in n8n to model new agents after it, then register them in Enlaight using the same webhook-update flow.
 
-### Where can I check information on <application name>?
+### Where can I check more information?
 
 The **docs/** folder at the root of the project has compiled information regarding the project and its sub applications (frontend, backend etc).
 
