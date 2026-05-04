@@ -98,9 +98,7 @@ Source: [`frontend/src/App.tsx`](./frontend/src/App.tsx). Anything outside this 
 | `/projectslist` | Projects | Manage client projects |
 | `/clientmanagement` | Clients | Manage client organisations |
 | `/userlist` | User List | Admin: list users |
-| `/usermanagement` | User Management | Admin: edit users |
 | `/user/:id` | User Detail | View / edit a single user |
-| `/addusers` | Add Users | Invite new users |
 
 ### API Communication
 

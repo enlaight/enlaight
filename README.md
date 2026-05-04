@@ -30,6 +30,14 @@ Copy `env.sample` to `.env` and fill in any required keys, secrets, or configura
 cp env.sample .env
 ```
 
+Also copy the Django settings template and fill in the required values:
+
+```bash
+cp backend/src/core/settings.sample.py backend/src/core/settings.py
+```
+
+Open `backend/src/core/settings.py` and replace every placeholder value (e.g. database credentials, secret keys, n8n keys) with your actual configuration.
+
 ### 2. Build and Start the Application
 
 ```bash
@@ -318,6 +326,14 @@ python n8n/scripts/youscan_normalize_mentions.py
 ---
 
 ## ❓ FAQ
+
+### Why can't I just use the default admin account?
+
+It is unsafe, the credentials are available on a public repository and may be used against the deployed application. Furthermore, the user is hardcoded and not connected to anything, which may cause permission issues, nor does it have a valid e-mail. As soon as access to the platform is possible, create a new Client and invite a new Admin account, then delete the default admin.
+
+### When I run "make build", why do I get an error at the following line: "RUN npm install --no-audit --no-fund --legacy-peer-deps"?
+
+Make sure you have NodeJs installed at the latest version (at least v20) and then try the command again.
 
 ### Why do my Knowledge Base or Agent operations fail right after a fresh install?
 
