@@ -21,7 +21,7 @@ const existingEmails = [
 type UserFormData = {
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Member' | '';
+  role: 'Admin' | 'User';
   status: 'Active' | 'Inactive';
   password: string;
 };
@@ -100,7 +100,7 @@ const AddUsers = () => {
         id: Math.random().toString(36).substr(2, 9),
         name: formData.name.trim(),
         email: formData.email.toLowerCase(),
-        role: formData.role as 'Admin' | 'Manager' | 'Member',
+        role: formData.role as 'Admin' | 'User',
         status: formData.status,
         department: formData.role === 'Admin' ? 'Administration' : 'General',
         joinDate: new Date().toISOString().split('T')[0],
@@ -203,14 +203,13 @@ const AddUsers = () => {
                 <Label htmlFor="role" className="text-sm font-medium">
                   Role <span className="text-destructive">*</span>
                 </Label>
-                <Select value={formData.role} onValueChange={(value: 'Admin' | 'Manager' | 'Member') => handleInputChange('role', value)}>
+                <Select value={formData.role} onValueChange={(value: 'Admin' | 'User') => handleInputChange('role', value)}>
                   <SelectTrigger className={errors.role ? 'border-destructive' : ''}>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
                     <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Manager">Manager</SelectItem>
-                    <SelectItem value="Member">Member</SelectItem>
+                    <SelectItem value="User">User</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.role && (

@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -7,11 +6,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from authentication.models.boards import Boards
-from authentication.models.clients import Clients
 from authentication.models.projects import Projects
+from authentication.models.roles import UserRole
 from authentication.serializers.board_serializer import BoardSerializer
 from authentication.serializers.board_update_serializer import BoardUpdateSerializer
-from authentication.serializers.user_profile import UserProfileSerializer
 
 
 class BoardViewSet(viewsets.ModelViewSet):
@@ -19,7 +17,13 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Boards.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
-    http_method_names = ["get", "patch"]
+    http_method_names = ["get", "post", "patch"]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == UserRole.ADMINISTRATOR.value:
+            return Boards.objects.all()
+        return Boards.objects.filter(project__in=user.projects.all())
 
     @swagger_auto_schema(
         operation_summary="Listar todos os charts da Dashboard",
@@ -31,26 +35,42 @@ class BoardViewSet(viewsets.ModelViewSet):
         tags=["Boards"],
     )
     def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
-        User = get_user_model()
-        try:
-            user = User.objects.get(id=request.user.id)
-        except Exception as e:
-            print(e)
+    @swagger_auto_schema(
+        operation_summary="Criar dashboard",
+        operation_description="Cria uma dashboard para um projeto. Apenas administradores. Requer autenticação JWT.",
+        responses={
+            201: openapi.Response("Dashboard criada", BoardSerializer),
+            400: openapi.Response("Dados inválidos"),
+            403: openapi.Response("Sem permissão"),
+            404: openapi.Response("Projeto não encontrado"),
+        },
+        security=[{"Bearer": []}],
+        tags=["Boards"],
+    )
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != UserRole.ADMINISTRATOR.value:
             return Response(
-                {"status": "Error: User not found", "detail": e},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {"detail": "Only administrators can create boards."},
+                status=status.HTTP_403_FORBIDDEN,
             )
-
-        # User of permission level "admin" can access all boards
-        user_role = user.role
-
-        # Else user can only access the boards belonging to their client and projects
-        user_client = user.client_id
-        projects = [p.id for p in user.projects.all()]
-        queryset = Boards.objects.filter(project_id__in=projects)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        project_id = request.data.get("project_id")
+        if not project_id:
+            return Response(
+                {"detail": "project_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            project = Projects.objects.get(id=project_id)
+        except Projects.DoesNotExist:
+            return Response(
+                {"detail": "Project not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        board = Boards.objects.create(config="[]", project=project, client=project.client)
+        return Response(self.get_serializer(board).data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         operation_summary="Atualizar dashboard",
@@ -66,33 +86,21 @@ class BoardViewSet(viewsets.ModelViewSet):
     )
     def partial_update(self, request, *args, **kwargs):
         try:
-            data = request.data.get("data")
-            if not data:
+            board = self.get_object()
+            config = request.data.get("config")
+            if not config:
                 return Response(
-                    {"detail": "Dados são obrigatórios."},
+                    {"detail": "config field is required."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-            project_id = data.get("project_id")
-            client_id = data.get("client_id")
-
-            boards = Boards.objects.filter()
-            if not boards:
-                serializer = self.get_serializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                new_boards = serializer.save()
-                return Response(
-                    self.get_serializer(new_boards).data, status=status.HTTP_201_CREATED
-                )
-
-            serializer = self.get_serializer(boards, data=request.data)
+            serializer = BoardUpdateSerializer(board, data={"config": config}, partial=True)
             serializer.is_valid(raise_exception=True)
-            updated_boards = serializer.save()
+            serializer.save()
         except Exception as e:
             print(e)
             return Response(
-                {"detail": e},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(self.get_serializer(updated_boards).data, status=200)
+        return Response(self.get_serializer(board).data, status=status.HTTP_200_OK)

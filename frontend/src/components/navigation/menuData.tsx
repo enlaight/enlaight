@@ -62,7 +62,6 @@ export const getMenuItems = (activeItem: string, t: TFunction) => {
         { id: "users-projects", label: t('navigation.projects') },
         { id: "agents-management", label: t('navigation.agentManagement'), to: "/assistantmanagement" },
         { id: "client-management", label: t('navigation.clientManagement'), to: "/clientmanagement" },
-        // { id: "users-management", label: t('nav.userManagement'), to: "/usermanagement" },
         { id: "users-list", label: t('navigation.usersList'), to: "/userlist" },
         { id: "invite", label: t('navigation.invite') },
       ]

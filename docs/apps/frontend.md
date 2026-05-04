@@ -179,8 +179,7 @@ Authenticated:
 - `/knowledgebases` — manage knowledge bases
 - `/projectslist` — manage projects
 - `/clientmanagement` — manage client organisations
-- `/userlist`, `/usermanagement`, `/user/:id` — user administration
-- `/addusers` — invite users
+- `/userlist`, `/user/:id` — user administration
 
 Anything else falls through to `Navigate to="/login"`.
 

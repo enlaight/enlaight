@@ -10,7 +10,6 @@ import ResetPassword from "./pages/ResetPassword";
 // import NotFound from "./pages/NotFound";
 import SignUp from "./pages/SignUp";
 import UserDetail from "./pages/UserDetail";
-// import UserManagement from "./pages/UserManagement";
 import AddUsers from "./pages/AddUsers";
 import BotManagement from "./pages/BotManagement";
 import KnowledgeBases from "./pages/KnowledgeBases";
@@ -161,14 +160,6 @@ const App = () => {
                           </RequireAuth>
                         }
                       />
-                      {/* <Route
-                        path="/usermanagement"
-                        element={
-                          <RequireAuth>
-                            <UserManagement />
-                          </RequireAuth>
-                        }
-                      /> */}
                       <Route
                         path="/userlist"
                         element={

@@ -2,16 +2,22 @@ import { useContext, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import GridLayout from 'react-grid-layout';
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddChartModal } from "@/components/AddChartModal";
+import { AddBoardModal } from "@/components/AddBoardModal";
 import { EditChartModal } from "@/components/EditChartModal";
 import { BoardsService } from "@/services/BoardsService";
 import { AuthContext } from "@/contexts/AuthContext";
+import { useStore } from "@/store/useStore";
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import QuickChartGraph from '@/components/QuickChartGraph';
 import { LayoutDashboard, Plus, SquareX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LoadingAnimation from "@/components/LoadingAnimation";
+
+type LayoutItem = { i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string };
+type Board = { id: string; project_id: string; client_id: string; config: string };
 
 const cardId = () => {
   // Creates a 13 char random id
@@ -22,6 +28,7 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const [isLoading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [addBoardOpen, setAddBoardOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteChart, setDeleteChart] = useState(false);
 
@@ -33,19 +40,61 @@ const DashboardPage = () => {
   const [modalN8n, setModalN8n] = useState('');
   const [modalHTML, setModalHTML] = useState('');
 
-  const [layout, setLayout] = useState<Array<{ i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string }>>([]);
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [layouts, setLayouts] = useState<LayoutItem[][]>([]);
+  const [activeBoardIndex, setActiveBoardIndex] = useState(0);
 
   // Checking for admin role
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "ADMINISTRATOR";
+
+  const projects = useStore((s) => s.projects);
+
+  const activeLayout: LayoutItem[] = layouts[activeBoardIndex] ?? [];
+  const activeBoardId = boards[activeBoardIndex]?.id ?? '';
+
+  const projectName = (projectId: string) => {
+    const proj = projects.find((p: any) => p.id === projectId);
+    return proj?.name ?? projectId;
+  };
+
+  const setActiveLayout = (newLayout: LayoutItem[]) => {
+    setLayouts((prev) => prev.map((l, i) => (i === activeBoardIndex ? newLayout : l)));
+  };
+
+  const availableProjects = isAdmin
+    ? projects
+    : projects.filter((p: any) => !boards.some((b) => b.project_id === p.id));
+
+  const createBoard = async (projectId: string) => {
+    try {
+      const newBoard = await BoardsService.create(projectId);
+      setBoards((prev) => [...prev, newBoard as Board]);
+      setLayouts((prev) => [...prev, []]);
+      setActiveBoardIndex(boards.length);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
     const getLayout = async () => {
       try {
         const response = await BoardsService.get();
-        const layoutData = JSON.parse(Array.isArray(response) ? response[0].data : response);
-        setLayout(layoutData);
+        const fetched: Board[] = Array.isArray(response) ? response : [];
+        const parsedLayouts: LayoutItem[][] = fetched.map((b) => {
+          if (!b.config) return [];
+          try {
+            const data = JSON.parse(b.config);
+            return Array.isArray(data) ? data : [];
+          } catch {
+            return [];
+          }
+        });
+        setBoards(fetched);
+        setLayouts(parsedLayouts);
+        setActiveBoardIndex(0);
       } catch (err) {
         console.error(err);
       } finally {
@@ -91,49 +140,47 @@ const DashboardPage = () => {
   }
 
   const addCard = ({ title, subtitle, n8n, html }: { title?: string; subtitle?: string; n8n?: string; html?: string }) => {
-    const position = getNextPosition(layout);
-    setLayout(prevLayout => [
-      ...prevLayout,
-      { i: cardId(), ...position, title, subtitle, n8n, html }
+    
+    const position = getNextPosition(activeLayout);
+    setActiveLayout([
+      ...activeLayout,
+      { i: cardId(), ...position, title, subtitle, n8n, html },
     ]);
   }
 
   const updateCard = ({ i, title, subtitle, n8n, html }: { i: string; title?: string; subtitle?: string; n8n?: string; html?: string }) => {
-    const updatedLayout = layout.map(item =>
+    const updatedLayout = activeLayout.map((item) =>
       item['i'] === i ? { ...item, title, subtitle, n8n, html } : item
     );
     saveLayout(updatedLayout);
   }
 
   const removeCard = (i: string) => {
-    const updatedLayout = layout.filter(item => item['i'] !== i);
-    setLayout(updatedLayout);
+    const updatedLayout = activeLayout.filter((item) => item['i'] !== i);
+    setActiveLayout(updatedLayout);
   }
 
   const saveLayout = async (newLayout: any[]) => {
-    // Creates an easy map to get an item by the id
-    const currentLayout = new Map(layout.map(item => [item['i'], item]));
+    if (!activeBoardId) return;
+    const currentLayout = new Map(activeLayout.map((item) => [item['i'], item]));
 
-    // Parse through the updated positions array
     const formattedLayout = newLayout.map((newObj: any) => {
       const { i, w, h, x, y } = newObj;
       let { title, subtitle, n8n, html } = newObj;
       if (!title) {
         const currentObj = currentLayout.get(i);
         if (!currentObj) return { i, w, h, x, y };
-        // In case these are not in newObj, we get them from currentObj
         title = currentObj.title;
         subtitle = currentObj.subtitle;
         n8n = currentObj.n8n;
         html = currentObj.html;
       }
-      // Return a new object with the id, position keys and info
       return { i, w, h, x, y, title, subtitle, n8n, html };
     });
-    setLayout(formattedLayout);
+    setActiveLayout(formattedLayout);
 
     try {
-      await BoardsService.update(JSON.stringify(formattedLayout));
+      await BoardsService.update(JSON.stringify(formattedLayout), activeBoardId);
     } catch (err) {
       console.error(err);
     }
@@ -183,8 +230,28 @@ const DashboardPage = () => {
               {t('dashboard.description')}
             </p>
           </div>
-
+          {isAdmin && (
+            <Button onClick={() => setAddBoardOpen(true)} size="default">
+              <Plus className="mr-2 h-5 w-5" />
+              {t('dashboard.addNewBoard')}
+            </Button>
+          )}
         </div>
+        {boards.length > 1 && (
+          <Tabs
+            value={String(activeBoardIndex)}
+            onValueChange={(val) => setActiveBoardIndex(Number(val))}
+            className="mt-4"
+          >
+            <TabsList className="flex flex-wrap h-auto justify-start">
+              {boards.map((b, i) => (
+                <TabsTrigger key={b.id} value={String(i)}>
+                  {projectName(b.project_id)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
         {isLoading ? (
           <div className="h-full flex justify-center items-start pt-[8rem] pb-[3rem] relative">
             <LoadingAnimation
@@ -194,7 +261,7 @@ const DashboardPage = () => {
           </div>
         ) : (
           /* Empty Page */
-          layout.length === 0 && (
+          activeLayout.length === 0 && (
             <div className="flex align-center justify-center mb-5 w-full h-[80%]">
               <div className="flex flex-col align-center justify-center items-center gap-5 text-center space-y-4">
                 <div className="mx-auto w-24 h-24 bg-[#EAEAEA] rounded-full flex items-center justify-center">
@@ -208,8 +275,8 @@ const DashboardPage = () => {
                     {isAdmin ? t('dashboard.emptyBoardAdmin') : t('dashboard.emptyBoardNoAdmin')}
                   </p>
                 </div>
-                {isAdmin && (
-                  <Button onClick={() => setAddOpen(true)} size="default">
+                {isAdmin && availableProjects.length > 0 && (
+                  <Button onClick={() => setAddBoardOpen(true)} size="default">
                     <Plus className="mr-2 h-5 w-5" />
                     {t('dashboard.addFirstBoard')}
                   </Button>
@@ -219,8 +286,9 @@ const DashboardPage = () => {
           )
         )}
         <GridLayout
+          key={activeBoardId || 'empty'}
           className="layout"
-          layout={layout}
+          layout={activeLayout}
           cols={5}
           rowHeight={400}
           width={1300}
@@ -230,7 +298,7 @@ const DashboardPage = () => {
           isResizable={isAdmin}
           onLayoutChange={(ItemCallback: any) => saveLayout(ItemCallback)}
         >
-          {layout.map(item => {
+          {activeLayout.map((item) => {
             return (
               <div
                 key={item['i']}
@@ -290,6 +358,12 @@ const DashboardPage = () => {
         isOpen={addOpen}
         onClose={() => setAddOpen(false)}
         onSave={(data) => addCard(data)}
+      />
+      <AddBoardModal
+        isOpen={addBoardOpen}
+        onClose={() => setAddBoardOpen(false)}
+        onSave={(projectId) => createBoard(projectId)}
+        availableProjects={availableProjects}
       />
       <EditChartModal
         isOpen={editOpen}

@@ -172,7 +172,7 @@ class InviteUserView(APIView):
                 # Admin: uses client_id if provided; otherwise infers from the project
                 resolved_client_id = client_id_from_req or getattr(project, "client_id", None)
             else:
-                # Manager: always infers from the project
+                # User: always infers from the project
                 resolved_client_id = getattr(project, "client_id", None)
 
             if not resolved_client_id:

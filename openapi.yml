@@ -100,7 +100,7 @@ components:
     # ── Users ─────────────────────────────────────────────────────────────────
     Role:
       type: string
-      enum: [ADMINISTRATOR, MANAGER, USER]
+      enum: [ADMINISTRATOR, USER]
 
     UserProfile:
       type: object
@@ -198,7 +198,7 @@ components:
         client_id:
           type: string
           format: uuid
-          description: Required for ADMINISTRATOR invites. Ignored for MANAGER invites.
+          description: Required for ADMINISTRATOR invites.
 
     InviteConfirmRequest:
       type: object

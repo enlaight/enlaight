@@ -7,8 +7,13 @@ export const BoardsService = {
 		return data;
 	},
 
-	async update(data: string, projectId?: string) {
-		const response = await api.patch<Boards>(`boards/${projectId}`, { data: data });
+	async update(config: string, boardId: string) {
+		const response = await api.patch<Boards>(`boards/${boardId}/`, { config });
 		return response;
+	},
+
+	async create(projectId: string) {
+		const { data } = await api.post<Boards>(`boards/`, { project_id: projectId });
+		return data;
 	},
 };

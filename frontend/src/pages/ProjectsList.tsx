@@ -11,12 +11,14 @@ import { AddProjectModal } from "@/components/AddProjectModal";
 import { EditProjectModal } from "@/components/EditProjectModal";
 import { useToast } from "@/hooks/use-toast";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import { useStore } from "@/store/useStore";
 
 const PAGE_SIZE = 10;
 
 const ProjectsList = () => {
 	const { t } = useTranslation();
 	const { toast } = useToast();
+	const { update } = useStore;
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -66,6 +68,7 @@ const ProjectsList = () => {
 
 				if (!cancelled) {
 					setProjects(results);
+					update("projects", results);
 					setCount(total);
 				}
 			} catch (e: any) {
