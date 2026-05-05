@@ -24,7 +24,8 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 	prevHTML,
 	isOpen,
 	onClose,
-	onSave
+	onSave,
+	projectName
 }) => {
 	const { t } = useTranslation();
 
@@ -81,6 +82,11 @@ export const EditChartModal: React.FC<EditChartModalProps> = ({
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border">
 					<DialogTitle className="text-xl font-semibold text-foreground">{t('dashboard.editChart')}</DialogTitle>
 				</DialogHeader>
+
+				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+					<h3>{t('dashboard.boardProject')}<span style={{ color: 'red', marginLeft: 2 }}>*</span></h3>
+					<Input placeholder={projectName} disabled />
+				</div>
 
 				<div className="flex w-full" style={{ gap: 20 }}>
 					<div className="flex w-full" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>

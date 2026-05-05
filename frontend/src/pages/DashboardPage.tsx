@@ -1,10 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import GridLayout from 'react-grid-layout';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddChartModal } from "@/components/AddChartModal";
-import { AddBoardModal } from "@/components/AddBoardModal";
 import { EditChartModal } from "@/components/EditChartModal";
 import { BoardsService } from "@/services/BoardsService";
 import { AuthContext } from "@/contexts/AuthContext";
@@ -14,7 +13,6 @@ import 'react-resizable/css/styles.css';
 import QuickChartGraph from '@/components/QuickChartGraph';
 import { LayoutDashboard, Plus, SquareX } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import LoadingAnimation from "@/components/LoadingAnimation";
 
 type LayoutItem = { i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string };
 type Board = { id: string; project_id: string; client_id: string; config: string };
@@ -24,13 +22,22 @@ const cardId = () => {
   return (Math.random().toString(16) + Math.random().toString(16)).slice(2, 15);
 }
 
+const parseConfig = (config?: string): LayoutItem[] => {
+  if (!config) return [];
+  try {
+    const data = JSON.parse(config);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 const DashboardPage = () => {
   const { t } = useTranslation();
-  const [isLoading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
-  const [addBoardOpen, setAddBoardOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteChart, setDeleteChart] = useState(false);
+  const { projects, boards, activeBoard, update } = useStore();
 
   const [selectedChart, setSelected] = useState<any>(null);
 
@@ -40,69 +47,47 @@ const DashboardPage = () => {
   const [modalN8n, setModalN8n] = useState('');
   const [modalHTML, setModalHTML] = useState('');
 
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [layouts, setLayouts] = useState<LayoutItem[][]>([]);
-  const [activeBoardIndex, setActiveBoardIndex] = useState(0);
+  const [activeLayout, setActiveLayout] = useState<LayoutItem[]>([]);
+  const creatingRef = useRef<Set<string>>(new Set());
 
   // Checking for admin role
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "ADMINISTRATOR";
-
-  const projects = useStore((s) => s.projects);
-
-  const activeLayout: LayoutItem[] = layouts[activeBoardIndex] ?? [];
-  const activeBoardId = boards[activeBoardIndex]?.id ?? '';
 
   const projectName = (projectId: string) => {
     const proj = projects.find((p: any) => p.id === projectId);
     return proj?.name ?? projectId;
   };
 
-  const setActiveLayout = (newLayout: LayoutItem[]) => {
-    setLayouts((prev) => prev.map((l, i) => (i === activeBoardIndex ? newLayout : l)));
-  };
-
   const availableProjects = isAdmin
     ? projects
-    : projects.filter((p: any) => !boards.some((b) => b.project_id === p.id));
-
-  const createBoard = async (projectId: string) => {
-    try {
-      const newBoard = await BoardsService.create(projectId);
-      setBoards((prev) => [...prev, newBoard as Board]);
-      setLayouts((prev) => [...prev, []]);
-      setActiveBoardIndex(boards.length);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    : projects.filter((p: any) => !boards.some((b: Board) => b.project_id === p.id));
 
   useEffect(() => {
-    setLoading(true);
-    const getLayout = async () => {
-      try {
-        const response = await BoardsService.get();
-        const fetched: Board[] = Array.isArray(response) ? response : [];
-        const parsedLayouts: LayoutItem[][] = fetched.map((b) => {
-          if (!b.config) return [];
-          try {
-            const data = JSON.parse(b.config);
-            return Array.isArray(data) ? data : [];
-          } catch {
-            return [];
-          }
-        });
-        setBoards(fetched);
-        setLayouts(parsedLayouts);
-        setActiveBoardIndex(0);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getLayout();
+    if (boards.length === 0) {
+      (async () => {
+        try {
+          const response = await BoardsService.get();
+          const fetched: Board[] = Array.isArray(response) ? response : [];
+          update("boards", fetched);
+        } catch (err) {
+          console.error(err);
+        }
+      })();
+    }
   }, []);
+
+  useEffect(() => {
+    if (!activeBoard && projects.length > 0) {
+      update("activeBoard", projects[0].id);
+    }
+  }, [activeBoard, projects]);
+
+  const selectedBoard = boards.find((b: Board) => b.project_id === activeBoard);
+
+  useEffect(() => {
+    setActiveLayout(parseConfig(selectedBoard?.config));
+  }, [activeBoard, selectedBoard?.config]);
 
   const getNextPosition = (layout: any[], cols = 5, defaultW = 2, defaultH = 1) => {
     const gridMap: Record<string, boolean> = {};
@@ -140,7 +125,6 @@ const DashboardPage = () => {
   }
 
   const addCard = ({ title, subtitle, n8n, html }: { title?: string; subtitle?: string; n8n?: string; html?: string }) => {
-    
     const position = getNextPosition(activeLayout);
     setActiveLayout([
       ...activeLayout,
@@ -161,7 +145,7 @@ const DashboardPage = () => {
   }
 
   const saveLayout = async (newLayout: any[]) => {
-    if (!activeBoardId) return;
+    if (!activeBoard) return;
     const currentLayout = new Map(activeLayout.map((item) => [item['i'], item]));
 
     const formattedLayout = newLayout.map((newObj: any) => {
@@ -179,11 +163,37 @@ const DashboardPage = () => {
     });
     setActiveLayout(formattedLayout);
 
+    const config = JSON.stringify(formattedLayout);
+    const existing = boards.find((b: Board) => b.project_id === activeBoard);
+
     try {
-      await BoardsService.update(JSON.stringify(formattedLayout), activeBoardId);
+      if (existing) {
+        await BoardsService.update(config, activeBoard);
+        const latest: Board[] = useStore.getState().boards;
+        update(
+          "boards",
+          latest.map((b: Board) =>
+            b.project_id === activeBoard ? { ...b, config } : b
+          )
+        );
+      } else {
+        if (creatingRef.current.has(activeBoard)) return;
+        creatingRef.current.add(activeBoard);
+        try {
+          const created = await BoardsService.create(activeBoard, config);
+          const latest: Board[] = useStore.getState().boards;
+          update("boards", [...latest, created]);
+        } finally {
+          creatingRef.current.delete(activeBoard);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
+  }
+
+  const changeTabs = (projectId?: string) => {
+    update("activeBoard", projectId ?? "");
   }
 
   const N8nRender = (props: any) => {
@@ -231,62 +241,53 @@ const DashboardPage = () => {
             </p>
           </div>
           {isAdmin && (
-            <Button onClick={() => setAddBoardOpen(true)} size="default">
+            <Button onClick={() => setAddOpen(true)} size="default">
               <Plus className="mr-2 h-5 w-5" />
               {t('dashboard.addNewBoard')}
             </Button>
           )}
         </div>
-        {boards.length > 1 && (
+        {isAdmin && projects.length > 0 && (
           <Tabs
-            value={String(activeBoardIndex)}
-            onValueChange={(val) => setActiveBoardIndex(Number(val))}
+            value={activeBoard}
+            onValueChange={(val) => changeTabs(val)}
             className="mt-4"
           >
             <TabsList className="flex flex-wrap h-auto justify-start">
-              {boards.map((b, i) => (
-                <TabsTrigger key={b.id} value={String(i)}>
-                  {projectName(b.project_id)}
+              {projects.map((p) => (
+                <TabsTrigger key={p.id} value={p.id}>
+                  {p.name}
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
         )}
-        {isLoading ? (
-          <div className="h-full flex justify-center items-start pt-[8rem] pb-[3rem] relative">
-            <LoadingAnimation
-              icon={<LayoutDashboard className="h-[100px] w-[100px] text-primary" />}
-              text={<span>{t('dashboard.loadingMessage')}</span>}
-            />
-          </div>
-        ) : (
-          /* Empty Page */
-          activeLayout.length === 0 && (
-            <div className="flex align-center justify-center mb-5 w-full h-[80%]">
-              <div className="flex flex-col align-center justify-center items-center gap-5 text-center space-y-4">
-                <div className="mx-auto w-24 h-24 bg-[#EAEAEA] rounded-full flex items-center justify-center">
-                  <SquareX className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">
-                    {t('dashboard.emptyBoard')}
-                  </h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    {isAdmin ? t('dashboard.emptyBoardAdmin') : t('dashboard.emptyBoardNoAdmin')}
-                  </p>
-                </div>
-                {isAdmin && availableProjects.length > 0 && (
-                  <Button onClick={() => setAddBoardOpen(true)} size="default">
-                    <Plus className="mr-2 h-5 w-5" />
-                    {t('dashboard.addFirstBoard')}
-                  </Button>
-                )}
+        {activeLayout.length === 0 && (
+          <div className="flex align-center justify-center mb-5 w-full h-[80%]">
+            <div className="flex flex-col align-center justify-center items-center gap-5 text-center space-y-4">
+              <div className="mx-auto w-24 h-24 bg-[#EAEAEA] rounded-full flex items-center justify-center">
+                <SquareX className="h-12 w-12 text-muted-foreground" />
               </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">
+                  {t('dashboard.emptyBoard')}
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {isAdmin ? t('dashboard.emptyBoardAdmin') : t('dashboard.emptyBoardNoAdmin')}
+                </p>
+              </div>
+              {isAdmin && availableProjects.length > 0 && (
+                <Button onClick={() => setAddOpen(true)} size="default">
+                  <Plus className="mr-2 h-5 w-5" />
+                  {t('dashboard.addFirstBoard')}
+                </Button>
+              )}
             </div>
-          )
+          </div>
         )}
+        <div className="max-h-[calc(100vh-260px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg mt-4">
         <GridLayout
-          key={activeBoardId || 'empty'}
+          key={activeBoard || 'empty'}
           className="layout"
           layout={activeLayout}
           cols={5}
@@ -353,17 +354,13 @@ const DashboardPage = () => {
             )
           })}
         </GridLayout>
+        </div>
       </main>
       <AddChartModal
         isOpen={addOpen}
         onClose={() => setAddOpen(false)}
         onSave={(data) => addCard(data)}
-      />
-      <AddBoardModal
-        isOpen={addBoardOpen}
-        onClose={() => setAddBoardOpen(false)}
-        onSave={(projectId) => createBoard(projectId)}
-        availableProjects={availableProjects}
+        projectName={projectName(activeBoard)}
       />
       <EditChartModal
         isOpen={editOpen}
@@ -374,6 +371,7 @@ const DashboardPage = () => {
         prevHTML={modalHTML}
         onClose={() => setEditOpen(false)}
         onSave={(data) => updateCard(data)}
+        projectName={projectName(activeBoard)}
       />
       {selectedChart && (
         <Dialog open={deleteChart} onOpenChange={() => setDeleteChart(false)}>

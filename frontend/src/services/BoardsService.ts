@@ -7,13 +7,13 @@ export const BoardsService = {
 		return data;
 	},
 
-	async update(config: string, boardId: string) {
-		const response = await api.patch<Boards>(`boards/${boardId}/`, { config });
+	async update(config: string, projectId: string) {
+		const response = await api.patch<Boards>(`boards/${projectId}/`, { config, projectId });
 		return response;
 	},
 
-	async create(projectId: string) {
-		const { data } = await api.post<Boards>(`boards/`, { project_id: projectId });
+	async create(projectId: string, config?: string) {
+		const { data } = await api.post<Boards>(`boards/`, { project_id: projectId, config });
 		return data;
 	},
 };

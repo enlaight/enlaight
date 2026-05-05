@@ -18,7 +18,7 @@ const PAGE_SIZE = 10;
 const ProjectsList = () => {
 	const { t } = useTranslation();
 	const { toast } = useToast();
-	const { update } = useStore;
+	const { projects: storeProjects, update } = useStore();
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -75,8 +75,8 @@ const ProjectsList = () => {
 				if (!cancelled)
 					setError(
 						(e?.message || String(e)).includes("Invalid URL")
-							? "Configuração da API ausente ou inválida. Verifique VITE_API_BASE_URL."
-							: e?.message || "Erro ao carregar projetos"
+							? "API config absent or invalid. Check VITE_API_BASE_URL."
+							: e?.message || "Error on project loading"
 					);
 			} finally {
 				if (!cancelled) setLoading(false);
@@ -88,7 +88,12 @@ const ProjectsList = () => {
 	}
 
 	useEffect(() => {
-		getProjects();
+		if (storeProjects.length === 0) {
+			getProjects();
+			return;
+		}
+		setProjects(storeProjects);
+		setCount(storeProjects.length);
 	}, [page, debouncedSearch]);
 
 	const projectsForUI = useMemo(

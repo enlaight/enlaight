@@ -26,6 +26,7 @@ STATICFILES_DIRS = [
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Comment the log variables in dev mode to read errors in terminal
+"""
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOGGING = {
     "version": 1,
@@ -58,7 +59,7 @@ LOGGING = {
         },
     },
 }
-
+"""
 def env_bool(name, default=False):
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
 

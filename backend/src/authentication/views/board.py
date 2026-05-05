@@ -1,5 +1,7 @@
+import uuid
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,25 +28,27 @@ class BoardViewSet(viewsets.ModelViewSet):
         return Boards.objects.filter(project__in=user.projects.all())
 
     @swagger_auto_schema(
-        operation_summary="Listar todos os charts da Dashboard",
-        operation_description="Lista todos os charts da Dashboard. Requer autenticação JWT.",
+        operation_summary="List all boards for Dashboard Page",
+        operation_description="Lista all boards. Required JWT auth.",
         responses={
-            200: openapi.Response("Listas e Posições de Charts", BoardSerializer(many=True))
+            200: openapi.Response("Layouts list", BoardSerializer(many=True))
         },
         security=[{"Bearer": []}],
         tags=["Boards"],
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @swagger_auto_schema(
-        operation_summary="Criar dashboard",
-        operation_description="Cria uma dashboard para um projeto. Apenas administradores. Requer autenticação JWT.",
+        operation_summary="Creates dashboard",
+        operation_description="Creates dashboard for a project. Admin only. Requires JWT auth.",
         responses={
-            201: openapi.Response("Dashboard criada", BoardSerializer),
-            400: openapi.Response("Dados inválidos"),
-            403: openapi.Response("Sem permissão"),
-            404: openapi.Response("Projeto não encontrado"),
+            201: openapi.Response("Dashboard created", BoardSerializer),
+            400: openapi.Response("Invalid data"),
+            403: openapi.Response("Unauthorized"),
+            404: openapi.Response("Project not found"),
         },
         security=[{"Bearer": []}],
         tags=["Boards"],
@@ -69,12 +73,13 @@ class BoardViewSet(viewsets.ModelViewSet):
                 {"detail": "Project not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        board = Boards.objects.create(config="[]", project=project, client=project.client)
+        config = request.data.get("config", "[]")
+        board = Boards.objects.create(config=config, project=project, client=project.client)
         return Response(self.get_serializer(board).data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         operation_summary="Atualizar dashboard",
-        operation_description="Atualiza uma dashboard. Requer autenticação JWT.",
+        operation_description="Atualiza uma dashboard. Requires JWT auth.",
         request_body=BoardUpdateSerializer,
         responses={
             200: openapi.Response("Dashboard atualizada", BoardSerializer),
@@ -85,22 +90,32 @@ class BoardViewSet(viewsets.ModelViewSet):
         tags=["Boards"],
     )
     def partial_update(self, request, *args, **kwargs):
-        try:
-            board = self.get_object()
-            config = request.data.get("config")
-            if not config:
-                return Response(
-                    {"detail": "config field is required."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            serializer = BoardUpdateSerializer(board, data={"config": config}, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        except Exception as e:
-            print(e)
+        config = request.data.get("config")
+        project_id = request.data.get("projectId")
+
+        if not config:
             return Response(
-                {"detail": str(e)},
+                {"detail": "config field is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if not project_id:
+            return Response(
+                {"detail": "projectId is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            project_uuid = uuid.UUID(str(project_id).strip())
+        except (ValueError, AttributeError):
+            return Response(
+                {"detail": "Invalid projectId."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        board = get_object_or_404(Boards, project_id=project_uuid)
+
+        serializer = BoardUpdateSerializer(board, data={"config": config}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
         return Response(self.get_serializer(board).data, status=status.HTTP_200_OK)

@@ -11,7 +11,7 @@ interface AddChartModalProps {
 	onSave: (data: any) => void;
 }
 
-export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, onSave }) => {
+export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, onSave, projectName }) => {
 	const { t } = useTranslation();
 	const [title, setTitle] = useState('');
 	const [subtitle, setSubtitle] = useState('');
@@ -24,7 +24,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title) {
+		if (!title && !n8n) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -52,6 +52,11 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border">
 					<DialogTitle className="text-xl font-semibold text-foreground">{t('dashboard.addNewChart')}</DialogTitle>
 				</DialogHeader>
+
+				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+					<h3>{t('dashboard.boardProject')}<span style={{ color: 'red', marginLeft: 2 }}>*</span></h3>
+					<Input placeholder={projectName} disabled />
+				</div>
 
 				<div className="flex w-full" style={{ gap: 20 }}>
 					<div className="flex w-full" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>

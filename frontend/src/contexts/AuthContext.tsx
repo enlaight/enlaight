@@ -34,13 +34,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    const fetchUserData = useCallback(async () => {
+        try {
+            const [clientsData, projectsData] = await Promise.all([
+                listClients(),
+                listProjects(1, 100),
+            ]);
+            useStore.getState().update("clients", clientsData);
+            useStore.getState().update("projects", projectsData.results || []);
+        } catch (error) {
+            console.error("Failed to fetch clients/projects:", error);
+        }
+    }, []);
+
     useEffect(() => {
         let mounted = true;
         (async () => {
             setLoading(true);
             try {
                 const ok = await me();
-                if (mounted) setIsAuthenticated(ok);
+                if (!mounted) return;
+                setIsAuthenticated(ok);
+                if (ok) await fetchUserData();
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -48,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => {
             mounted = false;
         };
-    }, [me]);
+    }, [me, fetchUserData]);
 
     const login = async (email: string, password: string) => {
         setLoading(true);
@@ -58,17 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (data?.user) setUser(data.user as User);
             else await me().catch(() => { });
 
-            // Fetch clients and projects after successful login
-            try {
-                const [clientsData, projectsData] = await Promise.all([
-                    listClients(),
-                    listProjects(1, 100)
-                ]);
-                useStore.getState().update("clients", clientsData);
-                useStore.getState().update("projects", projectsData.results || []);
-            } catch (error) {
-                console.error("Failed to fetch clients/projects:", error);
-            }
+            await fetchUserData();
         } finally {
             setLoading(false);
         }

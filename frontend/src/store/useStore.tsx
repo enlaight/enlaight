@@ -24,6 +24,8 @@ interface StoreState {
 	kbs: any[];
 	clients: any[];
 	favorites: any[];
+	boards: any[];
+	activeBoard: string;
 
 	update: (key: string, newState: any) => void;
 	add: (key: string, item: any | any[]) => void;
@@ -47,6 +49,8 @@ export const useStore = create<StoreState>((set) => ({
 	kbs: [],
 	clients: [],
 	favorites: [],
+	boards: [],
+	activeBoard: "",
 
 	// Generic functions
 	update: (key, newState) =>
