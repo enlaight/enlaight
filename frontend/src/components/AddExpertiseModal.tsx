@@ -48,14 +48,6 @@ export const AddExpertiseModal: React.FC<AddExpertiseModalProps> = ({
           <DialogTitle className="text-lg font-semibold text-foreground">
             Add New Expertise
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCancel}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -153,7 +153,7 @@
     "chartSubtitle": "Chart Subtitle",
     "assignChart": "Assign Chart",
     "uuidPlaceholder": "Superset Dashboard UUID",
-    "n8nURL": "Assign n8n URL",
+    "n8nURL": "Assign n8n webhook",
     "htmlCode": "HTML Code",
     "loadingMessage": "Loading project's dashboard",
     "deleteTitle": "Are you sure you want to delete \"{{chartTitle}}\"?",
@@ -162,7 +162,7 @@
     "deleteChart": "Delete Chart",
     "addChart": "Add Chart",
     "saveChanges": "Save Changes",
-    "errorObligatory": "Chart title and Dashboard UUID are obligatory",
+    "errorObligatory": "Chart title and either n8n webhook or HTML are obligatory",
     "errorHTML": "HTML code is not valid",
     "embedInstructions": "Inside a <bold>Superset Dashboard</bold>, select the <code>...</code> button and <bold>Embed Dashboard</bold>. Copy the SDK code provided."
   },
@@ -362,7 +362,9 @@
     "lastWeek": "Last Week",
     "lastMonth": "Last Month",
     "deleteTitle": "Deleting current chat!",
-    "deleteDesc": "This is the chat you are <b>currently on</b>. If you delete it, your chat window will be closed and all messages will be lost. This action cannot be undone."
+    "deleteDesc": "This is the chat you are <b>currently on</b>. If you delete it, your chat window will be closed and all messages will be lost. This action cannot be undone.",
+    "noAssistantTitle": "No Assistants Assigned",
+    "noAssistantDescription": "There are no assistants available for this project. Contact an Admin to assign some."
   },
   "botModal": {
     "addNewAssistant": "Add New Assistant",

@@ -131,7 +131,7 @@
     "chartSubtitle": "Diagramma ost sarlavhasi",
     "assignChart": "Diagrammani biriktirish",
     "uuidPlaceholder": "Superset dashboard UUID",
-    "n8nURL": "n8n URL manzili tayinlash",
+    "n8nURL": "n8n webhook tayinlash",
     "htmlCode": "HTML kodi",
     "loadingMessage": "Doskalar yuklanmoqda",
     "deleteTitle": "«{{chartTitle}}» diagrammasini o‘chirib tashlamoqchimisiz?",
@@ -140,7 +140,7 @@
     "deleteChart": "Diagrammani o‘chirish",
     "addChart": "Diagramma qo‘shish",
     "saveChanges": "O‘zgarishlarni saqlash",
-    "errorObligatory": "Diagramma sarlavhasi va dashboard UUID majburiy",
+    "errorObligatory": "Diagramma sarlavhasi va n8n webhook yoki HTML majburiy",
     "errorHTML": "HTML kodi noto‘g‘ri",
     "embedInstructions": "<bold>Superset boshqaruv panelida</bold> <code>...</code> tugmasini tanlang va <bold>Dashboardni joylash</bold> ni bosing. Ta’minlangan SDK kodini nusxa oling."
   },
@@ -340,7 +340,9 @@
     "lastWeek": "O‘tgan hafta",
     "lastMonth": "O‘tgan oy",
     "deleteTitle": "Joriy chatni o‘chirish!",
-    "deleteDesc": "Bu siz <b>hozir turgan</b> chat. Uni o‘chirib yuborsangiz, chat oynasi yopiladi va barcha xabarlar yo‘qoladi. Bu amalni qaytarib bo‘lmaydi."
+    "deleteDesc": "Bu siz <b>hozir turgan</b> chat. Uni o’chirib yuborsangiz, chat oynasi yopiladi va barcha xabarlar yo’qoladi. Bu amalni qaytarib bo’lmaydi.",
+    "noAssistantTitle": "Tayinlangan yordamchilar yo’q",
+    "noAssistantDescription": "Ushbu loyiha uchun yordamchilar mavjud emas. Tayinlash uchun Administrator bilan bog’laning."
   },
   "botModal": {
     "addNewAssistant": "Yangi Yordamchi Qo'shish",

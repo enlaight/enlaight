@@ -24,7 +24,7 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 	const errorHTML = t('dashboard.errorHTML');
 
 	const handleSave = () => {
-		if (!title && !n8n) {
+		if ((!title) || (!n8n && !html)) {
 			return setErrorMessage(errorObligatory);
 		}
 
@@ -71,12 +71,12 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 				</div>
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-					<h3>{t('dashboard.n8nURL')}</h3>
+					<h3>{t('dashboard.n8nURL')}<span style={{ color: 'grey', marginLeft: 2 }}>*</span></h3>
 					<Input placeholder={t('dashboard.n8nURL')} onChange={(e) => setN8n(e.target.value)} />
 				</div>
 
 				<div className="flex" style={{ flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-					<h3>{t('dashboard.htmlCode')}</h3>
+					<h3>{t('dashboard.htmlCode')}<span style={{ color: 'grey', marginLeft: 2 }}>*</span></h3>
 					<Textarea placeholder={t('dashboard.htmlCode')} onChange={(e) => setHTML(e.target.value)} />
 				</div>
 

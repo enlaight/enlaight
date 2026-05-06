@@ -12,7 +12,7 @@ import supportAssistant from '@/assets/support-assistant.png';
 import techExpert from '@/assets/tech-expert.png';
 import { Button } from "@/components/ui/button";
 import { Bot } from "@/types/bots";
-import { Plus, X } from "lucide-react";
+import { Plus, X, BotOff } from "lucide-react";
 import SessionHistoryItem from "@/components/SessionHistoryItem";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChatSessionService } from "@/services/ChatSessionService";
@@ -238,18 +238,20 @@ const Index = () => {
 									<div className="flex flex-col justify-between w-full">
 										<div className="flex justify-between w-full">
 											<div className="font-bold text-2xl leading-[125%] tracking-[0] animate-fade-in">{selectedAgent?.name}</div>
-											<TooltipProvider delayDuration={0}>
-												<Tooltip>
-													<TooltipTrigger asChild>
-														<span>
-															<ChatInfo size={19} fill='#8C8C8C' />
-														</span>
-													</TooltipTrigger>
-													<TooltipContent style={{ maxWidth: '350px' }} side="right" align="start">
-														{selectedAgent?.description}
-													</TooltipContent>
-												</Tooltip>
-											</TooltipProvider>
+											{selectedAgent?.description && (
+												<TooltipProvider delayDuration={0}>
+													<Tooltip>
+														<TooltipTrigger asChild>
+															<span>
+																<ChatInfo size={19} fill='#8C8C8C' />
+															</span>
+														</TooltipTrigger>
+														<TooltipContent style={{ maxWidth: '350px' }} side="right" align="start">
+															{selectedAgent?.description}
+														</TooltipContent>
+													</Tooltip>
+												</TooltipProvider>
+											)}
 										</div>
 										<div className="font-roboto font-medium text-base leading-6 tracking-[0.5px] text-[#FEBC2F] uppercase animate-fade-in">{selectedAgent?.expertise_area?.name}</div>
 									</div>
@@ -341,8 +343,9 @@ const Index = () => {
 								</div>
 							) : (
 								// Assistants container
-								<div className="flex flex-wrap gap-[50px]">
-									{agents.slice(0, 4).map((agent: Bot, index: number) => (
+								<div className="flex flex-wrap gap-[50px] h-[80%]">
+									{agents.length > 0 ? 
+									(agents.slice(0, 4).map((agent: Bot, index: number) => (
 										<AgentsCard
 											key={index}
 											index={index}
@@ -352,7 +355,24 @@ const Index = () => {
 											icon={agent.image}
 											onClick={() => handleChat(agent)}
 										/>
-									))}
+									))) : (
+										<div className="flex align-center justify-center mb-5 w-full h-full">
+											<div className="flex flex-col align-center justify-center gap-5 text-center space-y-4">
+												<div className="mx-auto w-24 h-24 bg-[#EAEAEA] rounded-full flex items-center justify-center">
+													<BotOff className="h-12 w-12 text-muted-foreground" />
+												</div>
+												<div className="space-y-2">
+													<h3 className="text-xl font-semibold">
+														{t('home.noAssistantTitle')}
+													</h3>
+													<p className="text-muted-foreground max-w-md mx-auto">
+														{t('home.noAssistantDescription')}
+													</p>
+												</div>
+											</div>
+										</div>
+									)
+								}
 								</div>
 							)}
 						</div>

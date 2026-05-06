@@ -11,8 +11,11 @@ import { useStore } from "@/store/useStore";
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import QuickChartGraph from '@/components/QuickChartGraph';
-import { LayoutDashboard, Plus, SquareX } from "lucide-react";
+import { CalendarIcon, LayoutDashboard, Plus, SquareX } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { format, subDays } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type LayoutItem = { i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string };
 type Board = { id: string; project_id: string; client_id: string; config: string };
@@ -37,6 +40,8 @@ const DashboardPage = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteChart, setDeleteChart] = useState(false);
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const { projects, boards, activeBoard, update } = useStore();
 
   const [selectedChart, setSelected] = useState<any>(null);
@@ -92,91 +97,46 @@ const DashboardPage = () => {
   const getNextPosition = (layout: any[], cols = 5, defaultW = 2, defaultH = 1) => {
     const gridMap: Record<string, boolean> = {};
 
-    // Creating gridmap
     layout.forEach(({ x, y, w, h }) => {
       for (let dx = 0; dx < w; dx++) {
         for (let dy = 0; dy < h; dy++) {
-          const key = `${x + dx},${y + dy}`;
-          gridMap[key] = true;
+          gridMap[`${x + dx},${y + dy}`] = true;
         }
       }
     });
 
-    // Localize first empty space that fits new item
     for (let y = 0; y < 100; y++) {
       for (let x = 0; x <= cols - defaultW; x++) {
         let fits = true;
         for (let dx = 0; dx < defaultW; dx++) {
           for (let dy = 0; dy < defaultH; dy++) {
-            if (gridMap[`${x + dx},${y + dy}`]) {
-              fits = false;
-              break;
-            }
+            if (gridMap[`${x + dx},${y + dy}`]) { fits = false; break; }
           }
           if (!fits) break;
         }
-        if (fits) {
-          return { x, y, w: defaultW, h: defaultH };
-        }
+        if (fits) return { x, y, w: defaultW, h: defaultH };
       }
     }
-    // Returns first position, if no other available
     return { x: 0, y: 0, w: defaultW, h: defaultH };
   }
 
-  const addCard = ({ title, subtitle, n8n, html }: { title?: string; subtitle?: string; n8n?: string; html?: string }) => {
-    const position = getNextPosition(activeLayout);
-    setActiveLayout([
-      ...activeLayout,
-      { i: cardId(), ...position, title, subtitle, n8n, html },
-    ]);
-  }
-
-  const updateCard = ({ i, title, subtitle, n8n, html }: { i: string; title?: string; subtitle?: string; n8n?: string; html?: string }) => {
-    const updatedLayout = activeLayout.map((item) =>
-      item['i'] === i ? { ...item, title, subtitle, n8n, html } : item
-    );
-    saveLayout(updatedLayout);
-  }
-
-  const removeCard = (i: string) => {
-    const updatedLayout = activeLayout.filter((item) => item['i'] !== i);
-    setActiveLayout(updatedLayout);
-  }
-
-  const saveLayout = async (newLayout: any[]) => {
+  // Persist a known-good layout for the current board. All callers must pass the
+  // fully-built layout so this function never reads stale closure state.
+  const persist = async (layout: LayoutItem[]) => {
     if (!activeBoard) return;
-    const currentLayout = new Map(activeLayout.map((item) => [item['i'], item]));
-
-    const formattedLayout = newLayout.map((newObj: any) => {
-      const { i, w, h, x, y } = newObj;
-      let { title, subtitle, n8n, html } = newObj;
-      if (!title) {
-        const currentObj = currentLayout.get(i);
-        if (!currentObj) return { i, w, h, x, y };
-        title = currentObj.title;
-        subtitle = currentObj.subtitle;
-        n8n = currentObj.n8n;
-        html = currentObj.html;
-      }
-      return { i, w, h, x, y, title, subtitle, n8n, html };
-    });
-    setActiveLayout(formattedLayout);
-
-    const config = JSON.stringify(formattedLayout);
-    const existing = boards.find((b: Board) => b.project_id === activeBoard);
+    const config = JSON.stringify(layout);
+    const currentBoards: Board[] = useStore.getState().boards;
+    const existing = currentBoards.find((b: Board) => b.project_id === activeBoard);
 
     try {
       if (existing) {
         await BoardsService.update(config, activeBoard);
         const latest: Board[] = useStore.getState().boards;
-        update(
-          "boards",
-          latest.map((b: Board) =>
-            b.project_id === activeBoard ? { ...b, config } : b
-          )
-        );
+        update("boards", latest.map((b: Board) =>
+          b.project_id === activeBoard ? { ...b, config } : b
+        ));
       } else {
+        if (layout.length === 0) return;
         if (creatingRef.current.has(activeBoard)) return;
         creatingRef.current.add(activeBoard);
         try {
@@ -192,18 +152,51 @@ const DashboardPage = () => {
     }
   }
 
+  const addCard = ({ title, subtitle, n8n, html }: { title?: string; subtitle?: string; n8n?: string; html?: string }) => {
+    const position = getNextPosition(activeLayout);
+    const newLayout: LayoutItem[] = [
+      ...activeLayout,
+      { i: cardId(), ...position, title, subtitle, n8n, html },
+    ];
+    setActiveLayout(newLayout);
+    persist(newLayout);
+  }
+
+  const updateCard = ({ i, title, subtitle, n8n, html }: { i: string; title?: string; subtitle?: string; n8n?: string; html?: string }) => {
+    const newLayout = activeLayout.map((item: LayoutItem) =>
+      item.i === i ? { ...item, title, subtitle, n8n, html } : item
+    );
+    setActiveLayout(newLayout);
+    persist(newLayout);
+  }
+
+  const removeCard = (i: string) => {
+    const newLayout = activeLayout.filter((item: LayoutItem) => item.i !== i);
+    setActiveLayout(newLayout);
+    persist(newLayout);
+  }
+
+  // Merge new positions from react-grid-layout into our items, preserving metadata.
+  const mergePositions = (positions: any[], base: LayoutItem[]): LayoutItem[] =>
+    base.map(item => {
+      const pos = positions.find((p: any) => p.i === item.i);
+      return pos ? { ...item, x: pos.x, y: pos.y, w: pos.w, h: pos.h } : item;
+    });
+
   const changeTabs = (projectId?: string) => {
     update("activeBoard", projectId ?? "");
   }
 
-  const N8nRender = (props: any) => {
-    const { item } = props;
+  const N8nRender = ({ item, startDate, endDate }: { item: any; startDate: Date; endDate: Date }) => {
     const [n8nContent, setN8nContent] = useState('');
 
     useEffect(() => {
       const fetchN8n = async () => {
         try {
-          const response = await fetch(item['n8n']);
+          const url = new URL(item['n8n']);
+          url.searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
+          url.searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
+          const response = await fetch(url.toString());
           const data = await response.json();
           if (data.status === "success") {
             setN8nContent(data.content);
@@ -213,12 +206,10 @@ const DashboardPage = () => {
         }
       }
 
-      // If we have a n8n webhook, we fetch the content
-      // to display as a graph
       if (item['n8n']) {
         fetchN8n();
       }
-    }, [item]);
+    }, [item, startDate, endDate]);
 
     if (!n8nContent) return null;
     return (
@@ -240,12 +231,47 @@ const DashboardPage = () => {
               {t('dashboard.description')}
             </p>
           </div>
-          {isAdmin && (
-            <Button onClick={() => setAddOpen(true)} size="default">
-              <Plus className="mr-2 h-5 w-5" />
-              {t('dashboard.addNewBoard')}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="default" className="w-40 justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(startDate, 'MMM dd, yyyy')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date: Date | undefined) => date && setStartDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground">→</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="default" className="w-40 justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(endDate, 'MMM dd, yyyy')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date: Date | undefined) => date && setEndDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {isAdmin && (
+              <Button onClick={() => setAddOpen(true)} size="default">
+                <Plus className="mr-2 h-5 w-5" />
+                {t('dashboard.addNewBoard')}
+              </Button>
+            )}
+          </div>
         </div>
         {isAdmin && projects.length > 0 && (
           <Tabs
@@ -297,7 +323,19 @@ const DashboardPage = () => {
           draggableCancel='.stop-drag'
           isDraggable={true}
           isResizable={isAdmin}
-          onLayoutChange={(ItemCallback: any) => saveLayout(ItemCallback)}
+          onLayoutChange={(positions: any[]) => {
+            setActiveLayout((prev: LayoutItem[]) => mergePositions(positions, prev));
+          }}
+          onDragStop={(positions: any[]) => {
+            const merged = mergePositions(positions, activeLayout);
+            setActiveLayout(merged);
+            persist(merged);
+          }}
+          onResizeStop={(positions: any[]) => {
+            const merged = mergePositions(positions, activeLayout);
+            setActiveLayout(merged);
+            persist(merged);
+          }}
         >
           {activeLayout.map((item) => {
             return (
@@ -343,7 +381,7 @@ const DashboardPage = () => {
                   <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1 }}>{item['title']}</div>
                   <div style={{ fontSize: 13, lineHeight: 1 }}>{item['subtitle']}</div>
                 </div>
-                <N8nRender item={item} />
+                <N8nRender item={item} startDate={startDate} endDate={endDate} />
                 {item['html'] && (
                   <div
                     className="flex w-full"

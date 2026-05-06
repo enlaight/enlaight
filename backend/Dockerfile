@@ -25,11 +25,13 @@ ENV PATH="/root/.local/bin:$PATH" \
 
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-root --no-interaction --no-ansi
+    poetry install --no-root --no-interaction --no-ansi && \
+    pip install --no-cache-dir gunicorn
 
 COPY src /src/
+RUN cp /src/core/settings.sample.py /src/core/settings.py
 COPY scripts /scripts
 RUN chmod +x /scripts/*.sh
 
 ENTRYPOINT ["sh", "/scripts/entrypoint.sh"]
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]

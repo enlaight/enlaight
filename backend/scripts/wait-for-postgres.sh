@@ -1,9 +1,14 @@
 #!/bin/sh
 set -e
 
-echo "Waiting for PostgreSQL..."
+HOST="${POSTGRES_HOST:-postgres}"
+PORT="${POSTGRES_PORT:-5432}"
+USER="${BACKEND_DB_USER:-enlaight}"
+DB="${BACKEND_DB:-enlaight_database}"
 
-until pg_isready -h postgres -p 5432 -U n8n -d n8n_enlaight_db; do
+echo "Waiting for PostgreSQL at $HOST:$PORT..."
+
+until pg_isready -h "$HOST" -p "$PORT" -U "$USER" -d "$DB"; do
     sleep 1
 done
 

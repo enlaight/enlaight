@@ -131,7 +131,7 @@
     "chartSubtitle": "Sous-titre du graphique",
     "assignChart": "Assigner le graphique",
     "uuidPlaceholder": "UUID du tableau Superset",
-    "n8nURL": "Assigner URL de n8n",
+    "n8nURL": "Assigner n8n webhook",
     "htmlCode": "Code HTML",
     "loadingMessage": "Chargement des tableaux",
     "deleteTitle": "Êtes-vous sûr de vouloir supprimer \"{{chartTitle}}\" ?",
@@ -140,7 +140,7 @@
     "deleteChart": "Supprimer le graphique",
     "addChart": "Ajouter un graphique",
     "saveChanges": "Enregistrer les modifications",
-    "errorObligatory": "Le titre du graphique et l’UUID du tableau sont obligatoires",
+    "errorObligatory": "Le titre du graphique et un n8n webhook ou HTML sont obligatoires",
     "errorHTML": "Le code HTML n’est pas valide",
     "embedInstructions": "Dans un <bold>tableau de bord Superset</bold>, sélectionnez le bouton <code>...</code> puis <bold>Intégrer le tableau de bord</bold>. Copiez le code SDK fourni."
   },
@@ -340,7 +340,9 @@
     "lastWeek": "La semaine dernière",
     "lastMonth": "Le mois dernier",
     "deleteTitle": "Suppression du chat actuel !",
-    "deleteDesc": "C’est le chat sur lequel vous êtes <b>actuellement</b>. Si vous le supprimez, votre fenêtre de discussion sera fermée et tous les messages seront perdus. Cette action est irréversible."
+    "deleteDesc": "C’est le chat sur lequel vous êtes <b>actuellement</b>. Si vous le supprimez, votre fenêtre de discussion sera fermée et tous les messages seront perdus. Cette action est irréversible.",
+    "noAssistantTitle": "Aucun Assistant Assigné",
+    "noAssistantDescription": "Il n’y a pas d’assistants disponibles pour ce projet. Contactez un Administrateur pour en assigner."
   },
   "botModal": {
     "addNewAssistant": "Ajouter un Nouvel Assistant",
