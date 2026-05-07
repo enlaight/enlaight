@@ -145,7 +145,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
     const errors: FieldError = {};
 
     if (!email.trim()) {
-      errors.email = "Email is required";
+      errors.email = t('inviteModal.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = "Please enter a valid email address";
     }
@@ -155,11 +155,11 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
     }
 
     if (isAdmin && !selectedClient) {
-      errors.client_id = "Client is required";
+      errors.client_id = t('inviteModal.clientRequired');
     }
 
     if (!selectedProject) {
-      errors.project_id = "Project is required";
+      errors.project_id = t('inviteModal.projectRequired');
     }
 
     setFieldErrors(errors);
@@ -192,8 +192,8 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
       await sendInvite(payload);
 
       toast({
-        title: "Invitation sent",
-        description: `An invitation has been sent to ${email}`,
+        title: t('inviteModal.success'),
+        description: t('inviteModal.invitationSentTo', { email }),
       });
 
       onInviteSent?.();
@@ -211,15 +211,16 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
           setFieldErrors({
             [errorData.field]: errorData.error,
           });
-        } else if (errorData.message) {
+        } else if (errorData.message || errorData.detail) {
           // Generic message
-          setGeneralError(errorData.message);
+          const errorMessage = errorData.message || errorData.detail;
+          setGeneralError(errorMessage);
         } else {
           setGeneralError("Invalid request. Please check your inputs.");
         }
       } else if (error.response?.status >= 500) {
         // Server error
-        toast({
+        toast({ 
           title: "Server error",
           description: "An unexpected error occurred. Please try again later.",
           variant: "destructive",
@@ -243,7 +244,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" aria-describedby="invite-user-desc">
         <DialogHeader>
-          <DialogTitle>Invite User</DialogTitle>
+          <DialogTitle>{t('inviteModal.title')}</DialogTitle> 
         </DialogHeader>
 
         <DialogDescription id="invite-user-desc" className="sr-only">
@@ -270,7 +271,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
 
             <div className="space-y-2">
               <Label htmlFor="email">
-                Email <span className="text-destructive">*</span>
+                {t('inviteModal.email')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
@@ -290,7 +291,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
 
             <div className="space-y-2">
               <Label htmlFor="role">
-                Role <span className="text-destructive">*</span>
+                {t('inviteModal.role')} <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={selectedRole}
@@ -301,7 +302,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="role">
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder={t("inviteModal.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableRoles.map((role) => (
@@ -318,7 +319,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
 
             <div className="space-y-2" id='invite-user-modal'>
               <Label htmlFor="project">
-                Project <span className="text-destructive">*</span>
+                {t('inviteModal.project')} <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={selectedProject}
@@ -329,7 +330,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="project">
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue placeholder={t("inviteModal.selectProject")} />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
@@ -346,7 +347,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
 
             <div className="space-y-2">
               <Label htmlFor="client">
-                Client {isAdmin && <span className="text-destructive">*</span>}
+                {t('inviteModal.client')} {isAdmin && <span className="text-destructive">*</span>}
               </Label>
               <Select
                 value={selectedClient}
@@ -361,7 +362,7 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                     placeholder={
                       selectedProject
                         ? "Auto-selected from project"
-                        : "Select client"
+                        : t('inviteModal.selectClient')
                     }
                   />
                 </SelectTrigger>
@@ -385,11 +386,11 @@ export const InviteUserModal = ({ open, onOpenChange, onInviteSent }: InviteUser
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
-                Cancel
+                {t('inviteModal.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Invitation
+                {t('inviteModal.sendInvitation')}
               </Button>
             </div>
           </form>

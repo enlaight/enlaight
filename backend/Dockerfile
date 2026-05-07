@@ -29,7 +29,7 @@ RUN poetry config virtualenvs.create false && \
     pip install --no-cache-dir gunicorn
 
 COPY src /src/
-RUN cp /src/core/settings.sample.py /src/core/settings.py
+RUN cp core/settings.sample.py core/settings.py
 COPY scripts /scripts
 RUN chmod +x /scripts/*.sh
 

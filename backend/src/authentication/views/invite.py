@@ -164,7 +164,7 @@ class InviteUserView(APIView):
             try:
                 project = Projects.objects.get(id=project_id)
             except Projects.DoesNotExist:
-                return Response({"detail": "Project não encontrado"}, status=404)
+                return Response({"detail": "Project not found."}, status=404)
 
             # Resolve client_id according to the inviter's role
             client_id_from_req = request.data.get("client_id")
@@ -222,7 +222,7 @@ class InviteUserView(APIView):
                 recipient_list=[email],
             )
 
-        return Response({"detail": "Convite enviado com sucesso."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Invite sent successfully."}, status=status.HTTP_200_OK)
 
 
 class ConfirmInviteView(APIView):
@@ -244,12 +244,12 @@ class ConfirmInviteView(APIView):
         new_password = request.data.get("password")
 
         if not all([email, token, new_password]):
-            return Response({"detail": "Campos obrigatórios: email, token, password"}, status=400)
+            return Response({"detail": "Required fields: email, token, password"}, status=400)
 
         try:
             token_uuid = UUID(token)
         except ValueError:
-            return Response({"detail": "Token malformado"}, status=400)
+            return Response({"detail": "Token format error."}, status=400)
 
         # Try to locate invite by email+token. Prefer matching project if provided.
         project_q = request.query_params.get("project_id")
@@ -259,15 +259,15 @@ class ConfirmInviteView(APIView):
             else:
                 invite = Invite.objects.get(email=email, token=token_uuid)
         except Invite.DoesNotExist:
-            return Response({"detail": "Convite não encontrado"}, status=400)
+            return Response({"detail": "Invite not found."}, status=404)
 
         if invite.expires_at < timezone.now():
-            return Response({"detail": "Convite expirado"}, status=400)
+            return Response({"detail": "Invite expired."}, status=400)
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"detail": "Usuário não encontrado"}, status=404)
+            return Response({"detail": "User not found."}, status=404)
 
         user.set_password(new_password)
         user.is_active = True

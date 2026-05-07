@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Link, Bot as BotIcon } from "lucide-react";
+import { Plus, Link, Search, Bot as BotIcon } from "lucide-react";
 import { AddBotModal } from "@/components/AddBotModal";
 import { EditBotModal } from "@/components/EditBotModal";
 import {
@@ -25,6 +25,7 @@ import { listProjects, ProjectService } from "@/services/ProjectService";
 import { BotDisplayItem } from "@/components/BotDisplayItem";
 import { useBatchTranslation } from "@/hooks/use-batch-translation";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import { Card } from "@/components/ui/card";
 
 type ProjectOption = { id: string; name: string };
 
@@ -105,6 +106,7 @@ export default function BotManagement() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isUserRole = user?.role === "USER";
+  const [count, setCount] = useState(0);
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState(false);
   const [isAddBotOpen, setIsAddBotOpen] = useState(false);
@@ -156,6 +158,7 @@ export default function BotManagement() {
         const [{ results: projects }, botPage] = await Promise.all([listProjects(1, 100), BotService.list({ page_size: 100 })]);
         setProjectOptions(projects.map((p) => ({ id: p.id, name: p.name })));
         setBots(botPage.results);
+        setCount(botPage.results.length);
       } finally {
         setLoading(false);
       }
@@ -165,6 +168,7 @@ export default function BotManagement() {
   const reloadBots = async () => {
     const data = await BotService.list({ page_size: 100 });
     setBots(data.results);
+    setCount(data.results.length);
   };
 
   // CREATE
@@ -270,16 +274,23 @@ export default function BotManagement() {
           </Button>
         </div>
 
-        <div className="mt-4 flex items-center gap-3 w-full">
+        <div className="relative mt-4 mb-4 flex items-center gap-3 w-full">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('agentManagement.searchPlaceholder')}
-            className="w-full bg-background border-input"
+            className="w-full bg-background border-input pl-10"
           />
         </div>
 
-        <div className="mt-6 flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {t('agentManagement.botsFound', { count })}
+          </p>
+        </div>
+
+        <div className="mt-3 flex flex-col space-y-4">
           {loading ? (
             <div className="flex justify-center items-center py-12 pt-[8rem]">
               <LoadingAnimation
@@ -290,7 +301,21 @@ export default function BotManagement() {
               />
             </div>
           ) : filteredBots.length === 0 ? (
-            <div className="text-sm text-muted-foreground">{t('agentManagement.noBotsFound')}</div>
+              <Card className="p-12">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+                    <BotIcon className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold">
+                    {t('agentManagement.noBotsFound')}
+                    </h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                    {t('clientManagement.tryAdjusting')}
+                    </p>
+                  </div>
+                </div>
+              </Card>
           ) : (
             <div className="grid gap-4 max-h-[calc(100vh-290px)] overflow-y-auto">
               {filteredBots.map((bot) => (

@@ -25,3 +25,5 @@ frontend/node_modules/
 n8n/local-files/
 
 .claude
+
+*.DS_Store

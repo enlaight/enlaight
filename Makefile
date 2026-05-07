@@ -21,7 +21,7 @@ init:
 
 reset:
 	docker compose down
-	docker compose -f $(COMPOSE_FILE) build
+	docker compose -f $(COMPOSE_FILE) build --no-cache
 	make start
 
 test:

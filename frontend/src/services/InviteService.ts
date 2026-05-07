@@ -11,6 +11,7 @@ export type InviteErrorResponse = {
 	field?: string;
 	error?: string;
 	message?: string;
+	detail?: string;
 };
 
 export async function sendInvite(payload: InvitePayload) {

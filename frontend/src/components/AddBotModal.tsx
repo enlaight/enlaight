@@ -149,7 +149,7 @@ export const AddBotModal: React.FC<AddBotModalProps> = ({
                     : "BA"}
                 </AvatarFallback>
               </Avatar>
-              <Button
+              {/* <Button
                 type="button"
                 variant="outline"
                 size="icon"
@@ -157,7 +157,7 @@ export const AddBotModal: React.FC<AddBotModalProps> = ({
                 title="Upload avatar"
               >
                 <Upload className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
           </div>
 

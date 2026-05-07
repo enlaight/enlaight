@@ -6,5 +6,5 @@ CREATE DATABASE n8n_enlaight_db
     OWNER n8n
     ENCODING 'UTF8';
 
--- Grant privileges (usually redundant if owner)
+-- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE n8n_enlaight_db TO n8n;

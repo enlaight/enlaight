@@ -55,7 +55,7 @@ const KnowledgeBases = () => {
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -241,7 +241,7 @@ const KnowledgeBases = () => {
           <div className="w-full sm:w-64">
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Select Project
+              {t('knowledgeBase.selectProject')}
             </label>
             <Select
               value={selectedProjectId}
@@ -249,7 +249,7 @@ const KnowledgeBases = () => {
               disabled={loadingProjects}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a project" />
+                <SelectValue placeholder={t('knowledgeBase.selectProject')} />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project) => (
@@ -282,17 +282,17 @@ const KnowledgeBases = () => {
           <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You don't have access to this project. Please contact an administrator to request access.
+              {t('knowledgeBase.noProjectAccess')}
             </AlertDescription>
           </Alert>
         )}
 
         {/* No Projects Message */}
         {!loadingProjects && projects.length === 0 && (
-          <Alert className="mt-4">
+          <Alert className="mt-4 mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              No projects available. Please contact an administrator to be added to a project.
+              {t('knowledgeBase.noProjectsAvailable')}
             </AlertDescription>
           </Alert>
         )}

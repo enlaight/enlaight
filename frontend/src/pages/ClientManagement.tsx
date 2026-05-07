@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Handshake, Edit, Trash2 } from "lucide-react";
+import { Search, Handshake, Edit, Trash2, Plus } from "lucide-react";
 import { listClients, deleteClient } from "@/services/ClientService";
 import type { Client } from "@/types/client";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ import {
 import { useStore } from '@/store/useStore';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import { Card } from "@/components/ui/card";
 
 const ClientManagement = () => {
   const { t } = useTranslation();
@@ -89,12 +90,13 @@ const ClientManagement = () => {
               <p className="text-gray-600 text-sm">{t('clientManagement.titleDesc')}</p>
             </div>
             <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
               {t('clientManagement.addClient')}
             </Button>
           </div>
         </div>
 
-        <div className="space-y-6 mt-4">
+        <div className="space-y-3 mt-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -130,56 +132,66 @@ const ClientManagement = () => {
                 </p>
               </div>
 
-              <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg">
-                {clients.map((client) => (
-                  <div
-                    key={client.id}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                          {client.name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="text-base font-semibold text-foreground">
-                          {client.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">ID: {client.id}</p>
+              {clients.length > 0 && (
+                <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg">
+                  {clients.map((client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                            {client.name[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="text-base font-semibold text-foreground">
+                            {client.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">ID: {client.id}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingClient(client)}
+                          className="text-gray-600 hover:text-gray-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeletingClient(client)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingClient(client)}
-                        className="text-gray-600 hover:text-gray-900"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingClient(client)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  ))}
+                </div>
+              )}
+            
+              {clients.length === 0 && (
+                <Card className="p-12">
+                  <div className="text-center space-y-4">
+                    <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+                      <Handshake className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold">
+                      {t('clientManagement.noClientsFound')}
+                      </h3>
+                      <p className="text-muted-foreground max-w-md mx-auto">
+                      {t('clientManagement.tryAdjusting')}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {clients.length === 0 && (
-                <div className="text-center py-8">
-                  <Handshake className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {t('clientManagement.noClientsFound')}
-                  </h3>
-                  <p className="text-muted-foreground">{t('clientManagement.tryAdjusting')}</p>
-                </div>
+                </Card>
               )}
             </div>
           )}

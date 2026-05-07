@@ -10,7 +10,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     command: sh -c "npm run devmode -- --host 0.0.0.0"

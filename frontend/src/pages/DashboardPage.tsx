@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { format, subDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EnlaightBotFilled } from "@/assets/svgs";
 
 type LayoutItem = { i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string };
 type Board = { id: string; project_id: string; client_id: string; config: string };
@@ -348,6 +349,17 @@ const DashboardPage = () => {
                   <div className="flex absolute"
                     style={{ top: 5, right: 5 }}
                   >
+                    <div
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      onClick={() => {
+                        console.log("logged!")
+                      }}  
+                    >
+                      <EnlaightBotFilled className="me-1 mt-[0.15rem] stop-drag"
+                        size={18}
+                        fill="#9e9e9e"
+                      />
+                      </div>
                     <div className="me-1 mt-1 material-symbols-outlined stop-drag"
                       style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
                       onClick={() => {

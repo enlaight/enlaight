@@ -12,6 +12,7 @@ import { EditProjectModal } from "@/components/EditProjectModal";
 import { useToast } from "@/hooks/use-toast";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { useStore } from "@/store/useStore";
+import { Card } from "@/components/ui/card";
 
 const PAGE_SIZE = 10;
 
@@ -230,11 +231,22 @@ const ProjectsList = () => {
 										getTranslation={getTranslation}
 									/>
 								))}
-
 								{projectsForUI.length === 0 && (
-									<div className="text-sm text-muted-foreground px-1 py-2">
-										{t('projects.noProjectsFound')}
-									</div>
+									<Card className="p-12">
+										<div className="text-center space-y-4">
+											<div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+												<FolderKanban className="h-12 w-12 text-muted-foreground" />
+											</div>
+											<div className="space-y-2">
+												<h3 className="text-xl font-semibold">
+												{t('projects.noProjectsFound')}
+												</h3>
+												<p className="text-muted-foreground max-w-md mx-auto">
+												{t('clientManagement.tryAdjusting')}
+												</p>
+											</div>
+										</div>
+									</Card>
 								)}
 							</div>
 						</div>
