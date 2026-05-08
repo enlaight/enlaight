@@ -432,54 +432,56 @@ const DashboardPage = () => {
                 className="flex justify-center items-center p-2 relative rounded border border-dark"
                 style={{ backgroundColor: '#f9f9f9', flexDirection: 'column', gap: 10 }}
               >
-                {isAdmin && (
-                  <div className="flex absolute"
-                    style={{ top: 5, right: 5 }}
-                  >
-                    {item['n8n'] && n8nContents[item['i']] && (
-                      <div
-                        className="stop-drag"
-                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                <div className="flex absolute"
+                  style={{ top: 5, right: 5 }}
+                >
+                  {item['n8n'] && n8nContents[item['i']] && (
+                    <div
+                      className="stop-drag"
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      onClick={() => {
+                        setPickerContent(n8nContents[item['i']]);
+                        setPickerOpen(true);
+                      }}
+                    >
+                      <EnlaightBotFilled className="me-1 mt-[0.15rem]"
+                        size={18}
+                        fill="#9e9e9e"
+                      />
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <div className="me-1 mt-1 material-symbols-outlined stop-drag"
+                        style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => {
-                          setPickerContent(n8nContents[item['i']]);
-                          setPickerOpen(true);
+                          setSelected(item);
+                          setDeleteChart(true);
                         }}
                       >
-                        <EnlaightBotFilled className="me-1 mt-[0.15rem]"
-                          size={18}
-                          fill="#9e9e9e"
-                        />
+                        delete
                       </div>
-                    )}
-                    <div className="me-1 mt-1 material-symbols-outlined stop-drag"
-                      style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
-                      onClick={() => {
-                        setSelected(item);
-                        setDeleteChart(true);
-                      }}
-                    >
-                      delete
-                    </div>
-                    <div className="me-1 mt-1 material-symbols-outlined stop-drag"
-                      style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
-                      onClick={() => {
-                        setModalId(item['i']);
-                        setModalTitle(item['title'] ?? '');
-                        setModalSubtitle(item['subtitle'] ?? '');
-                        setModalN8n(item['n8n'] ?? '');
-                        setModalHTML(item['html'] ?? '');
-                        setEditOpen(true);
-                      }}
-                    >
-                      edit_square
-                    </div>
-                    <div className="me-1 mt-1 material-symbols-outlined allow-drag"
-                      style={{ color: '#9e9e9e', fontSize: 18, cursor: 'grab', userSelect: 'none' }}
-                    >
-                      drag_indicator
-                    </div>
-                  </div>
-                )}
+                      <div className="me-1 mt-1 material-symbols-outlined stop-drag"
+                        style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => {
+                          setModalId(item['i']);
+                          setModalTitle(item['title'] ?? '');
+                          setModalSubtitle(item['subtitle'] ?? '');
+                          setModalN8n(item['n8n'] ?? '');
+                          setModalHTML(item['html'] ?? '');
+                          setEditOpen(true);
+                        }}
+                      >
+                        edit_square
+                      </div>
+                      <div className="me-1 mt-1 material-symbols-outlined allow-drag"
+                        style={{ color: '#9e9e9e', fontSize: 18, cursor: 'grab', userSelect: 'none' }}
+                      >
+                        drag_indicator
+                      </div>
+                    </>
+                  )}
+                </div>
                 <div className="flex items-start" style={{ flexDirection: 'column', width: '100%', gap: '0.25rem', marginBottom: '0.25rem' }}>
                   <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1 }}>{item['title']}</div>
                   <div style={{ fontSize: 13, lineHeight: 1 }}>{item['subtitle']}</div>
