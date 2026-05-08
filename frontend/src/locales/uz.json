@@ -138,6 +138,8 @@
     "n8nURL": "n8n webhook tayinlash",
     "htmlCode": "HTML kodi",
     "loadingMessage": "Doskalar yuklanmoqda",
+    "loadingData": "Ma'lumotlar yuklanmoqda...",
+    "loadingGraph": "Ma'lumotlar olindi. Grafiklar yuklanmoqda.",
     "deleteTitle": "«{{chartTitle}}» diagrammasini o‘chirib tashlamoqchimisiz?",
     "deleteMessage": "Doska o‘chiriladi va dashboard avtomatik yangilanadi. Bu amalni qaytarib bo‘lmaydi.",
     "cancel": "Bekor qilish",
@@ -146,7 +148,8 @@
     "saveChanges": "O‘zgarishlarni saqlash",
     "errorObligatory": "Diagramma sarlavhasi va n8n webhook yoki HTML majburiy",
     "errorHTML": "HTML kodi noto‘g‘ri",
-    "embedInstructions": "<bold>Superset boshqaruv panelida</bold> <code>...</code> tugmasini tanlang va <bold>Dashboardni joylash</bold> ni bosing. Ta’minlangan SDK kodini nusxa oling."
+    "embedInstructions": "<bold>Superset boshqaruv panelida</bold> <code>...</code> tugmasini tanlang va <bold>Dashboardni joylash</bold> ni bosing. Ta’minlangan SDK kodini nusxa oling.",
+    "noData": "Ushbu parametrlar uchun ma'lumot topilmadi, boshqa sana oralig'ini sinab ko'ring."
   },
   "projects": {
     "directory": "Loyihalar katalogi",

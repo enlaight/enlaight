@@ -5,7 +5,8 @@ interface AgentsChatContextType {
   selectedAgentId: string | null;
   sessionKey: string | null;
   scrollSearch: string | null;
-  openModal: (agentId?: string, sessionKey?: string, searchRes?: string) => void;
+  initialUserMessage: string | null;
+  openModal: (agentId?: string, sessionKey?: string, searchRes?: string, initialUserMessage?: string) => void;
   isReset: boolean;
   setResetHomepage: (status?: boolean) => void;
   resetHomepage: () => void;
@@ -38,16 +39,18 @@ export const AgentsChatProvider: React.FC<AgentsChatProviderProps> = ({ children
   const [isReset, setResetHomepage] = useState(false);
   const [scrollSearch, setScrollSearch] = useState<string | null>(null);
   const [targetMessageId, setTargetMessageId] = useState<string | null>(null);
+  const [initialUserMessage, setInitialUserMessage] = useState<string | null>(null);
 
   const openSessionAndScroll = (sessionKeyParam: string, messageId?: string) => {
     setTargetMessageId(messageId || null);
     openModal(undefined, sessionKeyParam);
   };
 
-  const openModal = (agentId?: string, sessionKeyParam?: string, searchRes?: string) => {
+  const openModal = (agentId?: string, sessionKeyParam?: string, searchRes?: string, initialUserMessageParam?: string) => {
     setSelectedAgentId(agentId || null);
     setSessionKey(sessionKeyParam || null);
     setScrollSearch(searchRes || null);
+    setInitialUserMessage(initialUserMessageParam || null);
     setIsModalOpen(true);
   };
 
@@ -55,6 +58,7 @@ export const AgentsChatProvider: React.FC<AgentsChatProviderProps> = ({ children
     setIsModalOpen(false);
     setSelectedAgentId(null);
     setSessionKey(null);
+    setInitialUserMessage(null);
   };
 
   const resetHomepage = () => {
@@ -71,6 +75,7 @@ export const AgentsChatProvider: React.FC<AgentsChatProviderProps> = ({ children
       sessionKey,
       isReset,
       scrollSearch,
+      initialUserMessage,
       setResetHomepage: (status?: boolean) => setResetHomepage(status ?? false),
       resetHomepage,
       openModal,

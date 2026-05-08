@@ -138,6 +138,8 @@
     "n8nURL": "Assigner n8n webhook",
     "htmlCode": "Code HTML",
     "loadingMessage": "Chargement des tableaux",
+    "loadingData": "Chargement des données...",
+    "loadingGraph": "Données reçues. Chargement des graphiques.",
     "deleteTitle": "Êtes-vous sûr de vouloir supprimer \"{{chartTitle}}\" ?",
     "deleteMessage": "Le tableau sera supprimé et le dashboard mis à jour automatiquement. Cette action est irréversible.",
     "cancel": "Annuler",
@@ -146,7 +148,8 @@
     "saveChanges": "Enregistrer les modifications",
     "errorObligatory": "Le titre du graphique et un n8n webhook ou HTML sont obligatoires",
     "errorHTML": "Le code HTML n’est pas valide",
-    "embedInstructions": "Dans un <bold>tableau de bord Superset</bold>, sélectionnez le bouton <code>...</code> puis <bold>Intégrer le tableau de bord</bold>. Copiez le code SDK fourni."
+    "embedInstructions": "Dans un <bold>tableau de bord Superset</bold>, sélectionnez le bouton <code>...</code> puis <bold>Intégrer le tableau de bord</bold>. Copiez le code SDK fourni.",
+    "noData": "Aucune donnée n’a été trouvée pour ces paramètres, essayez une autre période."
   },
   "projects": {
     "directory": "Répertoire des projets",

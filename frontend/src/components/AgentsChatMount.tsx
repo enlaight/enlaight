@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import '@n8n/chat/style.css';
 import { createChat } from '@n8n/chat';
 import { ChatSessionService } from '@/services/ChatSessionService';
@@ -13,10 +13,12 @@ type Props = {
     metadata?: Record<string, unknown>;
     sessionKey?: string;
     initialMessage?: string;
+    initialUserMessage?: string;
 };
 
 export default function AgentsChatMount(props: Readonly<Props>) {
-    const { webhookUrl, agentId, containerId = 'n8n-chat-container', metadata = {}, sessionKey = null, initialMessage } = props;
+    const { webhookUrl, agentId, containerId = 'n8n-chat-container', metadata = {}, sessionKey = null, initialMessage, initialUserMessage } = props;
+    const autoSentRef = useRef(false);
 
     const { favorites, add, removeFav } = useStore() as any;
 
@@ -29,6 +31,10 @@ export default function AgentsChatMount(props: Readonly<Props>) {
             console.error('Webhook URL is undefined');
             return;
         }
+
+        // Reset auto-send flag for each new chat instance so a fresh
+        // initialUserMessage will fire even if the component is reused.
+        autoSentRef.current = false;
 
         // Creates div if it doesn't exist
         let el = document.getElementById(containerId);
@@ -83,9 +89,20 @@ export default function AgentsChatMount(props: Readonly<Props>) {
 
             // Checks if textarea and button already exist so we can add event listeners
             observer = new MutationObserver(() => {
-                const textarea = chatContainer.querySelector('textarea');
-                const sendButton = chatContainer.querySelector('.chat-input-send-button');
+                const textarea = chatContainer.querySelector('textarea') as HTMLTextAreaElement | null;
+                const sendButton = chatContainer.querySelector('.chat-input-send-button') as HTMLElement | null;
                 const chatList = chatContainer.querySelector('.chat-messages-list');
+
+                // Auto-send a programmatic user message once the input is mounted
+                if (initialUserMessage && !autoSentRef.current && textarea && sendButton) {
+                    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+                    if (setter) {
+                        setter.call(textarea, initialUserMessage);
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        sendButton.click();
+                        autoSentRef.current = true;
+                    }
+                }
 
                 if (!sessionKey) {
                     // Watches if user already typed in a first message and saves it partially so we
@@ -166,7 +183,7 @@ export default function AgentsChatMount(props: Readonly<Props>) {
                 console.error(err);
             }
         };
-    }, [webhookUrl, agentId, sessionKey, containerId, metadata, initialMessage]);
+    }, [webhookUrl, agentId, sessionKey, containerId, metadata, initialMessage, initialUserMessage]);
 
     function addToolbar(node: any) {
         const messageAuthor = node.classList.contains('chat-message-from-user') ? 'user' : 'bot';

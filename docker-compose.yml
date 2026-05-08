@@ -3,28 +3,24 @@ networks:
     driver: bridge
   public:
     driver: bridge
-  default:
-    name: superset_network
 
 services:
 
-  # Frontend (React)
+  # Frontend (React, built and served by nginx — see frontend/Dockerfile)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
-    command: sh -c "npm run devmode -- --host 0.0.0.0"
+        VITE_N8N_CHAT_URL: ${VITE_N8N_CHAT_URL}
+        VITE_N8N_SUPPORT_ASSISTANT_URL: ${VITE_N8N_SUPPORT_ASSISTANT_URL}
     container_name: enlaight_frontend
     restart: always
     ports:
-      - "8080:8080"
+      - "8080:80"
     networks:
       - public
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=300
 
   # Backend (Django)
   backend:
@@ -95,8 +91,7 @@ services:
       POSTGRES_PASSWORD: ${BACKEND_DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/sql-init:ro
-      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_BIND_HOST:-127.0.0.1}:5432:5432"
     networks:
@@ -123,45 +118,51 @@ services:
   # N8N
   n8n:
     image: docker.n8n.io/n8nio/n8n:1.113.0
-    container_name: n8n_dev
+    container_name: n8n
     restart: always
     ports:
       - "${N8N_BIND_HOST:-127.0.0.1}:5678:5678"
     environment:
       # Core
-      - NODE_ENV=development
-      - N8N_HOST=localhost
+      - NODE_ENV=production
+      - N8N_HOST=${N8N_HOST}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://${N8N_HOST}
       - N8N_API_KEY=${N8N_API_KEY}
       - GENERIC_TIMEZONE=UTC
 
+      - N8N_RUNNERS_ENABLED=true
       # Security: sandbox Execute Code nodes from the container env.
       # Set to "false" only if a workflow legitimately needs process.env access.
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE:-true}
       - N8N_DIAGNOSTICS_ENABLED=false
       - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_GIT_NODE_DISABLE_BARE_REPOS=true
 
-      # Database (LOCAL ONLY)
+      # Database
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=n8n_enlaight_db
       - DB_POSTGRESDB_USER=n8n
-      - DB_POSTGRESDB_PASSWORD=n8n_dev_password
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
       - DB_POSTGRESDB_SSL_ENABLED=false
 
       - N8N_RUN_MIGRATIONS=true
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n/local-files:/files
+      - ./n8n/scripts:/home/node/n8n-scripts
     networks:
       - internal
       - public
+    depends_on:
+      postgres:
+        condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.n8n.rule=Host(`n8n.localhost`)
+      - traefik.http.routers.n8n.rule=Host(`${N8N_HOST}`)
       - traefik.http.routers.n8n.entrypoints=websecure
       - traefik.http.routers.n8n.tls=true
       - traefik.http.routers.n8n.tls.certresolver=mytlschallenge

@@ -138,6 +138,8 @@
     "n8nURL": "Назначить n8n webhook",
     "htmlCode": "HTML код",
     "loadingMessage": "Загрузка досок",
+    "loadingData": "Загрузка данных...",
+    "loadingGraph": "Данные получены. Загрузка графиков.",
     "deleteTitle": "Вы уверены, что хотите удалить «{{chartTitle}}»?",
     "deleteMessage": "Доска будет удалена, и панель обновится автоматически. Это действие нельзя отменить.",
     "cancel": "Отмена",
@@ -146,7 +148,8 @@
     "saveChanges": "Сохранить изменения",
     "errorObligatory": "Заголовок графика, а также n8n webhook или HTML обязательны",
     "errorHTML": "HTML код недействителен",
-    "embedInstructions": "В <bold>панели Superset</bold> нажмите кнопку <code>...</code> и выберите <bold>Встроить панель</bold>. Скопируйте предоставленный SDK-код."
+    "embedInstructions": "В <bold>панели Superset</bold> нажмите кнопку <code>...</code> и выберите <bold>Встроить панель</bold>. Скопируйте предоставленный SDK-код.",
+    "noData": "Данные по этим параметрам не найдены, попробуйте выбрать другой период."
   },
   "projects": {
     "directory": "Каталог проектов",

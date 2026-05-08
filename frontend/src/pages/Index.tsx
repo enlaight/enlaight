@@ -45,12 +45,14 @@ const Index = () => {
 	const { clients, projects } = useStore() as any;
 	const [selectedAgent, setSelectedAgent] = useState<Bot | null>(null);
 	const [localSessionKey, setLocalSessionKey] = useState<string | null>(null);
+	const [localInitialUserMessage, setLocalInitialUserMessage] = useState<string | null>(null);
 	const {
 		isModalOpen,
 		selectedAgentId,
 		sessionKey: contextSessionKey,
 		isReset,
 		scrollSearch,
+		initialUserMessage,
 		closeModal,
 		setResetHomepage,
 	} = useAgentsChat();
@@ -62,6 +64,7 @@ const Index = () => {
 				webhookUrl={selectedAgent.url_n8n}
 				agentId={selectedAgent.id}
 				initialMessage={`Hello, I'm ${selectedAgent.name}. How can I assist you today?`}
+				initialUserMessage={localInitialUserMessage ?? undefined}
 				metadata={{
 					agentName: selectedAgent.name || '',
 					specialty: selectedAgent.expertise_area?.name || '',
@@ -70,11 +73,12 @@ const Index = () => {
 				sessionKey={localSessionKey ?? undefined}
 			/>
 		);
-	}, [selectedAgent, localSessionKey]);
+	}, [selectedAgent, localSessionKey, localInitialUserMessage]);
 
 	const startNewChat = () => {
 		const savedAgent = selectedAgent;
 		setSelectedAgent(null);
+		setLocalInitialUserMessage(null);
 		setTimeout(() => {
 			setSelectedAgent(savedAgent);
 			setLocalSessionKey(null);
@@ -89,16 +93,18 @@ const Index = () => {
 				if (contextSessionKey) {
 					setLocalSessionKey(contextSessionKey);
 				}
+				setLocalInitialUserMessage(initialUserMessage);
 				handleChat(agent);
 				closeModal();
 			}
 		}
-	}, [isModalOpen, selectedAgentId, contextSessionKey, agents, closeModal]);
+	}, [isModalOpen, selectedAgentId, contextSessionKey, initialUserMessage, agents, closeModal]);
 
 	useEffect(() => {
 		if (isReset) {
 			setChat(false);
 			setSelectedAgent(null);
+			setLocalInitialUserMessage(null);
 			setResetHomepage(false);
 		}
 	}, [isReset, setResetHomepage])

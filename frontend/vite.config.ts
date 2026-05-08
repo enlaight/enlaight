@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
 
 		proxy: {
 			'/charts': {
-				target: 'http://localhost:8001',
+				target: 'http://quickchart:3400',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/charts/, ''),
 			},

@@ -139,6 +139,8 @@
     "n8nURL": "Atribuir n8n webhook",
     "htmlCode": "Código HTML",
     "loadingMessage": "Carregando painés",
+    "loadingData": "Carregando dados...",
+    "loadingGraph": "Dados recebidos. Carregando gráficos.",
     "deleteTitle": "Tem certeza de que deseja excluir \"{{chartTitle}}\"?",
     "deleteMessage": "O painel será removido e o painel será atualizado automaticamente. Esta ação não pode ser desfeita.",
     "cancel": "Cancelar",
@@ -147,7 +149,8 @@
     "saveChanges": "Salvar alterações",
     "errorObligatory": "Título do gráfico e n8n webhook ou HTML são obrigatórios",
     "errorHTML": "O código HTML não é válido",
-    "embedInstructions": "Dentro de um <bold>Dashboard do Superset</bold>, selecione o botão <code>...</code> e <bold>Incorporar Dashboard</bold>. Copie o código SDK fornecido."
+    "embedInstructions": "Dentro de um <bold>Dashboard do Superset</bold>, selecione o botão <code>...</code> e <bold>Incorporar Dashboard</bold>. Copie o código SDK fornecido.",
+    "noData": "Nenhum dado foi encontrado para estes parâmetros, tente um período de datas diferente."
   },
   "projects": {
     "directory": "Diretório de Projetos",

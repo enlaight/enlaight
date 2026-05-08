@@ -1,4 +1,7 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAgentsChat } from "@/contexts/AgentsChatContext";
+import { AssistantPickerModal } from "@/components/AssistantPickerModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import GridLayout from 'react-grid-layout';
 import { Button } from "@/components/ui/button";
@@ -11,12 +14,13 @@ import { useStore } from "@/store/useStore";
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import QuickChartGraph from '@/components/QuickChartGraph';
-import { CalendarIcon, LayoutDashboard, Plus, SquareX } from "lucide-react";
+import { CalendarIcon, LayoutDashboard, Plus, SquareX, ChartColumnBig, RefreshCw, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { format, subDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EnlaightBotFilled } from "@/assets/svgs";
+import { Card } from "@/components/ui/card";
 
 type LayoutItem = { i: string; w: number; h: number; x: number; y: number; title?: string; subtitle?: string; n8n?: string; html?: string };
 type Board = { id: string; project_id: string; client_id: string; config: string };
@@ -36,6 +40,67 @@ const parseConfig = (config?: string): LayoutItem[] => {
   }
 }
 
+const N8nRender = ({ item, startDate, endDate, onLoaded }: { item: any; startDate: Date; endDate: Date; onLoaded?: (itemId: string, content: any) => void }) => {
+  const { t } = useTranslation();
+  const [n8nContent, setN8nContent] = useState<any>('');
+  const [message, setMessage] = useState<any>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchN8n = async () => {
+      setLoading(true);
+      setMessage('');
+      try {
+        const url = new URL(item['n8n']);
+        url.searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
+        url.searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
+        const response = await fetch(url.toString());
+        const data = await response.json();
+
+        if (data.status === "success" && !data.message) {
+          setN8nContent(data.content);
+          onLoaded?.(item['i'], data.content);
+        }
+
+        if (data.message) {
+          setMessage(data.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (item['n8n']) {
+      fetchN8n();
+    }
+  }, [item['n8n'], startDate, endDate]);
+
+  if (loading) return (
+    <Card className="w-full h-full flex items-center justify-center">
+      <div className="flex flex-col gap-5 w-[50%] items-center justify-center text-center">
+        <div className="flex items-center justify-center bg-secondary rounded-full p-5">
+          <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
+        </div>
+        <div className="font-normal text-muted-foreground text-sm">{t('dashboard.loadingData')}</div>
+      </div>
+    </Card>
+  );
+  if (message) return (
+    <Card className="w-full h-full flex items-center justify-center">
+      <div className="flex flex-col gap-5 w-[50%] items-center justify-center text-center">
+        <div className="flex items-center justify-center bg-secondary rounded-full p-5">
+        <ChartColumnBig className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <div className="font-normal text-muted-foreground text-sm">{t('dashboard.noData')}</div>
+      </div>
+    </Card>
+  );
+  if (!n8nContent) return null;
+  return (
+    <QuickChartGraph content={n8nContent} />
+  );
+}
+
 const DashboardPage = () => {
   const { t } = useTranslation();
   const [addOpen, setAddOpen] = useState(false);
@@ -43,6 +108,8 @@ const DashboardPage = () => {
   const [deleteChart, setDeleteChart] = useState(false);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [appliedStartDate, setAppliedStartDate] = useState<Date>(startDate);
+  const [appliedEndDate, setAppliedEndDate] = useState<Date>(endDate);
   const { projects, boards, activeBoard, update } = useStore();
 
   const [selectedChart, setSelected] = useState<any>(null);
@@ -55,6 +122,25 @@ const DashboardPage = () => {
 
   const [activeLayout, setActiveLayout] = useState<LayoutItem[]>([]);
   const creatingRef = useRef<Set<string>>(new Set());
+
+  const [n8nContents, setN8nContents] = useState<Record<string, any>>({});
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerContent, setPickerContent] = useState<any>(null);
+
+  const navigate = useNavigate();
+  const { openModal: openAgentChat } = useAgentsChat();
+
+  const handleN8nLoaded = useCallback((itemId: string, content: any) => {
+    setN8nContents((prev: Record<string, any>) => (prev[itemId] === content ? prev : { ...prev, [itemId]: content }));
+  }, []);
+
+  const handlePickAssistant = (agentId: string) => {
+    const prompt = `Please analyze the following data:\n\n${JSON.stringify(pickerContent, null, 2)}`;
+    setPickerOpen(false);
+    setPickerContent(null);
+    openAgentChat(agentId, undefined, undefined, prompt);
+    navigate('/');
+  };
 
   // Checking for admin role
   const { user } = useContext(AuthContext);
@@ -188,37 +274,6 @@ const DashboardPage = () => {
     update("activeBoard", projectId ?? "");
   }
 
-  const N8nRender = ({ item, startDate, endDate }: { item: any; startDate: Date; endDate: Date }) => {
-    const [n8nContent, setN8nContent] = useState('');
-
-    useEffect(() => {
-      const fetchN8n = async () => {
-        try {
-          const url = new URL(item['n8n']);
-          url.searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
-          url.searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
-          const response = await fetch(url.toString());
-          const data = await response.json();
-          if (data.status === "success") {
-            setN8nContent(data.content);
-          }
-        } catch (err) {
-          console.error(`Error at fetching n8n webhook for item "${item['title']}" (${item['i']}): ${err}`)
-        }
-      }
-
-      if (item['n8n']) {
-        fetchN8n();
-      }
-    }, [item, startDate, endDate]);
-
-    if (!n8nContent) return null;
-    return (
-      <QuickChartGraph data={n8nContent} />
-    );
-
-  }
-
   return (
     <>
       <main className="container pt-5 bg-[#F4F4F5] flex flex-col">
@@ -244,7 +299,16 @@ const DashboardPage = () => {
                 <Calendar
                   mode="single"
                   selected={startDate}
+                  month={startDate}
                   onSelect={(date: Date | undefined) => date && setStartDate(date)}
+                  onMonthChange={(month: Date) => {
+                    const next = new Date(month.getFullYear(), month.getMonth(), startDate.getDate());
+                    setStartDate(next);
+                    setAppliedStartDate(next);
+                  }}
+                  captionLayout="dropdown-buttons"
+                  fromYear={2000}
+                  toYear={new Date().getFullYear() + 1}
                   initialFocus
                 />
               </PopoverContent>
@@ -261,11 +325,34 @@ const DashboardPage = () => {
                 <Calendar
                   mode="single"
                   selected={endDate}
+                  month={endDate}
                   onSelect={(date: Date | undefined) => date && setEndDate(date)}
+                  onMonthChange={(month: Date) => {
+                    const next = new Date(month.getFullYear(), month.getMonth(), endDate.getDate());
+                    setEndDate(next);
+                    setAppliedEndDate(next);
+                  }}
+                  captionLayout="dropdown-buttons"
+                  fromYear={2000}
+                  toYear={new Date().getFullYear() + 1}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={
+                startDate.getTime() === appliedStartDate.getTime() &&
+                endDate.getTime() === appliedEndDate.getTime()
+              }
+              onClick={() => {
+                setAppliedStartDate(startDate);
+                setAppliedEndDate(endDate);
+              }}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             {isAdmin && (
               <Button onClick={() => setAddOpen(true)} size="default">
                 <Plus className="mr-2 h-5 w-5" />
@@ -349,17 +436,21 @@ const DashboardPage = () => {
                   <div className="flex absolute"
                     style={{ top: 5, right: 5 }}
                   >
-                    <div
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                      onClick={() => {
-                        console.log("logged!")
-                      }}  
-                    >
-                      <EnlaightBotFilled className="me-1 mt-[0.15rem] stop-drag"
-                        size={18}
-                        fill="#9e9e9e"
-                      />
+                    {item['n8n'] && n8nContents[item['i']] && (
+                      <div
+                        className="stop-drag"
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => {
+                          setPickerContent(n8nContents[item['i']]);
+                          setPickerOpen(true);
+                        }}
+                      >
+                        <EnlaightBotFilled className="me-1 mt-[0.15rem]"
+                          size={18}
+                          fill="#9e9e9e"
+                        />
                       </div>
+                    )}
                     <div className="me-1 mt-1 material-symbols-outlined stop-drag"
                       style={{ color: '#9e9e9e', fontSize: 18, cursor: 'pointer', userSelect: 'none' }}
                       onClick={() => {
@@ -393,7 +484,7 @@ const DashboardPage = () => {
                   <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1 }}>{item['title']}</div>
                   <div style={{ fontSize: 13, lineHeight: 1 }}>{item['subtitle']}</div>
                 </div>
-                <N8nRender item={item} startDate={startDate} endDate={endDate} />
+                <N8nRender item={item} startDate={appliedStartDate} endDate={appliedEndDate} onLoaded={handleN8nLoaded} />
                 {item['html'] && (
                   <div
                     className="flex w-full"
@@ -406,6 +497,11 @@ const DashboardPage = () => {
         </GridLayout>
         </div>
       </main>
+      <AssistantPickerModal
+        isOpen={pickerOpen}
+        onClose={() => { setPickerOpen(false); setPickerContent(null); }}
+        onSelect={handlePickAssistant}
+      />
       <AddChartModal
         isOpen={addOpen}
         onClose={() => setAddOpen(false)}

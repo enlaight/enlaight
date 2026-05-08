@@ -94,9 +94,8 @@ services:
       POSTGRES_USER: ${BACKEND_DB_USER}
       POSTGRES_PASSWORD: ${BACKEND_DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/sql-init:ro
-      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_BIND_HOST:-127.0.0.1}:5432:5432"
     networks:
@@ -136,6 +135,9 @@ services:
       - N8N_API_KEY=${N8N_API_KEY}
       - GENERIC_TIMEZONE=UTC
 
+      - N8N_CORS_ALLOW_ORIGIN=*
+      - N8N_EDITOR_BASE_URL=http://localhost:5678
+
       - N8N_RUNNERS_ENABLED=true
       # Security: sandbox Execute Code nodes from the container env.
       # Set to "false" only if a workflow legitimately needs process.env access.
@@ -149,7 +151,7 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=n8n_enlaight_db
       - DB_POSTGRESDB_USER=n8n
-      - DB_POSTGRESDB_PASSWORD=n8n_dev_password
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
       - DB_POSTGRESDB_SSL_ENABLED=false
       
       - N8N_RUN_MIGRATIONS=true
@@ -169,9 +171,10 @@ services:
     ports:
       - "8001:3400"
     restart: unless-stopped
+    networks:
+      - public
 
 volumes:
-  postgres_data:
   n8n_data:
   redis:
     external: false

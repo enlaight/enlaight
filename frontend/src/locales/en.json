@@ -160,6 +160,8 @@
     "n8nURL": "Assign n8n webhook",
     "htmlCode": "HTML Code",
     "loadingMessage": "Loading project's dashboard",
+    "loadingData": "Loading data...",
+    "loadingGraph": "Data received. Loading graphs.",
     "deleteTitle": "Are you sure you want to delete \"{{chartTitle}}\"?",
     "deleteMessage": "The board will be removed and the dashboard automatically updated. This action cannot be undone.",
     "cancel": "Cancel",
@@ -168,7 +170,8 @@
     "saveChanges": "Save Changes",
     "errorObligatory": "Chart title and either n8n webhook or HTML are obligatory",
     "errorHTML": "HTML code is not valid",
-    "embedInstructions": "Inside a <bold>Superset Dashboard</bold>, select the <code>...</code> button and <bold>Embed Dashboard</bold>. Copy the SDK code provided."
+    "embedInstructions": "Inside a <bold>Superset Dashboard</bold>, select the <code>...</code> button and <bold>Embed Dashboard</bold>. Copy the SDK code provided.",
+    "noData": "No data has been found for these parameters, try a different date period."
   },
   "projects": {
     "directory": "Projects Directory",
