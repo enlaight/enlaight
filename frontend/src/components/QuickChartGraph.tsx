@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 function QuickChartRenderer({ content }: { content: any }) {
 	const { t } = useTranslation();
@@ -23,18 +24,20 @@ function QuickChartRenderer({ content }: { content: any }) {
 		async function generate() {
 			setLoading(true);
 			try {
-				const response = await fetch(`charts/chart/create`, {
+				const response = await fetch("charts/chart", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify(payload),
+					body: JSON.stringify({ chart: payload, format: "png" }),
 				});
 
 				if (cancelled) return;
+				if (!response.ok) throw new Error(`QuickChart ${response.status}`);
 
-				const result = await response.json();
-				setUrl(result.url);
+				const blob = await response.blob();
+				const objectUrl = URL.createObjectURL(blob);
+				setUrl(objectUrl);
 				setLoading(false);
 			} catch (err) {
 				console.error("Failed to generate output", err);
@@ -47,6 +50,12 @@ function QuickChartRenderer({ content }: { content: any }) {
 			cancelled = true;
 		};
 	}, [contentKey, isTable]);
+
+	useEffect(() => {
+		return () => {
+			if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+		};
+	}, [url]);
 
 	if (isTable) {
 		const columns = content?.columns ?? [];
@@ -99,7 +108,7 @@ function QuickChartRenderer({ content }: { content: any }) {
 
 	return (
 		<div className="flex max-w-full max-h-full">
-			<img style={{ border: "1px solid red"}} src={url} alt="Chart" />
+			<img src={url} alt="Chart" />
 		</div>
 	);
 
