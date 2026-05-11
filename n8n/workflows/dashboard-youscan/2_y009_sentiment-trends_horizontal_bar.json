@@ -1,0 +1,271 @@
+{
+  "name": "2_y009 - Sentiment Trends in Health Sub-topic Conversations - horizontal_bar",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_y009",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "d20a253d-7b86-5a6e-aaac-32273d4ebbc8",
+      "name": "Webhook",
+      "webhookId": "31ef7ad1-e561-56d6-8010-edc5a013e467"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Sentiment Trends in Health Sub-topic Conversations"
+            },
+            {
+              "id": "a-start",
+              "name": "start_date",
+              "value": "={{ $json.query.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "a-end",
+              "name": "end_date",
+              "value": "={{ $json.query.endDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9568dc74-3b4b-5bf0-9523-b7b38051b31e",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT subtopic,\n       LOWER(JSON_UNQUOTE(sentiment)) AS sentiment,\n       COUNT(*) AS cnt\nFROM (\n  SELECT ym.id,\n    MAX(CASE WHEN ycl.classification_type = 'sub_topic' THEN ycl.result ELSE NULL END) AS subtopic,\n    MAX(CASE WHEN ycl.classification_type = 'sentiment' THEN ycl.result ELSE NULL END) AS sentiment\n  FROM warehouse.youscan_content yc\n  JOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\n  JOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\n  JOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\n  JOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\n  WHERE yt.client_id = {{ $json.client_id }}\n    AND ytr.translation IS NOT NULL\n    AND ym.published_at >= '{{ $json.start_date }}'\n    AND ym.published_at <= '{{ $json.end_date }}'\n  GROUP BY ym.id\n) t\nWHERE subtopic IS NOT NULL\n  AND (subtopic NOT LIKE '%prevention%' AND subtopic NOT LIKE '%general%' AND subtopic NOT LIKE '%diagnosis%' AND subtopic NOT LIKE '%spread%' AND subtopic NOT LIKE '%child abuse%' AND subtopic NOT LIKE '%pregnancy%' AND subtopic NOT LIKE '%side effects%' AND subtopic NOT LIKE '%fear%' AND subtopic NOT LIKE '%misadministration%' AND subtopic NOT LIKE '%not related%')\nGROUP BY subtopic, sentiment\nORDER BY subtopic;",
+        "options": {}
+      },
+      "id": "61ec097c-b3e0-55af-9dba-b37b570aaa7b",
+      "name": "MySQL Query",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        -32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Warehouse MySQL (UNICEF)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8ed25be0-c4bd-5984-9ae4-902dfbb1d3ad",
+              "leftValue": "={{\n  $items(\"MySQL Query\").length > 0 &&\n  Object.keys($items(\"MySQL Query\")[0].json).length > 0\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "8d59f9b9-184c-50bd-bc4e-c75d0a4be8eb",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unq(v) {\n  if (typeof v !== 'string') return v;\n  try { const p = JSON.parse(v); return typeof p === 'string' ? p : v; } catch { return v.replace(/^\"|\"$/g, ''); }\n}\n// Stacked horizontal bar by sub-topic / sentiment.\nconst rows = $input.all().map(i => i.json);\nconst subtopicTotals = {};\nconst cells = {}; // subtopic -> {positive, neutral, negative}\nfor (const r of rows) {\n  const sub = String(unq(r.subtopic) ?? 'unknown');\n  let sent = String(r.sentiment ?? '').toLowerCase().replace(/\"/g,'');\n  if (!['positive','negative','neutral'].includes(sent)) continue;\n  const cnt = Number(r.cnt || 0);\n  cells[sub] = cells[sub] || { positive:0, neutral:0, negative:0 };\n  cells[sub][sent] += cnt;\n  subtopicTotals[sub] = (subtopicTotals[sub] || 0) + cnt;\n}\nconst sorted = Object.entries(subtopicTotals).sort((a,b) => b[1]-a[1]).slice(0, 10).map(e => e[0]);\nconst chartTitle = $('Set Params').first().json.chart_title;\nconst chartConfig = {\n  type: 'bar',\n  data: {\n    labels: sorted,\n    datasets: [\n      { label: 'Positive', data: sorted.map(s => cells[s].positive), backgroundColor: '#59a14f' },\n      { label: 'Neutral',  data: sorted.map(s => cells[s].neutral),  backgroundColor: '#edc948' },\n      { label: 'Negative', data: sorted.map(s => cells[s].negative), backgroundColor: '#e15759' },\n    ]\n  },\n  options: {\n    indexAxis: 'y',\n    plugins: { title: { display: true, text: chartTitle } },\n    scales: { x: { stacked: true }, y: { stacked: true } }\n  }\n};\nreturn [{ json: { status: \"success\", content: { ...chartConfig, type: 'bar' } } }];"
+      },
+      "id": "d3964061-3649-5777-aa38-aaa8b02c1b81",
+      "name": "Build QuickChart Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "81dea136-56ee-5639-b804-e8d12310c3d4",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": [],\n\"message\": \"No content found.\"\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        80
+      ],
+      "id": "c2bfddd4-9d7b-5f47-b6cb-554fdfb51443",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "MySQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Build QuickChart Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build QuickChart Config": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

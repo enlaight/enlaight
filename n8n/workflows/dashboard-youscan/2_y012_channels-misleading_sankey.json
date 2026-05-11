@@ -1,0 +1,271 @@
+{
+  "name": "2_y012 - Channels associated with misleading or hateful content by sub-topic - sankey",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_y012",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "f7bbbf0c-412b-5bf1-9efe-257c229dd7c6",
+      "name": "Webhook",
+      "webhookId": "4cda1bf2-3e9b-5e00-9e56-8185e7f00b0c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Channels associated with misleading or hateful content by sub-topic"
+            },
+            {
+              "id": "a-start",
+              "name": "start_date",
+              "value": "={{ $json.query.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "a-end",
+              "name": "end_date",
+              "value": "={{ $json.query.endDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0dfc1c2c-bccd-5c66-8197-f8aab896d8a5",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ym.source AS channel, ycl.result AS subtopic, COUNT(*) AS cnt\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ycl.classification_type = 'sub_topic'\n  AND ytr.translation IS NOT NULL\n  AND ycl.result NOT LIKE '%not related%'\n  AND ym.published_at >= '{{ $json.start_date }}'\n  AND ym.published_at <= '{{ $json.end_date }}'\nGROUP BY ym.source, ycl.result\nORDER BY cnt DESC\nLIMIT 50;",
+        "options": {}
+      },
+      "id": "fc652ca5-e278-5c17-b824-ee387c4a4f1a",
+      "name": "MySQL Query",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        -32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Warehouse MySQL (UNICEF)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3d593845-9c13-5b6e-a745-dd50e8b881b2",
+              "leftValue": "={{\n  $items(\"MySQL Query\").length > 0 &&\n  Object.keys($items(\"MySQL Query\")[0].json).length > 0\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "f48acde7-009a-54b6-9380-5e49707f63c1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unq(v) {\n  if (typeof v !== 'string') return v;\n  try { const p = JSON.parse(v); return typeof p === 'string' ? p : v; } catch { return v.replace(/^\"|\"$/g, ''); }\n}\n// Sankey: Channel -> Sub-topic.\nconst rows = $input.all().map(i => i.json);\nconst data = rows.map(r => ({ from: String(unq(r.channel) ?? 'unknown'), to: String(unq(r.subtopic) ?? 'unknown'), flow: Number(r.cnt || 0) }));\nconst chartTitle = $('Set Params').first().json.chart_title;\nconst chartConfig = {\n  type: 'sankey',\n  data: { datasets: [{ data, colorFrom: () => '#4e79a7', colorTo: () => '#f28e2b' }] },\n  options: { plugins: { title: { display: true, text: chartTitle } } }\n};\nreturn [{ json: { status: \"success\", content: { ...chartConfig, type: 'sankey' } } }];"
+      },
+      "id": "f4ed07b0-f434-5025-ac49-75cc0191c38a",
+      "name": "Build QuickChart Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "05d87b1b-13ca-5106-a37b-f93feaff844f",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": [],\n\"message\": \"No content found.\"\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        80
+      ],
+      "id": "569e5526-91b6-5079-a9c2-fae564f6ad25",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "MySQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Build QuickChart Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build QuickChart Config": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

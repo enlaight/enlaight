@@ -1,0 +1,271 @@
+{
+  "name": "2_y001 - Misinformation Tracked - card",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_y001",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "7e3acef3-b316-5617-a7ad-18e92db256ef",
+      "name": "Webhook",
+      "webhookId": "79e0d7bb-3bab-5b11-9348-93cc3aff98b3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Misinformation Tracked"
+            },
+            {
+              "id": "a-start",
+              "name": "start_date",
+              "value": "={{ $json.query.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "a-end",
+              "name": "end_date",
+              "value": "={{ $json.query.endDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5368bd2e-0fe2-5255-98e3-241508c1f453",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(DISTINCT ym.id) AS value\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN warehouse.youscan_classifications ycl_st ON ycl_st.youscan_translation_id = ytr.id AND ycl_st.classification_type = 'sub_topic'\nJOIN warehouse.youscan_classifications ycl_mi ON ycl_mi.youscan_translation_id = ytr.id AND ycl_mi.classification_type = 'misinformation'\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ytr.translation IS NOT NULL\n  AND ym.published_at >= '{{ $json.start_date }}'\n  AND ym.published_at <= '{{ $json.end_date }}'\n  AND ycl_st.result NOT LIKE '%not related%'\n  AND ycl_mi.result NOT LIKE '%no misleading or harmful content in this post%'\n  AND ycl_mi.result NOT LIKE '%no misinterpreting or harmful content in this post%';",
+        "options": {}
+      },
+      "id": "f8a5dc20-2357-5860-a029-b74a77fc150d",
+      "name": "MySQL Query",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        -32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Warehouse MySQL (UNICEF)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "edc621eb-fc59-5d71-93f7-f63f21136a7f",
+              "leftValue": "={{\n  $items(\"MySQL Query\").length > 0 &&\n  Object.keys($items(\"MySQL Query\")[0].json).length > 0\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "626181b1-130f-5d0a-b8df-cdc0c2c855ef",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// KPI card.\nconst rows = $input.all().map(i => i.json);\nconst value = rows.length ? Number(rows[0].value || 0) : 0;\nreturn [{ json: { status: \"success\", content: { title: \"Misinformation Tracked\", value, type: \"card\" } } }];"
+      },
+      "id": "271915d0-1740-5406-a19e-05ba720a0d03",
+      "name": "Format Card",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "4bd45932-7e6f-5d6d-80b1-367aa9eebb54",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": [],\n\"message\": \"No content found.\"\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        80
+      ],
+      "id": "78922586-1b75-5cf5-9f96-46a5604d23e2",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "MySQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Format Card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Card": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

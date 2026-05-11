@@ -13,8 +13,9 @@ and analytics, orchestrated through Docker containers.
 5. [n8n Configuration](#-n8n-configuration)
    - [Workflows](#workflows)
    - [Scripts](#scripts)
-6. [FAQ](#-faq)
-7. [Technologies Used](#-technologies-used)
+6. [QuickChart Routing](#-quickchart-routing)
+7. [FAQ](#-faq)
+8. [Technologies Used](#-technologies-used)
 
 📐 For a detailed breakdown of every component and how they connect, see **[INTEGRATIONS.md](./INTEGRATIONS.md)**.
 
@@ -323,6 +324,58 @@ Reads raw JSON files produced by the collector, normalizes and deduplicates them
 pip install sqlalchemy pymysql python-dateutil
 python n8n/scripts/youscan_normalize_mentions.py
 ```
+---
+
+## 📊 QuickChart Routing
+
+Dashboard cards render charts by POSTing to one of two upstreams. The frontend always uses two stable path prefixes — `charts/*` and `quickchart-public/*` — and the dev/prod stacks each route them to the right backend.
+
+| Path prefix | Used for | Upstream |
+|---|---|---|
+| `charts/*` | Standard charts (bar, line, pie, etc.) — `charts/chart` | Self-hosted QuickChart container (`ianw/quickchart:latest`) on internal port `3400` |
+| `quickchart-public/*` | Word cloud — `quickchart-public/wordcloud` | Public `https://quickchart.io` |
+
+Why two upstreams: the open-source QuickChart Docker image **does not include the `/wordcloud` endpoint** (it's only in the hosted service), so word-cloud requests have to go to `quickchart.io`. Calling `quickchart.io` directly from the browser is blocked by CORS, so we proxy it server-side under a dedicated path.
+
+### Development
+
+Vite proxies both prefixes — see [`frontend/vite.config.ts`](./frontend/vite.config.ts):
+
+```ts
+proxy: {
+  '/charts':            { target: 'http://quickchart:3400', rewrite: p => p.replace(/^\/charts/, '') },
+  '/quickchart-public': { target: 'https://quickchart.io', secure: true, rewrite: p => p.replace(/^\/quickchart-public/, '') },
+}
+```
+
+### Production
+
+- **`/charts/*`** is handled by **Traefik** via labels on the `quickchart` service in [`docker-compose.yml`](./docker-compose.yml). Traefik strips the `/charts` prefix and forwards to the container on port `3400`.
+- **`/quickchart-public/*`** is handled by the **frontend's own nginx** ([`frontend/nginx.conf`](./frontend/nginx.conf)). Anything not caught by a Traefik path rule falls through to the frontend container, where this `location` block proxies the request out to `https://quickchart.io`:
+
+  ```nginx
+  resolver 127.0.0.11 8.8.8.8 valid=300s;
+
+  location /quickchart-public/ {
+      proxy_pass https://quickchart.io/;
+      proxy_set_header Host quickchart.io;
+      proxy_ssl_server_name on;
+      proxy_ssl_name quickchart.io;
+      proxy_http_version 1.1;
+      proxy_set_header Connection "";
+  }
+  ```
+
+  The `resolver` line is required so nginx can resolve `quickchart.io` at runtime (Docker's embedded DNS is `127.0.0.11`, with `8.8.8.8` as a fallback). The SNI directives are required for the upstream TLS handshake.
+
+After changing either file, rebuild the affected container:
+
+```bash
+docker compose build frontend && docker compose up -d frontend
+```
+
+> ⚠️ If you ever add a Traefik rule that matches a wider prefix on the app domain, `/quickchart-public/*` must be added as its own Traefik route too — otherwise the request will no longer reach the frontend nginx.
+
 ---
 
 ## ❓ FAQ

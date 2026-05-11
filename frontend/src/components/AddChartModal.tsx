@@ -42,6 +42,11 @@ export const AddChartModal: React.FC<AddChartModalProps> = ({ isOpen, onClose, o
 		}
 
 		onSave({ title, subtitle, n8n, html });
+		// After save, reset variables then close
+		setTitle('');
+		setSubtitle('');
+		setN8n('');
+		setHTML('');
 		setErrorMessage('');
 		onClose();
 	}

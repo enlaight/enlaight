@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { useAgents } from '@/hooks/use-agents';
 import type { Bot } from '@/types/bots';
@@ -9,6 +10,7 @@ interface AssistantPickerModalProps {
 }
 
 export const AssistantPickerModal: React.FC<AssistantPickerModalProps> = ({ isOpen, onClose, onSelect }) => {
+	const { t } = useTranslation();
 	const { agents } = useAgents();
 
 	const handleSelect = (agentId: string) => {
@@ -20,12 +22,12 @@ export const AssistantPickerModal: React.FC<AssistantPickerModalProps> = ({ isOp
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className="max-w-md max-h-[80vh] bg-background border border-border">
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border">
-					<DialogTitle className="text-xl font-semibold text-foreground">Choose an assistant</DialogTitle>
+					<DialogTitle className="text-xl font-semibold text-foreground">{t('assistantPicker.chooseAnAssistant')}</DialogTitle>
 				</DialogHeader>
 
 				<div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: '50vh' }}>
 					{agents.length === 0 && (
-						<div className="text-sm text-muted-foreground py-4 text-center">No assistants available</div>
+						<div className="text-sm text-muted-foreground py-4 text-center">{t('assistantPicker.noAssistantsAvailable')}</div>
 					)}
 					{agents.map((agent: Bot) => (
 						<button

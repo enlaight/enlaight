@@ -463,5 +463,9 @@
     "adding": "Qo'shilmoqda...",
     "save": "Saqlash",
     "saving": "Saqlanmoqda..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Yordamchini tanlang",
+    "noAssistantsAvailable": "Mavjud yordamchilar yo'q"
   }
 }

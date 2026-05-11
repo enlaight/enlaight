@@ -1,0 +1,271 @@
+{
+  "name": "2_y011 - Overall sub-topics driving concerns over time - line",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_y011",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "6ced42e2-6ad6-55d7-8f20-6af0353b8f0a",
+      "name": "Webhook",
+      "webhookId": "a146508e-2b5c-5d7e-8d26-e37bdccba411"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Overall sub-topics driving concerns over time"
+            },
+            {
+              "id": "a-start",
+              "name": "start_date",
+              "value": "={{ $json.query.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "a-end",
+              "name": "end_date",
+              "value": "={{ $json.query.endDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "58acbe32-e16b-5672-a959-5a44a087584b",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT subtopic, DATE(published_at) AS d, COUNT(*) AS cnt\nFROM (\n  SELECT ym.id, ym.published_at,\n    MAX(CASE WHEN ycl.classification_type = 'sub_topic' THEN ycl.result ELSE NULL END) AS subtopic\n  FROM warehouse.youscan_content yc\n  JOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\n  JOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\n  JOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\n  JOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\n  WHERE yt.client_id = {{ $json.client_id }}\n    AND ytr.translation IS NOT NULL\n    AND ym.published_at >= '{{ $json.start_date }}'\n    AND ym.published_at <= '{{ $json.end_date }}'\n  GROUP BY ym.id\n) t\nWHERE subtopic IS NOT NULL\n  AND subtopic NOT LIKE '%not related%'\n  AND (subtopic LIKE '%prevention%' OR subtopic LIKE '%general%' OR subtopic LIKE '%diagnosis%' OR subtopic LIKE '%spread%' OR subtopic LIKE '%child abuse%' OR subtopic LIKE '%pregnancy%' OR subtopic LIKE '%side effects%' OR subtopic LIKE '%fear%' OR subtopic LIKE '%risk factor%')\nGROUP BY subtopic, d\nORDER BY d ASC, subtopic ASC;",
+        "options": {}
+      },
+      "id": "7de32b13-6077-53b0-9f07-a4084ca95c58",
+      "name": "MySQL Query",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        -32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Warehouse MySQL (UNICEF)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0f6fb0db-da12-5288-ac7f-9ce02a60d8e2",
+              "leftValue": "={{\n  $items(\"MySQL Query\").length > 0 &&\n  Object.keys($items(\"MySQL Query\")[0].json).length > 0\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "226f0d34-6c07-5cda-8b60-706a202be1e7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unq(v) {\n  if (typeof v !== 'string') return v;\n  try { const p = JSON.parse(v); return typeof p === 'string' ? p : v; } catch { return v.replace(/^\"|\"$/g, ''); }\n}\n// Multi-series line: top 8 sub-topics over time.\nconst rows = $input.all().map(i => i.json);\nconst totals = {};\nconst series = {};   // subtopic -> {date: cnt}\nconst days = new Set();\nfor (const r of rows) {\n  const sub = String(unq(r.subtopic) ?? 'unknown');\n  const d = String(r.d).slice(0, 10);\n  const cnt = Number(r.cnt || 0);\n  totals[sub] = (totals[sub] || 0) + cnt;\n  series[sub] = series[sub] || {};\n  series[sub][d] = cnt;\n  days.add(d);\n}\nconst labels = Array.from(days).sort();\nconst top = Object.entries(totals).sort((a,b) => b[1]-a[1]).slice(0, 8).map(e => e[0]);\nconst palette = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7'];\nconst datasets = top.map((sub, i) => ({\n  label: sub,\n  data: labels.map(d => Number(series[sub][d] || 0)),\n  borderColor: palette[i % palette.length],\n  fill: false,\n}));\nconst chartTitle = $('Set Params').first().json.chart_title;\nconst chartConfig = {\n  type: 'line',\n  data: { labels, datasets },\n  options: { plugins: { title: { display: true, text: chartTitle } } }\n};\nreturn [{ json: { status: \"success\", content: { ...chartConfig, type: 'line' } } }];"
+      },
+      "id": "9cddb8b8-30cb-54d2-ab14-5c09ec664630",
+      "name": "Build QuickChart Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "e7ed022d-dfe7-5b50-b39e-76ca75c363cc",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": [],\n\"message\": \"No content found.\"\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        80
+      ],
+      "id": "54dd1688-eae2-546b-9532-0ed42a5479f1",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "MySQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Build QuickChart Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build QuickChart Config": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

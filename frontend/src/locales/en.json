@@ -485,5 +485,9 @@
     "adding": "Adding...",
     "save": "Save",
     "saving": "Saving..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Choose an assistant",
+    "noAssistantsAvailable": "No assistants available"
   }
 }

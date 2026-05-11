@@ -464,5 +464,9 @@
     "adding": "Adicionando...",
     "save": "Salvar",
     "saving": "Salvando..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Escolha um assistente",
+    "noAssistantsAvailable": "Nenhum assistente disponível"
   }
 }

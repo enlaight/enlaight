@@ -463,5 +463,9 @@
     "adding": "Қосылуда...",
     "save": "Сақтау",
     "saving": "Сақталуда..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Ассистентті таңдаңыз",
+    "noAssistantsAvailable": "Қол жетімді ассистенттер жоқ"
   }
 }

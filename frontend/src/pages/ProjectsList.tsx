@@ -24,6 +24,7 @@ const ProjectsList = () => {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [page, setPage] = useState(1);
+	const [refreshKey, setRefreshKey] = useState(0);
 
 	const [count, setCount] = useState(0);
 	const [projects, setProjects] = useState<Project[]>([]);
@@ -89,13 +90,13 @@ const ProjectsList = () => {
 	}
 
 	useEffect(() => {
-		if (storeProjects.length === 0) {
+		if (storeProjects.length === 0 || refreshKey > 0) {
 			getProjects();
 			return;
 		}
 		setProjects(storeProjects);
 		setCount(storeProjects.length);
-	}, [page, debouncedSearch]);
+	}, [page, debouncedSearch, refreshKey]);
 
 	const projectsForUI = useMemo(
 		() =>
@@ -140,8 +141,8 @@ const ProjectsList = () => {
 				title: t('common.success'),
 				description: t('projects.deleteSuccess'),
 			});
-			// Refresh the list
 			setPage(1);
+			setRefreshKey((k) => k + 1);
 		} catch (error: any) {
 			toast({
 				title: t('common.error'),
@@ -154,12 +155,14 @@ const ProjectsList = () => {
 	const handleProjectCreated = () => {
 		setAddModalOpen(false);
 		setPage(1);
+		setRefreshKey((k) => k + 1);
 	};
 
 	const handleProjectUpdated = () => {
 		setEditModalOpen(false);
 		setSelectedProject(null);
 		setPage(1);
+		setRefreshKey((k) => k + 1);
 	};
 
 	return (

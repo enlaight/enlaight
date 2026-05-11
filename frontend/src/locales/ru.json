@@ -463,5 +463,9 @@
     "adding": "Добавление...",
     "save": "Сохранить",
     "saving": "Сохранение..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Выберите ассистента",
+    "noAssistantsAvailable": "Нет доступных ассистентов"
   }
 }

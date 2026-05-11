@@ -1,0 +1,141 @@
+{
+  "name": "2_1111 - Insights - Multiple Correspondence Analysis - markdown",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_1111",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "1a170751-434b-5270-afe0-b961979ef9f2",
+      "name": "Webhook",
+      "webhookId": "2dcd440c-e061-57b4-b3ae-9e0b30684fe9"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Insights - Multiple Correspondence Analysis"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2124e598-685b-5110-80bf-6fe6d3b9e0ab",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Static markdown widget.\nreturn [{ json: { status: \"success\", content: { markdown: \"## [U-Report] HPV - Multiple Correspondence Analysis\\n\\n![alt text](https://enlaight-main.s3.sa-east-1.amazonaws.com/markdown-images/mapa_perceptual_2d.png)\\n\\n\\t**Behavioral Pattern Detractor**\\n\\t\\tq5.No\\n\\t\\tq2.A little important\\n\\t\\tq3.No\\n\\n\\t**Behavioral Pattern of Uncertainty**\\n\\t\\tq1.I'm not sure\\n\\t\\tq2.I don't know about the HPV vaccine\\n\\t\\tq5.I'm not sure\\n\\n\\t**Behavioral Pattern Promoter**\\n\\t\\tq1.Yes\\n\\t\\tq2.Moderately important\\n\\t\\tq3.Yes\\n\", type: \"markdown\" } } }];"
+      },
+      "id": "36de8a52-fd2d-5864-b1a7-a51bf2bdab84",
+      "name": "Static Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        480,
+        0
+      ],
+      "id": "2d813c12-4ea0-5679-9a6d-dce7d6e24ea3",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "Static Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Static Content": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

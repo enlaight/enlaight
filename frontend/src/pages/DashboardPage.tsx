@@ -181,7 +181,7 @@ const DashboardPage = () => {
     setActiveLayout(parseConfig(selectedBoard?.config));
   }, [activeBoard, selectedBoard?.config]);
 
-  const getNextPosition = (layout: any[], cols = 5, defaultW = 2, defaultH = 1) => {
+  const getNextPosition = (layout: any[], cols = 6, defaultW = 2, defaultH = 1) => {
     const gridMap: Record<string, boolean> = {};
 
     layout.forEach(({ x, y, w, h }) => {
@@ -340,7 +340,6 @@ const DashboardPage = () => {
               </PopoverContent>
             </Popover>
             <Button
-              variant="outline"
               size="icon"
               disabled={
                 startDate.getTime() === appliedStartDate.getTime() &&
@@ -353,7 +352,7 @@ const DashboardPage = () => {
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
-            {isAdmin && (
+            {isAdmin && projects.length > 0 && (
               <Button onClick={() => setAddOpen(true)} size="default">
                 <Plus className="mr-2 h-5 w-5" />
                 {t('dashboard.addNewBoard')}
@@ -399,14 +398,14 @@ const DashboardPage = () => {
             </div>
           </div>
         )}
-        <div className="max-h-[calc(100vh-260px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg mt-4">
+        <div className="max-h-[calc(100vh-208px)] overflow-y-auto scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent rounded-lg mt-4">
         <GridLayout
           key={activeBoard || 'empty'}
           className="layout"
           layout={activeLayout}
-          cols={5}
-          rowHeight={400}
-          width={1300}
+          cols={6}
+          rowHeight={260}
+          width={1620}
           draggableHandle='.allow-drag'
           draggableCancel='.stop-drag'
           isDraggable={true}

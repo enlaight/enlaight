@@ -463,5 +463,9 @@
     "adding": "Ajout en cours...",
     "save": "Enregistrer",
     "saving": "Enregistrement..."
+  },
+  "assistantPicker": {
+    "chooseAnAssistant": "Choisir un assistant",
+    "noAssistantsAvailable": "Aucun assistant disponible"
   }
 }

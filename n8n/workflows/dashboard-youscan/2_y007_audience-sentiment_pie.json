@@ -1,0 +1,271 @@
+{
+  "name": "2_y007 - Audience and Sentiment Analysis - pie",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "2_y007",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -112
+      ],
+      "id": "40893677-9f98-58e8-a2cb-340cc803bef1",
+      "name": "Webhook",
+      "webhookId": "f3b88109-1e1c-5c57-b067-950c96155692"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-client",
+              "name": "client_id",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "a-title",
+              "name": "chart_title",
+              "type": "string",
+              "value": "Audience and Sentiment Analysis"
+            },
+            {
+              "id": "a-start",
+              "name": "start_date",
+              "value": "={{ $json.query.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "a-end",
+              "name": "end_date",
+              "value": "={{ $json.query.endDate }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "06f107e9-5299-5bb0-9e85-5a5a3822efef",
+      "name": "Set Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT audience, COUNT(*) AS cnt FROM (\n  SELECT ym.id,\n    MAX(CASE WHEN ycl.classification_type = 'audience' THEN ycl.result ELSE NULL END) AS audience\n  FROM warehouse.youscan_content yc\n  JOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\n  JOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\n  JOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\n  JOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\n  WHERE yt.client_id = {{ $json.client_id }}\n    AND ytr.translation IS NOT NULL\n    AND ym.published_at >= '{{ $json.start_date }}'\n    AND ym.published_at <= '{{ $json.end_date }}'\n  GROUP BY ym.id\n) t\nWHERE audience IS NOT NULL\nGROUP BY audience\nORDER BY cnt DESC;",
+        "options": {}
+      },
+      "id": "5de618ab-f2bf-580d-9053-6c9b91396b45",
+      "name": "MySQL Query",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        -32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Warehouse MySQL (UNICEF)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b95b0ef5-36eb-58fd-8642-2c432eb8d8fc",
+              "leftValue": "={{\n  $items(\"MySQL Query\").length > 0 &&\n  Object.keys($items(\"MySQL Query\")[0].json).length > 0\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -32
+      ],
+      "id": "e3be5128-5a5a-5469-b6b1-00e7b607d7e8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "function unq(v) {\n  if (typeof v !== 'string') return v;\n  try { const p = JSON.parse(v); return typeof p === 'string' ? p : v; } catch { return v.replace(/^\"|\"$/g, ''); }\n}\n// Pie chart. Top 4 + 'others'.\nconst rows = $input.all().map(i => i.json);\nconst total = rows.reduce((s, r) => s + Number(r[\"cnt\"] || 0), 0) || 1;\nrows.sort((a, b) => Number(b[\"cnt\"]) - Number(a[\"cnt\"]));\nconst top = rows.slice(0, 4);\nconst othersCnt = rows.slice(4).reduce((s, r) => s + Number(r[\"cnt\"] || 0), 0);\nconst labels = top.map(r => String(unq(r[\"audience\"]) ?? 'unknown'));\nconst data = top.map(r => +((true ? (Number(r[\"cnt\"]) / total) * 100 : Number(r[\"cnt\"]))).toFixed(2));\nif (othersCnt > 0) { labels.push(\"others\"); data.push(+((true ? (othersCnt / total) * 100 : othersCnt)).toFixed(2)); }\nconst chartTitle = $('Set Params').first().json.chart_title;\nconst chartConfig = {\n  type: 'pie',\n  data: { labels, datasets: [{ data }] },\n  options: { plugins: { title: { display: true, text: chartTitle }, legend: { position: 'right' } } }\n};\nreturn [{ json: { status: \"success\", content: { ...chartConfig, type: 'pie' } } }];"
+      },
+      "id": "76b6d1c2-e7fb-558c-aa81-4d40a609c4bc",
+      "name": "Build QuickChart Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": $json.content\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        912,
+        -96
+      ],
+      "id": "a8f22d92-a178-57e9-aab5-d8cc7099b7a2",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"content\": [],\n\"message\": \"No content found.\"\n} }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        704,
+        80
+      ],
+      "id": "bcfa1055-925a-5240-90b7-6fa5a13475a6",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Params": {
+      "main": [
+        [
+          {
+            "node": "MySQL Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Build QuickChart Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build QuickChart Config": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

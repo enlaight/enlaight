@@ -18,6 +18,12 @@ export default defineConfig(({ mode }) => ({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/charts/, ''),
 			},
+			'/quickchart-public': {
+				target: 'https://quickchart.io',
+				changeOrigin: true,
+				secure: true,
+				rewrite: (path) => path.replace(/^\/quickchart-public/, ''),
+			},
 		},
 	},
 	plugins: [
