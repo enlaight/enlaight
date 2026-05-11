@@ -1,6 +1,6 @@
 .PHONY: start stop clear build reset test
 
-COMPOSE_FILE := docker-compose-dev.yml
+COMPOSE_FILE := docker-compose-dev.yml # dev file by default
 
 start:
 	docker compose -f $(COMPOSE_FILE) up $(filter-out $@,$(MAKECMDGOALS))
