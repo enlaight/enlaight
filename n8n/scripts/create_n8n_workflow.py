@@ -59,7 +59,7 @@ def create_workflow(json_path: Path, base_url: str, headers: dict) -> bool:
 
 
 def main() -> int:
-    api_key = os.getenv("N8N_API_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMzk2Mjk2Mi02M2MwLTQzOTUtYTRkZC1kMzRlNTI0YmJhZDMiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzc4NTE3OTM4fQ.C5vp7_PSgdqb7EH76YNBaS6ne_-JWr3ISSO6ZtgDzeg")
+    api_key = os.getenv("N8N_API_KEY", "")
     if not api_key:
         print("ERROR: N8N_API_KEY environment variable is required.", file=sys.stderr)
         print("       Generate one in n8n Settings > API and export it before running.", file=sys.stderr)
