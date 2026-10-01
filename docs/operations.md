@@ -114,7 +114,8 @@ Run both checks below on every deploy.
 
 ```bash
 docker compose exec postgres psql -U enlaight -d n8n_enlaight_db -c "
-SELECT e.tbl AS table_name,
+SELECT current_database() AS db,
+       e.tbl AS table_name,
        coalesce(t.tableowner, '(table missing)') AS owner,
        has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'SELECT') AS sel,
        has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'INSERT') AS ins,
@@ -133,9 +134,11 @@ The query is written so that each failure mode is visible rather than absent fro
 
 | What you see | What it means | Fix |
 |---|---|---|
-| `owner` reads `(table missing)` and the flags are blank | The table was never created. Nothing in the repository contains a `CREATE TABLE enlaight_knowledge_bases`, so a genuinely fresh install fails here before it can reach a permission error. | EN-143 |
-| `owner` is a role other than `n8n` and the flags read `f` | The table exists but another role created it. This is the exact cause of `permission denied for table enlaight_knowledge_bases`. | EN-143, then EN-129 |
-| All three rows present but you ran it against `enlaight_database` | Wrong database. All three objects belong to `n8n_enlaight_db`; the application database holds Django tables only. | EN-141 |
+| `owner` is a role other than `n8n`, flags read `f` | The table exists but another role created it, so `n8n` holds no privilege on it. This is the exact cause of `permission denied for table enlaight_knowledge_bases`. | EN-143, then EN-129 |
+| `owner` reads `(table missing)`, flags blank | **Check the `db` column first.** If it is not `n8n_enlaight_db` you queried the wrong database — all three objects live in `n8n_enlaight_db`, and the application database holds Django tables only (EN-141). If `db` *is* correct, the tables genuinely do not exist: nothing in the repository contains a `CREATE TABLE enlaight_knowledge_bases`, so a fresh install fails here before reaching any permission error (EN-143). |  |
+
+The query returns one row per expected table whichever database you are connected to, so a wrong
+connection and a missing table look identical in the flags. The `db` column is what separates them.
 
 To repair a deployment that is already running, grant explicitly and set the default for tables
 created later:
@@ -150,13 +153,26 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 
 Re-run the check — every flag should now read `t`.
 
+> **`ALTER DEFAULT PRIVILEGES` is narrower than it looks.** It applies only to tables created by the
+> role that *executes* it — above, `enlaight`. A table created later by any other role is still
+> inaccessible to `n8n`. If more than one role creates tables in this schema, repeat the statement
+> with `FOR ROLE`:
+>
+> ```sql
+> ALTER DEFAULT PRIVILEGES FOR ROLE <other_role> IN SCHEMA public
+>   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO n8n;
+> ```
+
 **MySQL — the warehouse user**
 
 The warehouse runs outside this compose stack, so use your own client and substitute the real host
 and user:
 
 ```bash
-mysql -h <warehouse-host> -u root -p -e "SHOW GRANTS FOR '<warehouse-user>'@'%';"
+# The host part of the account matters — list the accounts first if unsure
+mysql -h <warehouse-host> -u root -p -e "SELECT user, host FROM mysql.user;"
+
+mysql -h <warehouse-host> -u root -p -e "SHOW GRANTS FOR '<warehouse-user>'@'<host>';"
 ```
 
 **Pass:** a grant covering at least `SELECT, INSERT, UPDATE, DELETE` on the warehouse schema, such as
