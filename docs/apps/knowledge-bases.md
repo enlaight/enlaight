@@ -34,6 +34,10 @@ view calls.
 | DELETE | `/webhook/webhook/kb/file/delete` | `DELETE /api/kb/file/delete/` | `delete-files-kb.json` |
 | GET | `/webhook/webhook/kb/file/list` | `GET /api/kb/files/list/` | `list-files-kb.json` |
 
+The three `GET` rows are n8n's default: `get-kb.json`, `get-all-kb.json` and `list-files-kb.json`
+leave `httpMethod` unset on their webhook nodes, so n8n serves them as `GET`. The other five declare
+their method explicitly.
+
 Two things in that table are deliberate records of the current state, not typos:
 
 - **The doubled `/webhook/webhook/` prefix is real.** The webhook nodes in
