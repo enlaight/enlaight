@@ -146,8 +146,9 @@ on Linux does not**, which is why the mapping is declared explicitly rather than
 prefer a fixed address, substitute the Docker bridge gateway IP:
 
 ```bash
-docker network inspect enlaight_internal \
-  -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}'
+docker network inspect \
+  $(docker network ls --format '{{.Name}}' | grep -E '_internal$' | head -1) \
+  --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'
 ```
 
 #### 2. Let the server listen for the container
@@ -171,11 +172,25 @@ host    n8n_enlaight_db     n8n        172.16.0.0/12    scram-sha-256
 `172.16.0.0/12` covers Docker's default address pool. To pin it to this stack's actual subnets:
 
 ```bash
-docker network inspect enlaight_internal enlaight_public \
-  -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+docker network inspect \
+  $(docker network ls --format '{{.Name}}' | grep -E '_(internal|public)$') \
+  --format '{{.Name}}: {{range .IPAM.Config}}{{.Subnet}}{{end}}'
 ```
 
-Reload afterwards: `pg_ctl reload`, or `SELECT pg_reload_conf();`.
+Compose prefixes network names with the project name, which defaults to the directory the stack runs
+from — so these are `<project>_internal` and `<project>_public`, not a fixed name. The command above
+discovers them rather than assuming.
+
+Reload afterwards. `pg_hba.conf` needs only a reload, but a change to `port` or `listen_addresses`
+requires a full restart:
+
+```bash
+sudo systemctl reload postgresql     # pg_hba.conf changes
+sudo systemctl restart postgresql    # port / listen_addresses changes
+```
+
+Or from a session: `SELECT pg_reload_conf();`. Avoid bare `pg_ctl reload`, which fails unless
+`PGDATA` is set or `-D` is given.
 
 #### 3. Open the firewall — this is the step that bites
 
