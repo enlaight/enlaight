@@ -91,9 +91,85 @@ Enlaight is a multi-service application composed of:
 - [ ] Set up AWS credentials or email backend
 - [ ] Configure n8n API credentials and webhook URLs
 - [ ] Generate strong database passwords (not defaults)
+- [ ] Verify database grants — see [Verifying database grants](#verifying-database-grants)
 - [ ] Set up reverse proxy (Traefik/Nginx) with SSL
 - [ ] Configure Redis with persistence
 - [ ] Configure log aggregation
+
+### Verifying database grants
+
+Role and user privileges are not checked by any automated step, and the gap is no longer
+hypothetical: it is what produced `permission denied for table enlaight_knowledge_bases` (EN-129).
+Run both checks below on every deploy.
+
+> **Why the database-level grant is not enough.** `postgres/init/01-init-databases.sql` ends with
+> `GRANT ALL PRIVILEGES ON DATABASE n8n_enlaight_db TO n8n`. On PostgreSQL that confers only
+> `CONNECT`, `CREATE` and `TEMP` — **no privilege on any table**. The install works today only
+> because the database is created `OWNER n8n`, so the tables the PGVector node creates at runtime
+> already belong to `n8n`. A table created by any *other* role — a superuser running an init script,
+> for instance — is immediately unreadable to n8n. So check table privileges and ownership, never
+> the database grant.
+
+**PostgreSQL — the `n8n` role**
+
+```bash
+docker compose exec postgres psql -U enlaight -d n8n_enlaight_db -c "
+SELECT e.tbl AS table_name,
+       coalesce(t.tableowner, '(table missing)') AS owner,
+       has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'SELECT') AS sel,
+       has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'INSERT') AS ins,
+       has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'UPDATE') AS upd,
+       has_table_privilege('n8n', to_regclass('public.' || e.tbl), 'DELETE') AS del
+FROM (VALUES ('enlaight_knowledge_bases'),
+             ('n8n_vectors'),
+             ('n8n_vector_collections')) AS e(tbl)
+LEFT JOIN pg_tables t ON t.schemaname = 'public' AND t.tablename = e.tbl
+ORDER BY e.tbl;"
+```
+
+**Pass:** three rows, `owner` is `n8n` on each, and every flag reads `t`.
+
+The query is written so that each failure mode is visible rather than absent from the output:
+
+| What you see | What it means | Fix |
+|---|---|---|
+| `owner` reads `(table missing)` and the flags are blank | The table was never created. Nothing in the repository contains a `CREATE TABLE enlaight_knowledge_bases`, so a genuinely fresh install fails here before it can reach a permission error. | EN-143 |
+| `owner` is a role other than `n8n` and the flags read `f` | The table exists but another role created it. This is the exact cause of `permission denied for table enlaight_knowledge_bases`. | EN-143, then EN-129 |
+| All three rows present but you ran it against `enlaight_database` | Wrong database. All three objects belong to `n8n_enlaight_db`; the application database holds Django tables only. | EN-141 |
+
+To repair a deployment that is already running, grant explicitly and set the default for tables
+created later:
+
+```bash
+docker compose exec postgres psql -U enlaight -d n8n_enlaight_db -c "
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO n8n;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO n8n;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO n8n;"
+```
+
+Re-run the check — every flag should now read `t`.
+
+**MySQL — the warehouse user**
+
+The warehouse runs outside this compose stack, so use your own client and substitute the real host
+and user:
+
+```bash
+mysql -h <warehouse-host> -u root -p -e "SHOW GRANTS FOR '<warehouse-user>'@'%';"
+```
+
+**Pass:** a grant covering at least `SELECT, INSERT, UPDATE, DELETE` on the warehouse schema, such as
+
+```
+GRANT ALL PRIVILEGES ON `warehouse_db`.* TO `enlaight_user`@`%`
+```
+
+**Fail:** only `GRANT USAGE ON *.*`, or a `SELECT`-only grant. The YouScan pipelines write on every
+run, so a read-only user fails at the first insert with
+`ERROR 1142 (42000): INSERT command denied to user '...' for table 'youscan_topics'`.
+
+Creating these grants at init, rather than verifying them after the fact, is **EN-143**.
 
 ### Using Traefik for SSL/TLS
 
