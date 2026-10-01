@@ -120,6 +120,150 @@ traefik:
 
 Services are auto-configured via Docker labels.
 
+### Running PostgreSQL outside Docker
+
+**This is a supported deployment.** It needs configuration on three sides — the `.env` file, the
+PostgreSQL server, and the host firewall — and skipping the third produces a failure that looks like
+a DNS problem but is not: the container resolves the host name, then the TCP connection hangs until
+it times out.
+
+#### 1. Point the stack at the host
+
+```env
+POSTGRES_HOST=host.docker.internal
+POSTGRES_PORT=5433
+N8N_DB_HOST=host.docker.internal
+N8N_DB_PORT=5433
+```
+
+All four are needed. `POSTGRES_HOST` / `POSTGRES_PORT` carry the Django backend; `N8N_DB_HOST` /
+`N8N_DB_PORT` carry n8n's own database connection, which is a separate setting and does **not**
+inherit from the first pair.
+
+`host.docker.internal` is defined for the `backend` and `n8n` services by an `extra_hosts` mapping to
+`host-gateway` in both compose files. Docker Desktop provides this name on its own; **Docker Engine
+on Linux does not**, which is why the mapping is declared explicitly rather than assumed. If you
+prefer a fixed address, substitute the Docker bridge gateway IP:
+
+```bash
+docker network inspect enlaight_internal \
+  -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}'
+```
+
+#### 2. Let the server listen for the container
+
+In `postgresql.conf`:
+
+```conf
+listen_addresses = '*'        # or the bridge gateway address specifically
+port = 5433
+```
+
+In `pg_hba.conf`, allow the Docker network. Containers reach the host from their bridge address, so
+the rule must cover the bridge subnet rather than `127.0.0.1`:
+
+```conf
+# TYPE  DATABASE            USER       ADDRESS          METHOD
+host    enlaight_database   enlaight   172.16.0.0/12    scram-sha-256
+host    n8n_enlaight_db     n8n        172.16.0.0/12    scram-sha-256
+```
+
+`172.16.0.0/12` covers Docker's default address pool. To pin it to this stack's actual subnets:
+
+```bash
+docker network inspect enlaight_internal enlaight_public \
+  -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+```
+
+Reload afterwards: `pg_ctl reload`, or `SELECT pg_reload_conf();`.
+
+#### 3. Open the firewall — this is the step that bites
+
+A resolvable name with no route is the failure mode here. The container's packets arrive on the
+Docker bridge interface, and a default-deny host firewall drops them silently, so the container waits
+for the full connect timeout instead of being refused.
+
+```bash
+# ufw
+sudo ufw allow from 172.16.0.0/12 to any port 5433 proto tcp
+
+# firewalld
+sudo firewall-cmd --permanent --zone=trusted --add-source=172.16.0.0/12
+sudo firewall-cmd --permanent --zone=trusted --add-port=5433/tcp
+sudo firewall-cmd --reload
+```
+
+Note that Docker manages its own iptables chains. A rule added to `INPUT` may be bypassed or
+reordered by Docker's chains, so verify the result (step 5) rather than assuming the rule took effect.
+
+#### 4. Create the role and database by hand
+
+`postgres/init/01-init-databases.sql` runs **only** on first start of the bundled container, via
+`docker-entrypoint-initdb.d`. An external server never executes it, so create its objects yourself:
+
+```bash
+psql -h localhost -p 5433 -U postgres -f postgres/init/01-init-databases.sql
+```
+
+> ⚠️ That script hardcodes the n8n role's password as `n8n_dev_password`, while the stack
+> authenticates with `N8N_DB_PASSWORD` from `.env`. Unless the two already agree, set the real
+> password after running it:
+>
+> ```sql
+> ALTER ROLE n8n WITH PASSWORD '<value of N8N_DB_PASSWORD>';
+> ```
+>
+> Reconciling this properly is **EN-142**.
+
+The backend's own schema arrives through migrations as usual (`python manage.py migrate`). Grants are
+**not** created by the script beyond the database level, so verify them before going live — see
+**Verifying database grants** in the Production Deployment Checklist above (added by EN-134).
+
+#### 5. Verify, from inside a container
+
+Testing from the host proves nothing: the host can always reach its own PostgreSQL. Test from where
+the connection actually originates.
+
+```bash
+# Name resolves to the host gateway? Resolved through Python rather than getent:
+# on this image getent reports the IPv6 address first, while PostgreSQL is
+# usually listening on IPv4, which makes getent output misleading when debugging.
+docker compose exec backend python -c \
+  "import socket; print(socket.gethostbyname('host.docker.internal'))"
+
+# TCP reachable? Fails here = firewall or listen_addresses, not credentials.
+docker compose exec backend python -c \
+  "import socket; socket.create_connection(('host.docker.internal', 5433), 5); print('tcp ok')"
+
+# Django can authenticate and query?
+docker compose exec backend python manage.py check --database default
+```
+
+`backend/scripts/wait-for-postgres.sh` already honours `POSTGRES_HOST` and `POSTGRES_PORT`, so it
+works against an external server — but note that `run.sh` does not currently invoke it, and the
+backend relies on the `depends_on` health gate instead. If you remove that gate (step 6), the backend
+may start before an external PostgreSQL is accepting connections.
+
+For n8n, check its startup log rather than guessing — it fails loudly when it cannot reach its
+database:
+
+```bash
+docker compose logs n8n | grep -i "database\|connection\|ECONNREFUSED\|ETIMEDOUT"
+```
+
+#### 6. The bundled `postgres` service
+
+The `backend` and `n8n` services declare `depends_on: postgres: condition: service_healthy`, so the
+bundled container still starts even when nothing uses it. Two ways to handle that:
+
+- **Leave it running.** It binds `127.0.0.1:5432` and your external server is on another port, so
+  they coexist and the idle container is merely wasted memory. Nothing to edit.
+- **Remove it.** Delete the `depends_on` block from `backend` and `n8n`, and the `postgres` service
+  with it. Cleaner, but it is a local modification to carry across updates.
+
+If your external PostgreSQL listens on **5432**, the bundled container cannot bind that port on the
+host and the stack fails to start. Either move the external server to another port or remove the
+bundled service as above; making the published port configurable is **EN-146**.
 ---
 
 ## Service Management

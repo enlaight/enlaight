@@ -34,6 +34,12 @@ services:
       dockerfile: Dockerfile
     image: enlaight-service
     container_name: enlaight_backend
+    extra_hosts:
+      # Lets containers reach a PostgreSQL running on the host (see
+      # docs/operations.md "Running PostgreSQL outside Docker"). Docker Desktop
+      # defines this name already; on Linux Docker Engine it does not exist
+      # without this mapping. Harmless when the bundled postgres service is used.
+      - "host.docker.internal:host-gateway"
     working_dir: /src
     command: ["sh", "/scripts/run.sh"]
     restart: always
@@ -123,6 +129,12 @@ services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:1.113.0
     container_name: n8n_dev
+    extra_hosts:
+      # Lets containers reach a PostgreSQL running on the host (see
+      # docs/operations.md "Running PostgreSQL outside Docker"). Docker Desktop
+      # defines this name already; on Linux Docker Engine it does not exist
+      # without this mapping. Harmless when the bundled postgres service is used.
+      - "host.docker.internal:host-gateway"
     restart: always
     ports:
       - "${N8N_BIND_HOST:-127.0.0.1}:5678:5678"
@@ -147,8 +159,8 @@ services:
       - N8N_GIT_NODE_DISABLE_BARE_REPOS=true
 
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_HOST=${N8N_DB_HOST:-postgres}
+      - DB_POSTGRESDB_PORT=${N8N_DB_PORT:-5432}
       - DB_POSTGRESDB_DATABASE=n8n_enlaight_db
       - DB_POSTGRESDB_USER=n8n
       - DB_POSTGRESDB_PASSWORD=n8n_dev_password
