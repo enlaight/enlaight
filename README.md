@@ -399,7 +399,7 @@ If either step is skipped, the backend will return errors when the UI tries to c
 
 ### I ran `create_defaults` and got default agents, but their chat doesn't work — why?
 
-The `create_defaults` script (and `n8n/scripts/create_sample_kb.py`) seeds the database with default Knowledge Bases and Agents. These defaults reference n8n chat webhook URLs, **but n8n generates a new webhook URL every time a workflow is imported** — so the seeded URLs will not match your local n8n instance.
+The `create_defaults` script seeds the database with default Knowledge Bases and Agents. (It also looks for `n8n/scripts/create_sample_kb.py`, which is **not shipped in this repository** — when absent the script prints a yellow "skipped" notice and continues.) These defaults reference n8n chat webhook URLs, **but n8n generates a new webhook URL every time a workflow is imported** — so the seeded URLs will not match your local n8n instance.
 
 To fix it, for each default-created agent:
 
