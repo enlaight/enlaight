@@ -31,7 +31,9 @@ RUN poetry config virtualenvs.create false && \
 COPY src /src/
 RUN cp core/settings.sample.py core/settings.py
 COPY scripts /scripts
-RUN chmod +x /scripts/*.sh
+# Strip CR so a CRLF checkout cannot break the entrypoint. sed is in the
+# base image; dos2unix would need an extra apk add.
+RUN sed -i 's/\r$//' /scripts/*.sh && chmod +x /scripts/*.sh
 
 ENTRYPOINT ["sh", "/scripts/entrypoint.sh"]
 CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]

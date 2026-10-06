@@ -1,0 +1,26 @@
+# Normalise line endings so a checkout that passes through Windows cannot
+# reintroduce CRLF. A stray \r at the end of a shell script's line 2 produces
+# "set: illegal option -", which is how this first surfaced in deployment.
+* text=auto eol=lf
+
+# Shell scripts are executed by /bin/sh inside Alpine containers and must be LF
+# regardless of platform or of a contributor's core.autocrlf setting.
+*.sh    text eol=lf
+*.bash  text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+Makefile        text eol=lf
+
+# Binary files: never normalise, never diff as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.lockb binary
