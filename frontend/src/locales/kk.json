@@ -6,7 +6,8 @@
     "userManagement": "Пайдаланушыларды Басқару",
     "projects": "Жобалар",
     "addUsers": "Пайдаланушы Қосу",
-    "listUsers": "Пайдаланушылар Тізімі"
+    "listUsers": "Пайдаланушылар Тізімі",
+    "newChat": "New Chat"
   },
   "auth": {
     "login": "Кіру",
@@ -41,7 +42,8 @@
     "inactive": "Белсенді Емес",
     "created": "Жасалды",
     "updated": "Жаңартылды",
-    "back": "Артқа"
+    "back": "Артқа",
+    "attach": "Attach"
   },
   "bot": {
     "title": "Ассистенттерді Басқару",
@@ -77,7 +79,14 @@
     "botsFound": "{{count}} ассистент табылды",
     "noBotsFound": "Ассистенттер табылмады.",
     "noProjectsAssigned": "Тағайындалған жобалар жоқ",
-    "noProjectsAvailable": "Қолжетімді жобалар жоқ."
+    "noProjectsAvailable": "Қолжетімді жобалар жоқ.",
+    "confirmDelete": "Are you sure you want to delete this assistant?",
+    "attachSuccess": "Assistant attached to project(s) successfully",
+    "attachError": "Failed to attach assistant to project(s)",
+    "detachSuccess": "Assistant detached from project successfully",
+    "detachError": "Failed to detach assistant from project",
+    "deleteSuccess": "Assistant deleted successfully",
+    "deleteError": "Failed to delete assistant"
   },
   "knowledgeBase": {
     "title": "Білім Базалары",
@@ -149,13 +158,21 @@
     "errorObligatory": "Диаграмма атауы және n8n webhook немесе HTML міндетті",
     "errorHTML": "HTML коды жарамсыз",
     "embedInstructions": "<bold>Superset бақылау тақтасында</bold> <code>...</code> батырмасын басып, <bold>Бақылау тақтасын ендіру</bold> опциясын таңдаңыз. Берілген SDK кодын көшіріңіз.",
-    "noData": "Бұл параметрлер бойынша деректер табылмады, басқа күн аралығын таңдап көріңіз."
+    "noData": "Бұл параметрлер бойынша деректер табылмады, басқа күн аралығын таңдап көріңіз.",
+    "download": "Жүктеу",
+    "share": "Бөлісу",
+    "description": "Custom dashboard to visualize your project's data and insights",
+    "createBoard": "Create Board",
+    "boardProject": "Project",
+    "selectProject": "Select a project",
+    "boardProjectRequired": "Please select a project",
+    "noAvailableProjects": "All projects already have a board"
   },
   "projects": {
     "directory": "Жобалар каталогы",
     "description": "Ұйымыңыздың барлық жобаларын көру және басқару",
     "searchPlaceholder": "Жобаларды атауы, клиенті немесе сипаттамасы бойынша іздеу...",
-    "pageOf": "{{total}}-ден {{current}} бет",
+    "pageOf": "{{total}} ішінен {{current}} бет",
     "previous": "Алдыңғы",
     "next": "Келесі",
     "addProject": "Жоба қосу",
@@ -189,10 +206,7 @@
     "nameMaxLength": "Атауы 100 таңбадан аз болуы керек",
     "descriptionMaxLength": "Сипаттама 500 таңбадан аз болуы керек",
     "createdLabel": "Жасалды",
-    "next": "Келесі",
-    "pageOf": "{{total}} ішінен {{current}} бет",
     "backToDashboard": "Бақылау панеліне оралу",
-    "noProjectsFound": "Жобалар табылмады.",
     "invalidApiConfig": "API конфигурациясы жоқ немесе дұрыс емес. VITE_API_BASE_URL тексеріңіз.",
     "loadError": "Жобаларды жүктеу қатесі"
   },

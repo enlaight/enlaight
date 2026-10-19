@@ -7,6 +7,7 @@ import { Chart as ChartJS, registerables } from "chart.js";
 import { SankeyController, Flow } from "chartjs-chart-sankey";
 import { Chart } from "react-chartjs-2";
 import { Card } from "@/components/ui/card";
+import { useBatchTranslation } from "@/hooks/use-batch-translation";
 
 ChartJS.register(...registerables, SankeyController, Flow);
 
@@ -18,6 +19,29 @@ function QuickChartRenderer({ content }: { content: any }) {
 
 	const contentKey = useMemo(() => JSON.stringify(content ?? null), [content]);
 	const isTable = content?.type === "table";
+
+	// The registry tables and the insight block are the only chart types rendered
+	// as real DOM rather than a server-side image, so their narrative text is the
+	// one piece of chart content that can follow the interface language. Routed
+	// through the same batch endpoint the user and project lists already use.
+	const translatableText = useMemo(() => {
+		const parsed = content ?? {};
+		if (parsed?.type === "table") {
+			const cols: any[] = parsed.columns ?? [];
+			const rows: any[] = parsed.dataSource ?? [];
+			return [
+				...cols.map((c) => c?.title).filter(Boolean),
+				...rows.flatMap((r) =>
+					cols.map((c) => r?.[c?.key]).filter((v) => typeof v === "string" && v.trim())
+				),
+			];
+		}
+		if (parsed?.type === "markdown") return [parsed.markdown].filter(Boolean);
+		if (parsed?.type === "card") return [parsed.title].filter(Boolean);
+		return [];
+	}, [contentKey]);
+	const { getTranslation } = useBatchTranslation(translatableText, "charts");
+	const tr = (v: any) => (typeof v === "string" && v.trim() ? getTranslation(v) : v);
 	const isMarkdown = content?.type === "markdown";
 	const isSankey = content?.type === "sankey";
 	const isWordcloud = content?.type === "wordcloud";
@@ -37,7 +61,11 @@ function QuickChartRenderer({ content }: { content: any }) {
 			setError(false);
 			try {
 				let endpoint = "charts/chart";
-				let body: any = { chart: payload, format: "png" };
+				// `version` is required. Without it QuickChart renders with
+				// Chart.js 2.9.4, which silently ignores `options.plugins.title`
+				// and `options.indexAxis` — chart titles disappear and
+				// horizontal bars come out vertical.
+				let body: any = { chart: payload, format: "png", version: "4" };
 				if (isWordcloud) {
 					const { type: _type, ...rest } = payload;
 					endpoint = "quickchart-public/wordcloud";
@@ -85,7 +113,7 @@ function QuickChartRenderer({ content }: { content: any }) {
 		return (
 			<div className="w-full h-full flex flex-col items-center justify-center text-center gap-2 p-4">
 				<div className="text-5xl font-bold leading-none">{content?.value}</div>
-				<div className="text-sm text-muted-foreground">{content?.title}</div>
+				<div className="text-sm text-muted-foreground">{tr(content?.title)}</div>
 			</div>
 		);
 	}
@@ -94,7 +122,7 @@ function QuickChartRenderer({ content }: { content: any }) {
 		return (
 			<div className="max-w-full max-h-full overflow-auto prose prose-sm">
 				<ReactMarkdown remarkPlugins={[remarkGfm]}>
-					{content?.markdown ?? ""}
+					{tr(content?.markdown ?? "")}
 				</ReactMarkdown>
 			</div>
 		);
@@ -127,7 +155,7 @@ function QuickChartRenderer({ content }: { content: any }) {
 									key={col.key}
 									className="border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold"
 								>
-									{col.title}
+									{tr(col.title)}
 								</th>
 							))}
 						</tr>
@@ -140,7 +168,7 @@ function QuickChartRenderer({ content }: { content: any }) {
 										key={col.key}
 										className="border border-gray-300 px-3 py-2"
 									>
-										{row[col.key]}
+										{tr(row[col.key])}
 									</td>
 								))}
 							</tr>
@@ -170,8 +198,12 @@ function QuickChartRenderer({ content }: { content: any }) {
     </Card>
 	);
 
+	const chartTitle =
+		content?.options?.plugins?.title?.text ?? content?.title ?? "chart";
+	const fileName = `${String(chartTitle).replace(/[^\w\-]+/g, "_").slice(0, 60)}.png`;
+
 	return (
-		<div className="flex max-w-full max-h-full">
+		<div className="flex flex-col max-w-full max-h-full">
 			<img
 				src={url}
 				alt="Chart"
@@ -180,6 +212,36 @@ function QuickChartRenderer({ content }: { content: any }) {
 					setError(true);
 				}}
 			/>
+			<div className="stop-drag flex justify-end gap-3 pt-1">
+				<a
+					href={url}
+					download={fileName}
+					className="text-xs text-muted-foreground hover:underline"
+				>
+					{t("dashboard.download")}
+				</a>
+				<button
+					type="button"
+					className="text-xs text-muted-foreground hover:underline"
+					onClick={async () => {
+						try {
+							const blob = await (await fetch(url)).blob();
+							const file = new File([blob], fileName, { type: "image/png" });
+							if (navigator.canShare?.({ files: [file] })) {
+								await navigator.share({ files: [file], title: String(chartTitle) });
+							} else {
+								await navigator.clipboard.write?.([
+									new ClipboardItem({ "image/png": blob }),
+								]);
+							}
+						} catch (err) {
+							console.error("Share failed", err);
+						}
+					}}
+				>
+					{t("dashboard.share")}
+				</button>
+			</div>
 		</div>
 	);
 

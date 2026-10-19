@@ -6,7 +6,8 @@
     "userManagement": "Gestion des Utilisateurs",
     "projects": "Projets",
     "addUsers": "Ajouter des Utilisateurs",
-    "listUsers": "Lister les Utilisateurs"
+    "listUsers": "Lister les Utilisateurs",
+    "newChat": "New Chat"
   },
   "auth": {
     "login": "Se Connecter",
@@ -41,7 +42,8 @@
     "inactive": "Inactif",
     "created": "Créé",
     "updated": "Mis à jour",
-    "back": "Retour"
+    "back": "Retour",
+    "attach": "Attach"
   },
   "bot": {
     "title": "Gestion des Assistants",
@@ -77,7 +79,14 @@
     "botsFound": "{{count}} assistant(s) trouvé(s)",
     "noBotsFound": "Aucun assistant trouvé.",
     "noProjectsAssigned": "Aucun projet assigné",
-    "noProjectsAvailable": "Aucun projet disponible."
+    "noProjectsAvailable": "Aucun projet disponible.",
+    "confirmDelete": "Are you sure you want to delete this assistant?",
+    "attachSuccess": "Assistant attached to project(s) successfully",
+    "attachError": "Failed to attach assistant to project(s)",
+    "detachSuccess": "Assistant detached from project successfully",
+    "detachError": "Failed to detach assistant from project",
+    "deleteSuccess": "Assistant deleted successfully",
+    "deleteError": "Failed to delete assistant"
   },
   "knowledgeBase": {
     "title": "Bases de Connaissances",
@@ -149,7 +158,15 @@
     "errorObligatory": "Le titre du graphique et un n8n webhook ou HTML sont obligatoires",
     "errorHTML": "Le code HTML n’est pas valide",
     "embedInstructions": "Dans un <bold>tableau de bord Superset</bold>, sélectionnez le bouton <code>...</code> puis <bold>Intégrer le tableau de bord</bold>. Copiez le code SDK fourni.",
-    "noData": "Aucune donnée n’a été trouvée pour ces paramètres, essayez une autre période."
+    "noData": "Aucune donnée n’a été trouvée pour ces paramètres, essayez une autre période.",
+    "download": "Télécharger",
+    "share": "Partager",
+    "description": "Custom dashboard to visualize your project's data and insights",
+    "createBoard": "Create Board",
+    "boardProject": "Project",
+    "selectProject": "Select a project",
+    "boardProjectRequired": "Please select a project",
+    "noAvailableProjects": "All projects already have a board"
   },
   "projects": {
     "directory": "Répertoire des projets",
@@ -189,10 +206,7 @@
     "nameMaxLength": "Le nom doit comporter moins de 100 caractères",
     "descriptionMaxLength": "La description doit comporter moins de 500 caractères",
     "createdLabel": "Créé",
-    "next": "Suivant",
-    "pageOf": "Page {{current}} sur {{total}}",
     "backToDashboard": "Retour au Tableau de Bord",
-    "noProjectsFound": "Aucun projet trouvé.",
     "invalidApiConfig": "Configuration API manquante ou invalide. Veuillez vérifier VITE_API_BASE_URL.",
     "loadError": "Erreur lors du chargement des projets"
   },
