@@ -149,7 +149,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"Error while editing knowledge base\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 500
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
@@ -198,7 +200,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 400
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
@@ -269,7 +273,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base does not exist\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 400
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
