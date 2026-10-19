@@ -37,7 +37,8 @@
         0
       ],
       "id": "606bc925-5a57-4484-a614-1e2567911059",
-      "name": "AI Agent"
+      "name": "AI Agent",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -119,6 +120,19 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Database step failed: {{ $json.error?.message || $json.error || 'database error' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        432,
+        176
+      ],
+      "id": "de3c3141-7e65-5367-b930-153aea396633",
+      "name": "stop_on_database_error"
     }
   ],
   "connections": {
@@ -135,7 +149,14 @@
     },
     "AI Agent": {
       "main": [
-        []
+        [],
+        [
+          {
+            "node": "stop_on_database_error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "OpenRouter Chat Model": {

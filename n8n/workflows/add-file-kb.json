@@ -79,7 +79,8 @@
           "id": "cCL19pxDOJh2L8rn",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -331,7 +332,8 @@
           "id": "cCL19pxDOJh2L8rn",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -383,6 +385,24 @@
       ],
       "id": "2713cb08-eb03-4383-8f86-09fadfee5346",
       "name": "respond_error_invalid_input1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"error\",\n  \"content\": [],\n  \"message\": $json.error?.message || $json.error || 'database error'\n} }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1020,
+        -4
+      ],
+      "id": "b8dda667-9b30-565f-b8c3-117988cbef8e",
+      "name": "respond_error_query_failed",
+      "alwaysOutputData": false
     }
   ],
   "connections": {
@@ -420,6 +440,13 @@
         [
           {
             "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_query_failed",
             "type": "main",
             "index": 0
           }
@@ -498,6 +525,11 @@
             "node": "respond_error_kb_does_not_exists1",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "respond_error_query_failed",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -529,6 +561,13 @@
         [
           {
             "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_query_failed",
             "type": "main",
             "index": 0
           }

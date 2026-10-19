@@ -229,7 +229,8 @@
           "id": "cCL19pxDOJh2L8rn",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -333,6 +334,13 @@
         [
           {
             "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_while_creating",
             "type": "main",
             "index": 0
           }

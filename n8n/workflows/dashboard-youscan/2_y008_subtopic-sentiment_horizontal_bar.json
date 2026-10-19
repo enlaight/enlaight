@@ -80,7 +80,8 @@
           "id": "REPLACE_WITH_CREDENTIAL_ID",
           "name": "Warehouse MySQL (UNICEF)"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -194,6 +195,40 @@
       "id": "7c8782a6-a139-5a96-ad96-6bcc2ae93a03",
       "name": "Respond to Webhook1",
       "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"error\",\n  \"content\": [],\n  \"message\": $json.error?.message || $json.error || 'database error'\n} }}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        144
+      ],
+      "id": "b703e2fd-5a3f-5c62-9779-3c09a2214cab",
+      "name": "respond_error_query_failed",
+      "alwaysOutputData": false
     }
   ],
   "connections": {
@@ -224,6 +259,13 @@
         [
           {
             "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_query_failed",
             "type": "main",
             "index": 0
           }

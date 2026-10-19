@@ -15,7 +15,10 @@
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [-800, 0],
+      "position": [
+        -800,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000001",
       "name": "Daily at 02:00 UTC"
     },
@@ -25,7 +28,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-560, 0],
+      "position": [
+        -560,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000002",
       "name": "Scan Raw Directory"
     },
@@ -54,7 +60,10 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [-320, 0],
+      "position": [
+        -320,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000003",
       "name": "Has Files?"
     },
@@ -64,7 +73,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 0],
+      "position": [
+        -80,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000004",
       "name": "Read JSON File"
     },
@@ -76,7 +88,10 @@
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [160, -160],
+      "position": [
+        160,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000005",
       "name": "Check Topic Exists",
       "credentials": {
@@ -84,7 +99,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -92,7 +108,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [160, 0],
+      "position": [
+        160,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000006",
       "name": "Evaluate Topic"
     },
@@ -121,7 +140,10 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [400, -160],
+      "position": [
+        400,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000007",
       "name": "Topic New?"
     },
@@ -136,17 +158,20 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "uuid":             "={{ crypto.randomUUID().replace(/-/g,'') }}",
+            "uuid": "={{ crypto.randomUUID().replace(/-/g,'') }}",
             "youscan_topic_id": "={{ $json.topic_id }}",
-            "name":             "={{ $json.topic.name }}",
-            "query":            "={{ $json.topic.query || '' }}"
+            "name": "={{ $json.topic.name }}",
+            "query": "={{ $json.topic.query || '' }}"
           }
         },
         "options": {}
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [640, -320],
+      "position": [
+        640,
+        -320
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000008",
       "name": "Insert Topic",
       "credentials": {
@@ -154,7 +179,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -164,7 +190,10 @@
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [640, -160],
+      "position": [
+        640,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000009",
       "name": "Re-fetch Topic ID",
       "credentials": {
@@ -172,7 +201,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -180,7 +210,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, -160],
+      "position": [
+        880,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000010",
       "name": "Resolve Topic ID"
     },
@@ -192,7 +225,10 @@
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [1120, -160],
+      "position": [
+        1120,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000011",
       "name": "Check File Already Ingested",
       "credentials": {
@@ -200,7 +236,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -208,7 +245,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 0],
+      "position": [
+        1120,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000012",
       "name": "Evaluate File"
     },
@@ -237,7 +277,10 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [1360, 0],
+      "position": [
+        1360,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000013",
       "name": "File New?"
     },
@@ -252,19 +295,22 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "uuid":              "={{ $json.uuid }}",
+            "uuid": "={{ $json.uuid }}",
             "youscan_topic_id": "={{ $json.topic_id }}",
-            "topic_id":         "={{ $json._db_topic_id }}",
-            "file_name":        "={{ $json._fileName }}",
-            "collected_at":     "={{ $json.collection_datetime ? new Date($json.collection_datetime).toISOString().slice(0,19).replace('T',' ') : null }}",
-            "total_collected":  "={{ $json.total || 0 }}"
+            "topic_id": "={{ $json._db_topic_id }}",
+            "file_name": "={{ $json._fileName }}",
+            "collected_at": "={{ $json.collection_datetime ? new Date($json.collection_datetime).toISOString().slice(0,19).replace('T',' ') : null }}",
+            "total_collected": "={{ $json.total || 0 }}"
           }
         },
         "options": {}
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [1600, 0],
+      "position": [
+        1600,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000014",
       "name": "Insert Ingestion File Record",
       "credentials": {
@@ -272,7 +318,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -280,7 +327,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1840, 0],
+      "position": [
+        1840,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000015",
       "name": "Explode Mentions"
     },
@@ -292,7 +342,10 @@
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [2080, -160],
+      "position": [
+        2080,
+        -160
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000016",
       "name": "Check Mention Exists",
       "credentials": {
@@ -300,7 +353,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -308,7 +362,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2080, 0],
+      "position": [
+        2080,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000017",
       "name": "Evaluate Mention"
     },
@@ -337,7 +394,10 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [2320, 0],
+      "position": [
+        2320,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000018",
       "name": "Mention New?"
     },
@@ -347,7 +407,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2560, 0],
+      "position": [
+        2560,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000019",
       "name": "Build Mention Row"
     },
@@ -362,38 +425,41 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "uuid":               "={{ $json._mentionRow.uuid }}",
+            "uuid": "={{ $json._mentionRow.uuid }}",
             "youscan_mention_id": "={{ $json._mentionRow.youscan_mention_id }}",
-            "topic_id":           "={{ $json._mentionRow.topic_id }}",
-            "youscan_topic_id":   "={{ $json._mentionRow.youscan_topic_id }}",
-            "youscan_added_at":   "={{ $json._mentionRow.youscan_added_at }}",
-            "published_at":       "={{ $json._mentionRow.published_at }}",
-            "url":                "={{ $json._mentionRow.url }}",
-            "image_url":          "={{ $json._mentionRow.image_url }}",
-            "source":             "={{ $json._mentionRow.source }}",
-            "author":             "={{ $json._mentionRow.author }}",
-            "sentiment":          "={{ $json._mentionRow.sentiment }}",
-            "resource_type":      "={{ $json._mentionRow.resource_type }}",
-            "publication_place":  "={{ $json._mentionRow.publication_place }}",
-            "language":           "={{ $json._mentionRow.language }}",
-            "country":            "={{ $json._mentionRow.country }}",
-            "city":               "={{ $json._mentionRow.city }}",
-            "region":             "={{ $json._mentionRow.region }}",
-            "post_type":          "={{ $json._mentionRow.post_type }}",
-            "post_id":            "={{ $json._mentionRow.post_id }}",
-            "discussion_id":      "={{ $json._mentionRow.discussion_id }}",
-            "potential_reach":    "={{ $json._mentionRow.potential_reach }}",
-            "engagement":         "={{ $json._mentionRow.engagement }}",
-            "tags":               "={{ $json._mentionRow.tags }}",
-            "auto_categories":    "={{ $json._mentionRow.auto_categories }}",
-            "subjects":           "={{ $json._mentionRow.subjects }}"
+            "topic_id": "={{ $json._mentionRow.topic_id }}",
+            "youscan_topic_id": "={{ $json._mentionRow.youscan_topic_id }}",
+            "youscan_added_at": "={{ $json._mentionRow.youscan_added_at }}",
+            "published_at": "={{ $json._mentionRow.published_at }}",
+            "url": "={{ $json._mentionRow.url }}",
+            "image_url": "={{ $json._mentionRow.image_url }}",
+            "source": "={{ $json._mentionRow.source }}",
+            "author": "={{ $json._mentionRow.author }}",
+            "sentiment": "={{ $json._mentionRow.sentiment }}",
+            "resource_type": "={{ $json._mentionRow.resource_type }}",
+            "publication_place": "={{ $json._mentionRow.publication_place }}",
+            "language": "={{ $json._mentionRow.language }}",
+            "country": "={{ $json._mentionRow.country }}",
+            "city": "={{ $json._mentionRow.city }}",
+            "region": "={{ $json._mentionRow.region }}",
+            "post_type": "={{ $json._mentionRow.post_type }}",
+            "post_id": "={{ $json._mentionRow.post_id }}",
+            "discussion_id": "={{ $json._mentionRow.discussion_id }}",
+            "potential_reach": "={{ $json._mentionRow.potential_reach }}",
+            "engagement": "={{ $json._mentionRow.engagement }}",
+            "tags": "={{ $json._mentionRow.tags }}",
+            "auto_categories": "={{ $json._mentionRow.auto_categories }}",
+            "subjects": "={{ $json._mentionRow.subjects }}"
           }
         },
         "options": {}
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [2800, 0],
+      "position": [
+        2800,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000020",
       "name": "Insert Mention",
       "credentials": {
@@ -401,7 +467,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -409,7 +476,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3040, 0],
+      "position": [
+        3040,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000021",
       "name": "Explode Content Shards"
     },
@@ -425,16 +495,19 @@
           "mappingMode": "defineBelow",
           "value": {
             "youscan_mention_id": "={{ $json.youscan_mention_id }}",
-            "uuid":               "={{ $json.uuid }}",
-            "content_type":       "={{ $json.content_type }}",
-            "content":            "={{ $json.content }}"
+            "uuid": "={{ $json.uuid }}",
+            "content_type": "={{ $json.content_type }}",
+            "content": "={{ $json.content }}"
           }
         },
         "options": {}
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [3280, 0],
+      "position": [
+        3280,
+        0
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000022",
       "name": "Insert Content Shard",
       "credentials": {
@@ -442,7 +515,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -450,9 +524,25 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1840, -320],
+      "position": [
+        1840,
+        -320
+      ],
       "id": "b2c3d4e5-0002-0002-0002-000000000023",
       "name": "Move File to Ingested"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Database step failed: {{ $json.error?.message || $json.error || 'database error' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        384,
+        16
+      ],
+      "id": "10fcc038-0c35-52c1-a5ab-9543dbb23f5c",
+      "name": "stop_on_database_error"
     }
   ],
   "connections": {
@@ -513,6 +603,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -553,6 +650,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -561,6 +665,13 @@
         [
           {
             "node": "Resolve Topic ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
             "type": "main",
             "index": 0
           }
@@ -588,6 +699,13 @@
         [
           {
             "node": "Evaluate File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
             "type": "main",
             "index": 0
           }
@@ -629,6 +747,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -653,6 +778,13 @@
         [
           {
             "node": "Evaluate Mention",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
             "type": "main",
             "index": 0
           }
@@ -700,6 +832,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -708,6 +847,18 @@
         [
           {
             "node": "Insert Content Shard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Content Shard": {
+      "main": [
+        [],
+        [
+          {
+            "node": "stop_on_database_error",
             "type": "main",
             "index": 0
           }
