@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT urr.category AS category, COUNT(*) AS cnt\nFROM warehouse.ureport_runs ur\nJOIN warehouse.ureport_responses urr ON ur.id = urr.run_id\nWHERE ur.flow_id = 3\n  AND urr.`key` = 'q5_do_you_feel_that_you_can_influence_the_decision_to_get_vaccin'\n  AND ur.started_on >= '{{ $json.start_date }}'\n  AND ur.started_on <  '{{ $json.end_date }}'\nGROUP BY urr.category\nORDER BY cnt DESC;",
+        "query": "SELECT urr.category AS category, COUNT(*) AS cnt\nFROM ureport_runs ur\nJOIN ureport_responses urr ON ur.id = urr.run_id\nWHERE ur.flow_id = 3\n  AND urr.`key` = 'q5_do_you_feel_that_you_can_influence_the_decision_to_get_vaccin'\n  AND ur.started_on >= '{{ $json.start_date }}'\n  AND ur.started_on <  '{{ $json.end_date }}'\nGROUP BY urr.category\nORDER BY cnt DESC;",
         "options": {}
       },
       "id": "987bfda8-16e3-55d9-8bf6-417797202451",

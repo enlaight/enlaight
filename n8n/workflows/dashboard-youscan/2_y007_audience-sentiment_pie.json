@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT audience, COUNT(*) AS cnt FROM (\n  SELECT ym.id,\n    MAX(CASE WHEN ycl.classification_type = 'audience' THEN ycl.result ELSE NULL END) AS audience\n  FROM warehouse.youscan_content yc\n  JOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\n  JOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\n  JOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\n  JOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\n  WHERE yt.client_id = {{ $json.client_id }}\n    AND ytr.translation IS NOT NULL\n    AND ym.published_at >= '{{ $json.start_date }}'\n    AND ym.published_at <= '{{ $json.end_date }}'\n  GROUP BY ym.id\n) t\nWHERE audience IS NOT NULL\nGROUP BY audience\nORDER BY cnt DESC;",
+        "query": "SELECT audience, COUNT(*) AS cnt FROM (\n  SELECT ym.id,\n    MAX(CASE WHEN ycl.classification_type = 'audience' THEN ycl.result ELSE NULL END) AS audience\n  FROM youscan_content yc\n  JOIN youscan_mentions ym ON ym.id = yc.youscan_mention_id\n  JOIN youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\n  JOIN youscan_translations ytr ON ytr.youscan_mention_id = ym.id\n  JOIN youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\n  WHERE yt.client_id = {{ $json.client_id }}\n    AND ytr.translation IS NOT NULL\n    AND ym.published_at >= '{{ $json.start_date }}'\n    AND ym.published_at <= '{{ $json.end_date }}'\n  GROUP BY ym.id\n) t\nWHERE audience IS NOT NULL\nGROUP BY audience\nORDER BY cnt DESC;",
         "options": {}
       },
       "id": "5de618ab-f2bf-580d-9053-6c9b91396b45",
