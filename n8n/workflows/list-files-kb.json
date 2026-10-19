@@ -113,7 +113,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT DISTINCT original_file_name\n  from (\n  SELECT\n    metadata->>'original_file_name' AS original_file_name,\n    c.name\n  FROM n8n_vectors v\n    left join n8n_vector_collections c\n    on v.collection_id = c.uuid\n  WHERE metadata ? 'original_file_name'\n    AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n    AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n  ORDER BY original_file_name\n  );",
+        "query": "SELECT DISTINCT original_file_name\n  from (\n  SELECT\n    metadata->>'original_file_name' AS original_file_name,\n    c.name\n  FROM n8n_vectors v\n    left join n8n_vector_collections c\n    on v.collection_id = c.uuid\n  WHERE metadata ? 'original_file_name'\n    AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n    AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n  ORDER BY original_file_name\n  ) AS indexed_files;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
