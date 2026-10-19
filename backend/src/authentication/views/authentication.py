@@ -347,6 +347,15 @@ class LoginView(APIView):
             return Response(
                 {"detail": "Credenciais inválidas"}, status=status.HTTP_401_UNAUTHORIZED
             )
+
+        # Refuse before issuing a token. SimpleJWT already warns here ("Creating
+        # token for inactive user"), and half the API rejects the token that
+        # results, so letting login succeed only produces a half-working session.
+        if not user.is_active:
+            return Response(
+                {"detail": "Conta não ativada.", "code": "user_inactive"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # generate tokens; wrap in try/except to avoid unhandled 500s in prod
         try:
             refresh = make_refresh_for_user(user)
@@ -504,6 +513,18 @@ class CustomTokenRefreshView(APIView):
                 {"detail": "Invalid refresh token.", "error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # The refresh endpoint re-signs claims from the old token and never looks
+        # the account up, so without this a deactivated user keeps minting fresh
+        # access tokens for as long as they keep refreshing.
+        user_id = old_refresh.payload.get(jwt_api_settings.USER_ID_CLAIM)
+        if user_id is not None:
+            account = User.objects.filter(**{jwt_api_settings.USER_ID_FIELD: user_id}).first()
+            if account is None or not account.is_active:
+                return Response(
+                    {"detail": "Conta não ativada.", "code": "user_inactive"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         access = old_refresh.access_token
 
@@ -750,9 +771,19 @@ class ResetPasswordView(APIView):
         ):
             return Response({"detail": "Token inválido ou expirado"}, status=400)
 
+        # An invited user who sets their password here instead of through the
+        # invite link proves control of the same mailbox the invite was sent to,
+        # so finish activating the account. Without this the account stays
+        # is_active=False for ever and the admin list shows it as inactive.
+        never_signed_in = not user.has_usable_password()
+
         user.set_password(new_password)
         user.password_reset_token = None
         user.password_reset_token_expires_at = None
+        if never_signed_in:
+            user.is_active = True
+            if hasattr(user, "active"):
+                user.active = True
         user.save()
 
         return Response({"detail": "Senha redefinida com sucesso"}, status=200)
