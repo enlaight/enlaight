@@ -3,8 +3,10 @@
 Usage:
     N8N_API_KEY=<key> python create_n8n_workflow.py [folder_or_file]
 
-If no path is given, defaults to ../workflows/dashboard-youscan relative to
-this script and creates one workflow per JSON file in that folder.
+If no path is given, defaults to ../workflows relative to this script and
+creates one workflow per JSON file directly in that folder. Sub-folders are
+not traversed, so pass ../workflows/dashboard-youscan explicitly to import
+the dashboards.
 N8N_BASE_URL defaults to https://facsimile-n8n.enlaight.ai/api/v1.
 """
 
@@ -15,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-DEFAULT_DIR = Path(__file__).resolve().parent.parent / "workflows" / "dashboard-youscan"
+DEFAULT_DIR = Path(__file__).resolve().parent.parent / "workflows"
 DEFAULT_BASE_URL = "https://facsimile-n8n.enlaight.ai/api/v1"
 REQUEST_TIMEOUT = int(os.getenv("N8N_TIMEOUT", "15"))
 
