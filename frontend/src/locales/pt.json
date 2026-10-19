@@ -43,7 +43,7 @@
     "created": "Criado",
     "updated": "Atualizado",
     "back": "Voltar",
-    "attach": "Attach"
+    "attach": "Vincular"
   },
   "bot": {
     "title": "Gestão de Assistentes",
@@ -80,13 +80,13 @@
     "noBotsFound": "Nenhum assistente encontrado.",
     "noProjectsAssigned": "Nenhum projeto atribuído",
     "noProjectsAvailable": "Nenhum projeto disponível.",
-    "confirmDelete": "Are you sure you want to delete this assistant?",
-    "attachSuccess": "Assistant attached to project(s) successfully",
-    "attachError": "Failed to attach assistant to project(s)",
-    "detachSuccess": "Assistant detached from project successfully",
-    "detachError": "Failed to detach assistant from project",
-    "deleteSuccess": "Assistant deleted successfully",
-    "deleteError": "Failed to delete assistant"
+    "confirmDelete": "Tem certeza de que deseja excluir este assistente?",
+    "attachSuccess": "Assistente vinculado ao(s) projeto(s) com sucesso",
+    "attachError": "Falha ao vincular o assistente ao(s) projeto(s)",
+    "detachSuccess": "Assistente desvinculado do projeto com sucesso",
+    "detachError": "Falha ao desvincular o assistente do projeto",
+    "deleteSuccess": "Assistente excluído com sucesso",
+    "deleteError": "Falha ao excluir o assistente"
   },
   "knowledgeBase": {
     "title": "Bases de Conhecimento",
@@ -159,12 +159,12 @@
     "noData": "Nenhum dado foi encontrado para estes parâmetros, tente um período de datas diferente.",
     "download": "Baixar",
     "share": "Compartilhar",
-    "description": "Custom dashboard to visualize your project's data and insights",
-    "createBoard": "Create Board",
-    "boardProject": "Project",
-    "selectProject": "Select a project",
-    "boardProjectRequired": "Please select a project",
-    "noAvailableProjects": "All projects already have a board"
+    "description": "Painel personalizado para visualizar os dados e insights do seu projeto",
+    "createBoard": "Criar painel",
+    "boardProject": "Projeto",
+    "selectProject": "Selecione um projeto",
+    "boardProjectRequired": "Por favor, selecione um projeto",
+    "noAvailableProjects": "Todos os projetos já têm um painel"
   },
   "projects": {
     "directory": "Diretório de Projetos",

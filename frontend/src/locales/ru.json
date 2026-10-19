@@ -7,7 +7,7 @@
     "projects": "Проекты",
     "addUsers": "Добавить Пользователей",
     "listUsers": "Список Пользователей",
-    "newChat": "New Chat"
+    "newChat": "Новый Чат"
   },
   "auth": {
     "login": "Войти",
@@ -43,7 +43,7 @@
     "created": "Создано",
     "updated": "Обновлено",
     "back": "Назад",
-    "attach": "Attach"
+    "attach": "Прикрепить"
   },
   "bot": {
     "title": "Управление Ассистентами",
@@ -80,13 +80,13 @@
     "noBotsFound": "Ассистенты не найдены.",
     "noProjectsAssigned": "Проекты не назначены",
     "noProjectsAvailable": "Проекты недоступны.",
-    "confirmDelete": "Are you sure you want to delete this assistant?",
-    "attachSuccess": "Assistant attached to project(s) successfully",
-    "attachError": "Failed to attach assistant to project(s)",
-    "detachSuccess": "Assistant detached from project successfully",
-    "detachError": "Failed to detach assistant from project",
-    "deleteSuccess": "Assistant deleted successfully",
-    "deleteError": "Failed to delete assistant"
+    "confirmDelete": "Вы уверены, что хотите удалить этого ассистента?",
+    "attachSuccess": "Ассистент успешно прикреплён к проекту (проектам)",
+    "attachError": "Не удалось прикрепить ассистента к проекту (проектам)",
+    "detachSuccess": "Ассистент успешно откреплён от проекта",
+    "detachError": "Не удалось открепить ассистента от проекта",
+    "deleteSuccess": "Ассистент успешно удалён",
+    "deleteError": "Не удалось удалить ассистента"
   },
   "knowledgeBase": {
     "title": "Базы Знаний",
@@ -159,12 +159,12 @@
     "noData": "Данные по этим параметрам не найдены, попробуйте выбрать другой период.",
     "download": "Скачать",
     "share": "Поделиться",
-    "description": "Custom dashboard to visualize your project's data and insights",
-    "createBoard": "Create Board",
-    "boardProject": "Project",
-    "selectProject": "Select a project",
-    "boardProjectRequired": "Please select a project",
-    "noAvailableProjects": "All projects already have a board"
+    "description": "Настраиваемый дашборд для визуализации данных и аналитики вашего проекта",
+    "createBoard": "Создать доску",
+    "boardProject": "Проект",
+    "selectProject": "Выберите проект",
+    "boardProjectRequired": "Пожалуйста, выберите проект",
+    "noAvailableProjects": "У всех проектов уже есть доска"
   },
   "projects": {
     "directory": "Каталог проектов",

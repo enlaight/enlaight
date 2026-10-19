@@ -7,7 +7,7 @@
     "projects": "Projets",
     "addUsers": "Ajouter des Utilisateurs",
     "listUsers": "Lister les Utilisateurs",
-    "newChat": "New Chat"
+    "newChat": "Nouveau Chat"
   },
   "auth": {
     "login": "Se Connecter",
@@ -43,7 +43,7 @@
     "created": "Créé",
     "updated": "Mis à jour",
     "back": "Retour",
-    "attach": "Attach"
+    "attach": "Associer"
   },
   "bot": {
     "title": "Gestion des Assistants",
@@ -80,13 +80,13 @@
     "noBotsFound": "Aucun assistant trouvé.",
     "noProjectsAssigned": "Aucun projet assigné",
     "noProjectsAvailable": "Aucun projet disponible.",
-    "confirmDelete": "Are you sure you want to delete this assistant?",
-    "attachSuccess": "Assistant attached to project(s) successfully",
-    "attachError": "Failed to attach assistant to project(s)",
-    "detachSuccess": "Assistant detached from project successfully",
-    "detachError": "Failed to detach assistant from project",
-    "deleteSuccess": "Assistant deleted successfully",
-    "deleteError": "Failed to delete assistant"
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet assistant ?",
+    "attachSuccess": "Assistant associé au(x) projet(s) avec succès",
+    "attachError": "Échec de l'association de l'assistant au(x) projet(s)",
+    "detachSuccess": "Assistant dissocié du projet avec succès",
+    "detachError": "Échec de la dissociation de l'assistant du projet",
+    "deleteSuccess": "Assistant supprimé avec succès",
+    "deleteError": "Échec de la suppression de l'assistant"
   },
   "knowledgeBase": {
     "title": "Bases de Connaissances",
@@ -159,12 +159,12 @@
     "noData": "Aucune donnée n’a été trouvée pour ces paramètres, essayez une autre période.",
     "download": "Télécharger",
     "share": "Partager",
-    "description": "Custom dashboard to visualize your project's data and insights",
-    "createBoard": "Create Board",
-    "boardProject": "Project",
-    "selectProject": "Select a project",
-    "boardProjectRequired": "Please select a project",
-    "noAvailableProjects": "All projects already have a board"
+    "description": "Tableau de bord personnalisé pour visualiser les données et les informations de votre projet",
+    "createBoard": "Créer un tableau",
+    "boardProject": "Projet",
+    "selectProject": "Sélectionner un projet",
+    "boardProjectRequired": "Veuillez sélectionner un projet",
+    "noAvailableProjects": "Tous les projets ont déjà un tableau"
   },
   "projects": {
     "directory": "Répertoire des projets",

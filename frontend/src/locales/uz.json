@@ -7,7 +7,7 @@
     "projects": "Loyihalar",
     "addUsers": "Foydalanuvchi Qo'shish",
     "listUsers": "Foydalanuvchilar Ro'yxati",
-    "newChat": "New Chat"
+    "newChat": "Yangi Chat"
   },
   "auth": {
     "login": "Kirish",
@@ -43,7 +43,7 @@
     "created": "Yaratildi",
     "updated": "Yangilandi",
     "back": "Orqaga",
-    "attach": "Attach"
+    "attach": "Bog'lash"
   },
   "bot": {
     "title": "Assistent Boshqarish",
@@ -80,13 +80,13 @@
     "noBotsFound": "Assistent topilmadi.",
     "noProjectsAssigned": "Tayinlangan loyihalar yo'q",
     "noProjectsAvailable": "Mavjud loyihalar yo'q.",
-    "confirmDelete": "Are you sure you want to delete this assistant?",
-    "attachSuccess": "Assistant attached to project(s) successfully",
-    "attachError": "Failed to attach assistant to project(s)",
-    "detachSuccess": "Assistant detached from project successfully",
-    "detachError": "Failed to detach assistant from project",
-    "deleteSuccess": "Assistant deleted successfully",
-    "deleteError": "Failed to delete assistant"
+    "confirmDelete": "Bu assistentni o'chirishni xohlaysizmi?",
+    "attachSuccess": "Assistent loyiha(lar)ga muvaffaqiyatli bog'landi",
+    "attachError": "Assistentni loyiha(lar)ga bog'lash amalga oshmadi",
+    "detachSuccess": "Assistent loyihadan muvaffaqiyatli ajratildi",
+    "detachError": "Assistentni loyihadan ajratish amalga oshmadi",
+    "deleteSuccess": "Assistent muvaffaqiyatli o'chirildi",
+    "deleteError": "Assistentni o'chirish amalga oshmadi"
   },
   "knowledgeBase": {
     "title": "Bilim Bazalari",
@@ -159,12 +159,12 @@
     "noData": "Ushbu parametrlar uchun ma'lumot topilmadi, boshqa sana oralig'ini sinab ko'ring.",
     "download": "Yuklab olish",
     "share": "Ulashish",
-    "description": "Custom dashboard to visualize your project's data and insights",
-    "createBoard": "Create Board",
-    "boardProject": "Project",
-    "selectProject": "Select a project",
-    "boardProjectRequired": "Please select a project",
-    "noAvailableProjects": "All projects already have a board"
+    "description": "Loyihangiz ma'lumotlari va tahlillarini ko'rish uchun moslashtirilgan boshqaruv paneli",
+    "createBoard": "Doska yaratish",
+    "boardProject": "Loyiha",
+    "selectProject": "Loyihani tanlang",
+    "boardProjectRequired": "Iltimos, loyihani tanlang",
+    "noAvailableProjects": "Barcha loyihalarda doska allaqachon mavjud"
   },
   "projects": {
     "directory": "Loyihalar katalogi",
