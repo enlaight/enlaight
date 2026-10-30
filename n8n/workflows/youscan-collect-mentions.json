@@ -15,7 +15,10 @@
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [-800, 0],
+      "position": [
+        -800,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000001",
       "name": "Daily at 01:00 UTC"
     },
@@ -25,7 +28,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-560, 0],
+      "position": [
+        -560,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000002",
       "name": "Build Date Range"
     },
@@ -37,7 +43,10 @@
       },
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.4,
-      "position": [-320, 0],
+      "position": [
+        -320,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000003",
       "name": "Get Active Topics from DB",
       "credentials": {
@@ -45,7 +54,8 @@
           "id": "WAREHOUSE_DB_CREDENTIAL_ID",
           "name": "Warehouse MySQL"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -53,7 +63,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-80, 0],
+      "position": [
+        -80,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000004",
       "name": "Aggregate Topic IDs"
     },
@@ -75,7 +88,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [160, -160],
+      "position": [
+        160,
+        -160
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000005",
       "name": "Fetch Topics API Key 1"
     },
@@ -97,7 +113,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [160, 0],
+      "position": [
+        160,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000006",
       "name": "Fetch Topics API Key 2"
     },
@@ -119,7 +138,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [160, 160],
+      "position": [
+        160,
+        160
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000007",
       "name": "Fetch Topics API Key 3"
     },
@@ -129,7 +151,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 0],
+      "position": [
+        420,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000008",
       "name": "Merge & Filter Topics"
     },
@@ -139,7 +164,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 0],
+      "position": [
+        680,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000009",
       "name": "Collect Mentions (Paginated)"
     },
@@ -149,9 +177,25 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [940, 0],
+      "position": [
+        940,
+        0
+      ],
       "id": "a1b2c3d4-0001-0001-0001-000000000010",
       "name": "Write JSON to Disk"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Database step failed: {{ $json.error?.message || $json.error || 'database error' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        176
+      ],
+      "id": "dce2ef8f-6353-53c1-85f5-41b47c068f77",
+      "name": "stop_on_database_error"
     }
   ],
   "connections": {
@@ -182,6 +226,13 @@
         [
           {
             "node": "Aggregate Topic IDs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "stop_on_database_error",
             "type": "main",
             "index": 0
           }

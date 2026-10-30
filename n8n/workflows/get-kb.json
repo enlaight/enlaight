@@ -84,7 +84,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"Error while editing knowledge base\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 500
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
@@ -133,7 +135,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"invalid input\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 400
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
@@ -164,7 +168,8 @@
           "id": "cCL19pxDOJh2L8rn",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -203,7 +208,9 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\n  \"status\": \"error\",\n  \"reason\": \"knowledge base does not exist\"\n}",
-        "options": {}
+        "options": {
+          "responseCode": 400
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.2,
@@ -268,6 +275,13 @@
         [
           {
             "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_while_creating",
             "type": "main",
             "index": 0
           }
