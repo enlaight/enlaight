@@ -7,7 +7,7 @@
     "projects": "Proyectos",
     "addUsers": "Agregar Usuarios",
     "listUsers": "Listar Usuarios",
-    "newChat": "New Chat"
+    "newChat": "Nuevo Chat"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -43,7 +43,7 @@
     "created": "Creado",
     "updated": "Actualizado",
     "back": "Volver",
-    "attach": "Attach"
+    "attach": "Vincular"
   },
   "bot": {
     "title": "Gestión de Asistentes",
@@ -80,13 +80,13 @@
     "noBotsFound": "No se encontraron asistentes.",
     "noProjectsAssigned": "No hay proyectos asignados",
     "noProjectsAvailable": "No hay proyectos disponibles.",
-    "confirmDelete": "Are you sure you want to delete this assistant?",
-    "attachSuccess": "Assistant attached to project(s) successfully",
-    "attachError": "Failed to attach assistant to project(s)",
-    "detachSuccess": "Assistant detached from project successfully",
-    "detachError": "Failed to detach assistant from project",
-    "deleteSuccess": "Assistant deleted successfully",
-    "deleteError": "Failed to delete assistant"
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este asistente?",
+    "attachSuccess": "Asistente vinculado a los proyectos correctamente",
+    "attachError": "No se pudo vincular el asistente a los proyectos",
+    "detachSuccess": "Asistente desvinculado del proyecto correctamente",
+    "detachError": "No se pudo desvincular el asistente del proyecto",
+    "deleteSuccess": "Asistente eliminado correctamente",
+    "deleteError": "No se pudo eliminar el asistente"
   },
   "knowledgeBase": {
     "title": "Bases de Conocimiento",
@@ -159,12 +159,12 @@
     "noData": "No se encontraron datos para estos parámetros, prueba con un período de fechas diferente.",
     "download": "Descargar",
     "share": "Compartir",
-    "description": "Custom dashboard to visualize your project's data and insights",
-    "createBoard": "Create Board",
-    "boardProject": "Project",
-    "selectProject": "Select a project",
-    "boardProjectRequired": "Please select a project",
-    "noAvailableProjects": "All projects already have a board"
+    "description": "Panel personalizado para visualizar los datos e información de tu proyecto",
+    "createBoard": "Crear tablero",
+    "boardProject": "Proyecto",
+    "selectProject": "Selecciona un proyecto",
+    "boardProjectRequired": "Por favor, selecciona un proyecto",
+    "noAvailableProjects": "Todos los proyectos ya tienen un tablero"
   },
   "projects": {
     "directory": "Directorio de Proyectos",
