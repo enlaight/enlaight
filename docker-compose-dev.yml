@@ -14,7 +14,6 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     command: sh -c "npm run devmode -- --host 0.0.0.0"
-    container_name: enlaight_frontend
     restart: always
     ports:
       - "8080:8080"
@@ -33,7 +32,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: enlaight-service
-    container_name: enlaight_backend
     working_dir: /src
     command: ["sh", "/scripts/run.sh"]
     restart: always
@@ -75,7 +73,6 @@ services:
   # Email service
   smtp:
     image: rnwood/smtp4dev
-    container_name: smtp4dev
     restart: unless-stopped
     ports:
       - "3000:80"
@@ -87,7 +84,6 @@ services:
   # Databases
   postgres:
     image: postgres:15
-    container_name: postgres_dev
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${BACKEND_DB}
@@ -108,7 +104,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: enlaight_cache
     restart: unless-stopped
     volumes:
       - redis:/data
@@ -122,7 +117,6 @@ services:
   # N8N
   n8n:
     image: docker.n8n.io/n8nio/n8n:1.113.0
-    container_name: n8n_dev
     restart: always
     ports:
       - "${N8N_BIND_HOST:-127.0.0.1}:5678:5678"
