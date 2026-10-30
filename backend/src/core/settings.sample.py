@@ -19,10 +19,6 @@ if not SECRET_KEY:
 
 
 DRF_YASG_STATIC = os.path.join(os.path.dirname(drf_yasg.__file__), "static")
-STATICFILES_DIRS = [
-    DRF_YASG_STATIC,
-]
-
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Comment the log variables in dev mode to read errors in terminal
@@ -274,15 +270,16 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [
+    DRF_YASG_STATIC,
+    BASE_DIR / "static",
+]
 
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"  # compress and cache static files
 )
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STATIC_URL = "/static/"
 STATIC_ROOT = "/static"
