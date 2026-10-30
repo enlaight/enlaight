@@ -121,12 +121,23 @@ class FlexibleJWTAuthentication(JWTAuthentication):
     Use in production when you trust the token issuer and want resilient lookup.
     """
 
+    @staticmethod
+    def _checked(user):
+        """Apply the same is_active rule the parent class applies."""
+        if not getattr(user, "is_active", False):
+            raise exceptions.AuthenticationFailed("User is inactive", code="user_inactive")
+        return user
+
     def get_user(self, validated_token):
-        # Try the standard lookup first
+        # Try the standard lookup first. Only a genuinely missing user should
+        # fall through to the claim-based lookup below; an inactive user must
+        # keep failing, or this class quietly re-admits accounts the rest of the
+        # API rejects.
         try:
             return super().get_user(validated_token)
-        except Exception:
-            pass
+        except exceptions.AuthenticationFailed as exc:
+            if getattr(getattr(exc, "detail", None), "code", None) != "user_not_found":
+                raise
 
         # If not found, try fallback lookups by email or username (safe because token already validated)
         User = get_user_model()
@@ -137,13 +148,13 @@ class FlexibleJWTAuthentication(JWTAuthentication):
 
         if email:
             try:
-                return User.objects.get(email__iexact=email)
+                return self._checked(User.objects.get(email__iexact=email))
             except User.DoesNotExist:
                 pass
 
         if username:
             try:
-                return User.objects.get(username__iexact=username)
+                return self._checked(User.objects.get(username__iexact=username))
             except User.DoesNotExist:
                 pass
 
