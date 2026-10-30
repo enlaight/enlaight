@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT d, SUM(daily) OVER (ORDER BY d) AS cumulative\nFROM (\n  SELECT DATE_FORMAT(ur.started_on, '%Y-%m-%d') AS d, COUNT(*) AS daily\n  FROM warehouse.ureport_runs ur\n  WHERE ur.flow_id = 3\n    AND ur.started_on >= '{{ $json.start_date }}'\n    AND ur.started_on <  '{{ $json.end_date }}'\n  GROUP BY d\n) AS daily_counts\nORDER BY d;",
+        "query": "SELECT d, SUM(daily) OVER (ORDER BY d) AS cumulative\nFROM (\n  SELECT DATE_FORMAT(ur.started_on, '%Y-%m-%d') AS d, COUNT(*) AS daily\n  FROM ureport_runs ur\n  WHERE ur.flow_id = 3\n    AND ur.started_on >= '{{ $json.start_date }}'\n    AND ur.started_on <  '{{ $json.end_date }}'\n  GROUP BY d\n) AS daily_counts\nORDER BY d;",
         "options": {}
       },
       "id": "3e380fdd-14ac-55b8-8941-eeffa0983e7a",

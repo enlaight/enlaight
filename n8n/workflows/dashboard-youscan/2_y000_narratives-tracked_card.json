@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT COUNT(DISTINCT ym.id) AS value\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ycl.classification_type = 'sub_topic'\n  AND ytr.translation IS NOT NULL\n  AND ym.published_at >= '{{ $json.start_date }}'\n  AND ym.published_at <= '{{ $json.end_date }}';",
+        "query": "SELECT COUNT(DISTINCT ym.id) AS value\nFROM youscan_content yc\nJOIN youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ycl.classification_type = 'sub_topic'\n  AND ytr.translation IS NOT NULL\n  AND ym.published_at >= '{{ $json.start_date }}'\n  AND ym.published_at <= '{{ $json.end_date }}';",
         "options": {}
       },
       "id": "473b7391-cacd-5e5e-bccb-658ffdfda90e",

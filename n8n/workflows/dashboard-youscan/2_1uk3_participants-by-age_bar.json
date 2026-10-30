@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  CASE\n    WHEN age < 12 AND age > 0 THEN '<12'\n    WHEN age >= 50 THEN '50+'\n    ELSE CAST(age AS CHAR)\n  END AS age_category,\n  COUNT(*) AS cnt\nFROM (\n  SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) AS UNSIGNED) AS age\n  FROM warehouse.ureport_runs ur\n  JOIN warehouse.ureport_contacts uc ON ur.contact_id = uc.id\n  WHERE ur.flow_id = 3\n    AND ur.started_on >= '{{ $json.start_date }}'\n    AND ur.started_on <  '{{ $json.end_date }}'\n    AND JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) IS NOT NULL\n    AND JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) >= 0\n) AS a\nWHERE age IS NOT NULL\nGROUP BY age_category\nORDER BY age_category;",
+        "query": "SELECT\n  CASE\n    WHEN age < 12 AND age > 0 THEN '<12'\n    WHEN age >= 50 THEN '50+'\n    ELSE CAST(age AS CHAR)\n  END AS age_category,\n  COUNT(*) AS cnt\nFROM (\n  SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) AS UNSIGNED) AS age\n  FROM ureport_runs ur\n  JOIN ureport_contacts uc ON ur.contact_id = uc.id\n  WHERE ur.flow_id = 3\n    AND ur.started_on >= '{{ $json.start_date }}'\n    AND ur.started_on <  '{{ $json.end_date }}'\n    AND JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) IS NOT NULL\n    AND JSON_UNQUOTE(JSON_EXTRACT(uc.fields, '$.age')) >= 0\n) AS a\nWHERE age IS NOT NULL\nGROUP BY age_category\nORDER BY age_category;",
         "options": {}
       },
       "id": "0c159510-a6c0-56a2-b7f2-9b7dc939d7c9",

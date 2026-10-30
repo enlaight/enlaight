@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT JSON_UNQUOTE(JSON_EXTRACT(ypr.result, '$.nlp_prep')) AS nlp_text\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN warehouse.youscan_post_process_results ypr ON ypr.id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nLIMIT 5000;",
+        "query": "SELECT JSON_UNQUOTE(JSON_EXTRACT(ypr.result, '$.nlp_prep')) AS nlp_text\nFROM youscan_content yc\nJOIN youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN youscan_post_process_results ypr ON ypr.id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nLIMIT 5000;",
         "options": {}
       },
       "id": "9d7437d8-13f5-51d0-9427-ad1b8177a714",

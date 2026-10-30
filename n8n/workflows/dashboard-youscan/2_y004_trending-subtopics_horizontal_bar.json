@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ycl.result AS subtopic, COUNT(*) AS cnt\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN warehouse.youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN warehouse.youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ycl.classification_type = 'sub_topic'\n  AND ytr.translation IS NOT NULL\n  AND ycl.result NOT LIKE '%not related%'\n  AND ycl.result NOT LIKE '%propaganda%'\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nGROUP BY ycl.result\nORDER BY cnt DESC\nLIMIT 10;",
+        "query": "SELECT ycl.result AS subtopic, COUNT(*) AS cnt\nFROM youscan_content yc\nJOIN youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nJOIN youscan_translations ytr ON ytr.youscan_mention_id = ym.id\nJOIN youscan_classifications ycl ON ycl.youscan_translation_id = ytr.id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ycl.classification_type = 'sub_topic'\n  AND ytr.translation IS NOT NULL\n  AND ycl.result NOT LIKE '%not related%'\n  AND ycl.result NOT LIKE '%propaganda%'\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nGROUP BY ycl.result\nORDER BY cnt DESC\nLIMIT 10;",
         "options": {}
       },
       "id": "d8244ebd-9aa9-59c6-a6a5-0a0f715fb283",

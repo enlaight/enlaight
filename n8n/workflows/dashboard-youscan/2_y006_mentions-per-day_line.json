@@ -63,7 +63,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT DATE_FORMAT(ym.published_at, '%Y-%m-%d') AS d, COUNT(*) AS cnt\nFROM warehouse.youscan_content yc\nJOIN warehouse.youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN warehouse.youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nGROUP BY d\nORDER BY d ASC;",
+        "query": "SELECT DATE_FORMAT(ym.published_at, '%Y-%m-%d') AS d, COUNT(*) AS cnt\nFROM youscan_content yc\nJOIN youscan_mentions ym ON ym.id = yc.youscan_mention_id\nJOIN youscan_topics yt ON yt.youscan_topic_id = ym.youscan_topic_id\nWHERE yt.client_id = {{ $json.client_id }}\n  AND ym.youscan_added_at >= '{{ $json.start_date }}'\n  AND ym.youscan_added_at <= '{{ $json.end_date }}'\nGROUP BY d\nORDER BY d ASC;",
         "options": {}
       },
       "id": "6a14b1fb-15e2-51b9-9c8a-1b6a8b88e8e0",
