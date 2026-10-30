@@ -1,0 +1,25 @@
+# Line-ending policy.
+#
+# Deliberately targeted rather than `* text=auto`: nine tracked files are
+# binary and every one of them carries stray \r bytes inside its payload, so
+# a blanket normalisation risks rewriting their contents.
+
+# Shell-executed files must keep LF. A .sh with CRLF makes BusyBox and dash
+# abort immediately, and makes bash run on with `set -eu` never in effect.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+Dockerfile.*    text eol=lf
+
+# Shell-parsed configuration: a trailing \r lands inside the variable value.
+env.sample      text eol=lf
+*.template      text eol=lf
+
+# Run by the postgres container's entrypoint at init.
+*.sql           text eol=lf
+
+# Binary: never normalise, never diff as text. These are the extensions
+# actually tracked here (*.png is 6 files; the others one each).
+*.png           binary
+*.jpg           binary
+*.ico           binary
+*.lockb         binary
