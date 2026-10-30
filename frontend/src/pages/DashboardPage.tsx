@@ -16,6 +16,8 @@ import 'react-resizable/css/styles.css';
 import QuickChartGraph from '@/components/QuickChartGraph';
 import { CalendarIcon, LayoutDashboard, Plus, SquareX, ChartColumnBig, RefreshCw, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18-utils";
+import { chartImageUrl, summariseChart } from "@/lib/chart-utils";
 import { format, subDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -54,6 +56,10 @@ const N8nRender = ({ item, startDate, endDate, onLoaded }: { item: any; startDat
         const url = new URL(item['n8n']);
         url.searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
         url.searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
+        // Chart titles and series labels are baked into the image by n8n, so
+        // the workflow has to know which language to emit. Without this the
+        // chart stays English whatever the interface is set to.
+        url.searchParams.set('lang', (i18n.language || 'en').slice(0, 2));
         const response = await fetch(url.toString());
         const data = await response.json();
 
@@ -73,7 +79,7 @@ const N8nRender = ({ item, startDate, endDate, onLoaded }: { item: any; startDat
     if (item['n8n']) {
       fetchN8n();
     }
-  }, [item['n8n'], startDate, endDate]);
+  }, [item['n8n'], startDate, endDate, i18n.language]);
 
   if (loading) return (
     <Card className="w-full h-full flex items-center justify-center">
@@ -135,7 +141,16 @@ const DashboardPage = () => {
   }, []);
 
   const handlePickAssistant = (agentId: string) => {
-    const prompt = `Please analyze the following data:\n\n${JSON.stringify(pickerContent, null, 2)}`;
+    // The chat renders markdown, so hand it a rendered chart image plus the
+    // underlying series. Pasting the raw config as JSON showed the assistant
+    // a wall of text and showed the user no chart at all.
+    const chartUrl = chartImageUrl(pickerContent);
+    const summary = summariseChart(pickerContent);
+    const prompt = [
+      chartUrl ? `![chart](${chartUrl})` : '',
+      'Please analyse this chart.',
+      summary,
+    ].filter(Boolean).join('\n\n');
     setPickerOpen(false);
     setPickerContent(null);
     openAgentChat(agentId, undefined, undefined, prompt);

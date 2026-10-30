@@ -5,6 +5,7 @@ import { ChatSessionService } from '@/services/ChatSessionService';
 import { ChatCopy, ChatLikeEmpty, ChatLikeFull } from "@/assets/svgs";
 import { FavoritesService } from '@/services/FavoritesService';
 import { useStore } from '@/store/useStore';
+import i18n from '@/lib/i18-utils';
 
 type Props = {
     webhookUrl: string;
@@ -61,6 +62,9 @@ export default function AgentsChatMount(props: Readonly<Props>) {
                     ...metadata,
                     agentId,
                     customSessionId, // we send our custom session key
+                    // The agent cannot infer the interface language on its own,
+                    // so it replied in English regardless of the UI setting.
+                    language: (i18n.language || 'en').slice(0, 2),
                 },
                 allowFileUploads: true,
                 allowedFilesMimeTypes: 'image/jpeg,image/png,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',

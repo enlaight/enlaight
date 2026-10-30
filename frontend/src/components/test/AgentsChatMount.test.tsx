@@ -64,3 +64,16 @@ describe('AgentsChatMount basic', () => {
 		expect(container).toBeTruthy();
 	});
 });
+describe('AgentsChatMount language passthrough', () => {
+	it('tells the agent which language the interface is in', async () => {
+		const { createChat } = await import('@n8n/chat');
+		const i18n = (await import('@/lib/i18-utils')).default;
+		await i18n.changeLanguage('ru');
+		(createChat as any).mockClear();
+		render(<AgentsChatMount webhookUrl="http://x/webhook/chat" agentId="a1" />);
+		await waitFor(() => expect(createChat).toHaveBeenCalled());
+		const cfg = (createChat as any).mock.calls[0][0];
+		expect(cfg.metadata.language).toBe('ru');
+		await i18n.changeLanguage('en');
+	});
+});
