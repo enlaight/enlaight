@@ -239,15 +239,21 @@ The backend DB is provisioned automatically by the Postgres container from
 the `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` env vars (see
 [`docker-compose.yml`](../../docker-compose.yml)). Additional roles and
 databases (e.g. the n8n DB that shares the same Postgres instance) are
-created by [`postgres/init/01-init-databases.sql`](../../postgres/init/01-init-databases.sql),
+created by [`postgres/init/01-init-databases.sh`](../../postgres/init/01-init-databases.sh),
 which Postgres runs automatically from `/docker-entrypoint-initdb.d` on
-first startup:
+first startup — and only then, on an empty data directory:
 
 ```sql
-CREATE ROLE n8n WITH LOGIN PASSWORD 'n8n_dev_password';
+CREATE ROLE n8n WITH LOGIN PASSWORD '<N8N_DB_PASSWORD from .env>';
 CREATE DATABASE n8n_enlaight_db OWNER n8n ENCODING 'UTF8';
 GRANT ALL PRIVILEGES ON DATABASE n8n_enlaight_db TO n8n;
 ```
+
+The role's password is taken from `N8N_DB_PASSWORD`, the same variable the n8n
+service authenticates with, so the two cannot drift apart. Because the init
+scripts do not run again on a volume that already holds data, changing that
+variable later does not reach an existing role — run
+`ALTER ROLE n8n WITH PASSWORD '<new value>';` as well.
 
 ### ORM Queries
 
