@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18-utils';
 import { useAuth } from "@/hooks/use-auth";
+import { authErrorText } from "@/lib/auth-errors";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ const Login = () => {
     } catch (err: any) {
       toast({
         title: t('login.loginFailedTitle'),
-        description: err?.message || t('login.invalidCredentials'),
+        description: authErrorText(err, t),
         variant: "destructive",
       });
     } finally {

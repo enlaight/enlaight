@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Inicio de sesión exitoso",
     "loginSuccessDesc": "¡Bienvenido de nuevo!",
     "loginFailedTitle": "Error de inicio de sesión",
-    "invalidCredentials": "Credenciales inválidas"
+    "invalidCredentials": "Credenciales inválidas",
+    "accountNotActivated": "Esta cuenta aún no está activada. Usa el enlace del correo de invitación o contacta a un administrador."
   },
   "home": {
     "welcomeToWorkspace": "Bienvenido a su espacio de trabajo",

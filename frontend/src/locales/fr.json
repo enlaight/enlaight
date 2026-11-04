@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Connexion réussie",
     "loginSuccessDesc": "Bon retour !",
     "loginFailedTitle": "Échec de la connexion",
-    "invalidCredentials": "Identifiants invalides"
+    "invalidCredentials": "Identifiants invalides",
+    "accountNotActivated": "Ce compte n'est pas encore activé. Utilisez le lien de votre e-mail d'invitation ou contactez un administrateur."
   },
   "home": {
     "welcomeToWorkspace": "Bienvenue dans votre espace de travail",

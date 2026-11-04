@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Muvaffaqiyatli kirish",
     "loginSuccessDesc": "Xush kelibsiz!",
     "loginFailedTitle": "Kirish xatosi",
-    "invalidCredentials": "Noto'g'ri ma'lumotlar"
+    "invalidCredentials": "Noto'g'ri ma'lumotlar",
+    "accountNotActivated": "Bu hisob hali faollashtirilmagan. Taklif xatidagi havoladan foydalaning yoki administratorga murojaat qiling."
   },
   "home": {
     "welcomeToWorkspace": "Ish makoniga xush kelibsiz",

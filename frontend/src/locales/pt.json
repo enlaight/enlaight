@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Login bem-sucedido",
     "loginSuccessDesc": "Bem-vindo de volta!",
     "loginFailedTitle": "Falha no Login",
-    "invalidCredentials": "Credenciais inválidas"
+    "invalidCredentials": "Credenciais inválidas",
+    "accountNotActivated": "Esta conta ainda não foi ativada. Use o link do e-mail de convite ou fale com um administrador."
   },
   "home": {
     "welcomeToWorkspace": "Bem-vindo ao seu espaço de trabalho",

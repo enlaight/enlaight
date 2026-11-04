@@ -27,3 +27,12 @@ repos:
           - "--filter-files"
           - "--profile=black"
           - "--line-length=99"
+
+  - repo: local
+    hooks:
+      - id: check-locale-placeholders
+        name: locale placeholders match en.json
+        entry: python3 frontend/scripts/check_locale_placeholders.py
+        language: system
+        pass_filenames: false
+        files: ^frontend/src/locales/.*\.json$

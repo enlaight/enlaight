@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Login Successful",
     "loginSuccessDesc": "Welcome back!",
     "loginFailedTitle": "Login Failed",
-    "invalidCredentials": "Invalid credentials"
+    "invalidCredentials": "Invalid credentials",
+    "accountNotActivated": "This account is not activated yet. Use the link in your invitation e-mail, or ask an administrator."
   },
   "home": {
     "welcomeToWorkspace": "Welcome to your workspace",

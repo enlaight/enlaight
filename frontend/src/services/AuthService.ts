@@ -1,4 +1,5 @@
 import api, { tokens } from "./api";
+import { toAuthError } from "@/lib/auth-errors";
 import type {
 	User,
 	LoginResponse,
@@ -9,9 +10,15 @@ import type {
 
 export class AuthService {
 	static async login(email: string, password: string): Promise<LoginResponse> {
-		const { data } = await api.post<LoginResponse>("login/", { email, password });
-		tokens.set(data.access);
-		return data;
+		try {
+			const { data } = await api.post<LoginResponse>("login/", { email, password });
+			tokens.set(data.access);
+			return data;
+		} catch (err) {
+			// Mapped here rather than in the component so every caller of
+			// login() gets the same treatment.
+			throw toAuthError(err);
+		}
 	}
 
 	static async register(payload: RegisterPayload) {

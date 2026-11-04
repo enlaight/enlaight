@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Вход выполнен",
     "loginSuccessDesc": "С возвращением!",
     "loginFailedTitle": "Ошибка входа",
-    "invalidCredentials": "Неверные учетные данные"
+    "invalidCredentials": "Неверные учетные данные",
+    "accountNotActivated": "Эта учётная запись ещё не активирована. Перейдите по ссылке из приглашения или обратитесь к администратору."
   },
   "home": {
     "welcomeToWorkspace": "Добро пожаловать в ваше рабочее пространство",
@@ -380,7 +381,7 @@
     "initialProjects": "Начальные Проекты (Необязательно)",
     "projects": "Проекты",
     "selectProjects": "Выберите проекты",
-    "projectsSelected": "Выбрано проектов: {cou{nt}",
+    "projectsSelected": "Выбрано проектов: {{count}}",
     "noProjectsAvailable": "Нет доступных проектов.",
     "clear": "Очистить",
     "done": "Готово",

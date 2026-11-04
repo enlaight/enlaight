@@ -343,7 +343,8 @@
     "loginSuccessTitle": "Кіру сәтті өтті",
     "loginSuccessDesc": "Қош келдіңіз!",
     "loginFailedTitle": "Кіру сәтсіз",
-    "invalidCredentials": "Қате деректеме"
+    "invalidCredentials": "Қате деректеме",
+    "accountNotActivated": "Бұл тіркелгі әлі белсендірілмеген. Шақыру хатындағы сілтемені пайдаланыңыз немесе әкімшіге хабарласыңыз."
   },
   "home": {
     "welcomeToWorkspace": "Жұмыс кеңістігіңізге қош келдіңіз",
