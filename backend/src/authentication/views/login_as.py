@@ -38,7 +38,10 @@ class LoginAsView(APIView):
                     },
                 ),
             ),
-            403: openapi.Response("Permission denied — USER role cannot impersonate"),
+            403: openapi.Response(
+                "Permission denied — the caller has the USER role, or the target "
+                "account is not active"
+            ),
             404: openapi.Response("User not found"),
         },
         security=[{"Bearer": []}],
@@ -54,6 +57,16 @@ class LoginAsView(APIView):
 
         if not user:
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Refuse before minting, with the same shape LoginView and
+        # CustomTokenRefreshView now use. The token this used to issue was
+        # refused by the rest of the API anyway, so the admin got a session
+        # that failed on its next request with nothing to explain it.
+        if not user.is_active:
+            return Response(
+                {"detail": "Conta não ativada.", "code": "user_inactive"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         refresh = RefreshToken.for_user(user)
         from authentication.views.authentication import _set_refresh_cookie

@@ -310,6 +310,7 @@ class LoginView(APIView):
         responses={
             200: openapi.Response("Tokens gerados com sucesso"),
             401: openapi.Response("Credenciais inválidas"),
+            403: openapi.Response("Conta não ativada"),
         },
         tags=["Auth"],
         security=[],
@@ -495,7 +496,8 @@ class CustomTokenRefreshView(APIView):
                         "refresh": openapi.Schema(type=openapi.TYPE_STRING),
                     },
                 ),
-            )
+            ),
+            403: openapi.Response("Conta não ativada"),
         },
         security=[],
     )
