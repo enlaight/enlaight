@@ -19,7 +19,6 @@ if not SECRET_KEY:
 
 
 DRF_YASG_STATIC = os.path.join(os.path.dirname(drf_yasg.__file__), "static")
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Comment the log variables in dev mode to read errors in terminal
 '''
@@ -268,8 +267,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     DRF_YASG_STATIC,
     BASE_DIR / "static",
@@ -282,4 +279,7 @@ STATICFILES_STORAGE = (
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATIC_URL = "/static/"
+# Outside the project tree, and deliberately so: this is what has always run.
+# collectstatic writes here and WhiteNoise serves from here, so anything in the
+# deployment that mounts or serves static files must point at /static.
 STATIC_ROOT = "/static"
