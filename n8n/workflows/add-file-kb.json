@@ -315,7 +315,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "select count(*)\n  from (\n    SELECT DISTINCT\n      metadata->>'original_file_name' AS original_file_name,\n      c.name\n    FROM n8n_vectors v\n      left join n8n_vector_collections c\n      on v.collection_id = c.uuid\n    WHERE metadata ? 'original_file_name'\n      AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n      AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n      AND metadata->>'original_file_name' = '{{ $('Read/Write Files from Disk').item.json.fileName.replace('/tmp/', '') }}'\n    ORDER BY original_file_name\n  )",
+        "query": "select count(*)\n  from (\n    SELECT DISTINCT\n      metadata->>'original_file_name' AS original_file_name,\n      c.name\n    FROM n8n_vectors v\n      left join n8n_vector_collections c\n      on v.collection_id = c.uuid\n    WHERE metadata ? 'original_file_name'\n      AND NULLIF(trim(metadata->>'original_file_name'), '') IS NOT NULL\n      AND c.name = '{{ $('Webhook').item.json.body.hash_id }}'\n      AND metadata->>'original_file_name' = '{{ $('Read/Write Files from Disk').item.json.fileName.replace('/tmp/', '') }}'\n    ORDER BY original_file_name\n  ) AS indexed_files",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
