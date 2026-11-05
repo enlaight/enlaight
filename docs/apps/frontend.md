@@ -228,13 +228,14 @@ api.interceptors.response.use(
 
 ### Environment Variables
 
-These variables **must** be set on your `.env` file, switching out codes appropriately.
+This variable **must** be set in your `.env` file:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api    # Backend API endpoint
-VITE_N8N_CHAT_URL=http://localhost:5678/webhook/<code>/chat
-VITE_N8N_SUPPORT_ASSISTANT_URL=http://localhost:5678/webhook/<code>/chat
 ```
+
+Each agent's n8n chat endpoint comes from its own record in the database
+(`selectedAgent.url_n8n`), not from the environment.
 
 ---
 

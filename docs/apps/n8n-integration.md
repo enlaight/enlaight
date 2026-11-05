@@ -405,7 +405,6 @@ Example body:
 * `N8N_BASE_URL`
 * `N8N_KB_KEY`
 * `N8N_TIMEOUT`
-* `VITE_N8N_CHAT_URL`
 
 ### Docker Services
 

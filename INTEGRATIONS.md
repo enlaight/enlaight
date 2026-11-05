@@ -115,10 +115,10 @@ All HTTP calls go through a shared Axios instance configured in [`frontend/src/s
 The frontend communicates **directly** with n8n for real-time chat sessions — the backend is not involved in the message exchange:
 
 - Embedded via the `@n8n/chat` v0.65 widget (`AgentsChatContext`).
-- Each bot/agent record in the DB stores its own n8n webhook URL.
-- Environment variables for built-in agents:
-  - `VITE_N8N_CHAT_URL` — main data-analyst agent chat endpoint.
-  - `VITE_N8N_SUPPORT_ASSISTANT_URL` — support assistant chat endpoint.
+- Each bot/agent record in the DB stores its own n8n webhook URL, and that
+  record is the only source of the endpoint: `Index.tsx` passes
+  `selectedAgent.url_n8n` straight to the widget. There is no environment
+  variable for a built-in agent.
 
 ---
 
@@ -578,8 +578,6 @@ postgres_dev  ──(healthy)──► enlaight_backend, n8n_dev
 | Variable | Description |
 |---|---|
 | `VITE_API_BASE_URL` | Backend API base URL (e.g. `http://localhost:8000/api`) |
-| `VITE_N8N_CHAT_URL` | n8n chat webhook for the main data-analyst agent |
-| `VITE_N8N_SUPPORT_ASSISTANT_URL` | n8n chat webhook for the support assistant |
 
 ### Backend
 
