@@ -284,5 +284,5 @@ After any tier, confirm:
 | Env flags | `.env` (from `env.sample`) |
 | Backend settings | `backend/src/core/settings.sample.py` |
 | URL routing | `backend/src/core/urls.py`, `backend/src/authentication/urls.py` |
-| DB init | `postgres/init/01-init-databases.sql` |
+| DB init | `postgres/init/01-init-databases.sh` |
 | Frontend auth | `frontend/src/services/api.ts`, `frontend/src/contexts/AuthContext.tsx` |

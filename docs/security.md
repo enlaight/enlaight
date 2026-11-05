@@ -380,7 +380,7 @@ DATABASES = {
 
 - `BACKEND_DB_USER` owns only `BACKEND_DB` (`enlaight_database` by default).
 - The `n8n` role owns only `n8n_enlaight_db` (created by
-  [`postgres/init/01-init-databases.sql`](../postgres/init/01-init-databases.sql)).
+  [`postgres/init/01-init-databases.sh`](../postgres/init/01-init-databases.sh)).
 - Neither application runs as the `postgres` superuser.
 
 **Non-Root User:**
