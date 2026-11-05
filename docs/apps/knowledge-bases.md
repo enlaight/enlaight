@@ -11,7 +11,7 @@ Knowledge Bases (KBs) in Enlaight are document repositories that assistants can 
 ### 1. n8n Service – Knowledge Base Backend
 
 - Runs on port `5678` (localhost)
-- Docker container: `n8n_dev`
+- Compose service: `n8n`
 - Database: PostgreSQL
 - File storage: n8n local or configured external storage
 - Handles KB lifecycle via webhooks

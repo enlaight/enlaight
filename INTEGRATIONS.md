@@ -293,7 +293,7 @@ n8n uses PostgreSQL both for its own internal storage **and** as the PGVector st
 
 ### PostgreSQL— Application Data
 
-**Container:** `postgres_dev` (PostgreSQL)
+**Service:** `postgres` (PostgreSQL)
 **Internal host:** `postgres:5432`
 **Database:** `enlaight_database`
 **Used by:** Django backend
@@ -316,7 +316,7 @@ Stores all transactional business data managed by the Django ORM:
 
 ### PostgreSQL + PGVector — n8n & Embeddings
 
-**Container:** `postgres_dev` (PostgreSQL with pgvector)
+**Service:** `postgres` (PostgreSQL with pgvector)
 **Internal host:** `postgres:5432`
 **Database:** `n8n_enlaight_db`
 **Used by:** n8n
@@ -329,7 +329,7 @@ Stores all transactional business data managed by the Django ORM:
 
 ### Redis — Cache
 
-**Container:** `enlaight_cache` (Redis 7 Alpine)
+**Service:** `redis` (Redis 7 Alpine)
 **Internal host:** `redis:6379`
 **Used by:** Backend (session cache, throttle counters)
 
@@ -553,20 +553,39 @@ Two Docker networks keep services isolated:
 
 ### Service Network Membership
 
-| Container | Networks | Internal hostname | Exposed port |
+Compose resolves each service by its own name on every network it joins, so
+the service name below is also the hostname other services use to reach it.
+Container names are not fixed — Compose derives them from the project name —
+so address services by name and drive them with `docker compose`.
+
+| Service | Networks | Host port | In |
 |---|---|---|---|
-| `enlaight_frontend` | public | — | `8080` |
-| `enlaight_backend` | internal, public | `backend` | `8000` |
-| `postgres_dev` | internal | `postgres` | `5432` |
-| `enlaight_cache` | internal | `redis` | — |
-| `n8n_dev` | internal, public | `n8n` | `5678` |
-| `quickchart` | internal | `quickchart` | `3400` |
-| `smtp4dev` | internal, public | `smtp4dev` | `3000`, `2525` |
+| `frontend` | public | `8080` | both |
+| `backend` | internal, public | `8000` | both |
+| `postgres` | internal | `5432` | both |
+| `redis` | default | — | both |
+| `n8n` | internal, public | `5678` | both |
+| `smtp` | internal, public | `3000`, `2525` | both |
+| `quickchart` | public | ephemeral / `8001` | both |
+| `traefik` | internal, public | `80`, `443`, `8081` | `docker-compose.yml` only |
+
+Read from `docker compose config` on both files, not from the literal
+`networks:` and `ports:` keys. Three things that output disagreed with:
+
+- `redis` declares no networks at all, so Compose places it on the implicit
+  `default` network — on its own, reachable from neither `internal` nor
+  `public`. The table used to say `internal`.
+- `quickchart` is on `public`, not `internal`. Its host port differs between
+  the two files: `docker-compose.yml` writes `- "3400"`, so Docker assigns an
+  ephemeral host port, while `docker-compose-dev.yml` publishes `8001:3400`.
+  The container port is `3400` in both.
+- `traefik` was missing from the table, and it exists only in
+  `docker-compose.yml`.
 
 ### Service Start-up Dependencies
 
 ```
-postgres_dev  ──(healthy)──► enlaight_backend, n8n_dev
+postgres  ──(healthy)──►  backend, n8n
 ```
 
 ---

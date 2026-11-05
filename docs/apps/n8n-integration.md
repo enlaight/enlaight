@@ -15,7 +15,7 @@ created, configured, plugged into the application, and accessed by end users.
 
 ### 1. n8n Service
 - Runs on port **5678** (localhost)
-- Docker container: `n8n_dev`
+- Compose service: `n8n`
 - Database: **PostgreSQL** (`postgres` service)
 - Local URL: `http://localhost:5678`
 - Hosts automated workflows that power the agents
