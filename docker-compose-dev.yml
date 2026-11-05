@@ -1,3 +1,25 @@
+# DEVELOPMENT ONLY. Neither this file nor docker-compose.yml is a
+# production deployment.
+#
+# The backend here is served by Django's development server: backend/Dockerfile
+# ends in a gunicorn CMD, but both files override it with
+# `command: ["sh", "/scripts/run.sh"]`, and run.sh ends in
+# `exec python manage.py runserver 0.0.0.0:8000`. The container says so itself
+# at startup — "WARNING: This is a development server. Do not use it in a
+# production setting." — and that warning is accurate. Django's development
+# server is single-threaded by default and explicitly unsupported for
+# production traffic.
+#
+# Production is served by something outside this repository. This file is the
+# local-development one of the two and is MEANT to run runserver — keep the
+# `command:` override here. If production ever moves into the repository, it
+# belongs in docker-compose.yml, which says what to change.
+#
+# Known duplication, harmless in development: entrypoint.sh runs collectstatic
+# and migrate, and run.sh runs both again, so every start does each twice.
+# (entrypoint.sh is not bypassed — a Compose `command:` replaces CMD, not
+# ENTRYPOINT.)
+
 networks:
   internal:
     driver: bridge
